@@ -24,6 +24,8 @@
 #test-last-update-time !Returned by get-test-last-tranche to allow the last update time to be bound for testing.
 #test-now !Returned by get-test-last-tranche to allow the current time to be bound for testing.
 
+#io-ratio-multiplier !The binding to get the IO ratio multiplier.
+
 #tranche-space-key "tranche-space"
 #update-time-key "update-time"
 
@@ -67,6 +69,8 @@
     int-sub<1>(now int-add(last-update-time tranche-space-recharge-delay)),
   recharged-tranche-space:
     decimal18-mul(int-to-decimal18(recharge-duration) tranche-space-per-second),
+  /* repeat now for easy access by callers */
+  _: now,
   tranche-space-now:
     decimal18-sub<1>(tranche-space-before recharged-tranche-space),
   tranche-space-available:
@@ -77,8 +81,25 @@
       decimal18-power(tranche-size-growth decimal18-floor(tranche-space-now))
     );
 
+#io-ratio-multiplier-sell
+  multiplier:
+    uniswap-v3-twap-output-ratio(
+      reference-stable reference-stable-decimals
+      reference-reserve reference-reserve-decimals
+      twap-duration 0
+      [uniswap-v3-fee-low]
+    );
+
+#io-ratio-multiplier-buy
+  multiplier:
+    uniswap-v3-twap-output-ratio(
+      reference-reserve reference-reserve-decimals
+      reference-stable reference-stable-decimals
+      twap-duration 0
+      [uniswap-v3-fee-low]
+    );
+
 #calculate-io
-  io-ratio-multiplier:,
   tranche-space-now
   tranche-space-available
   tranche-total-size:
@@ -91,30 +112,10 @@
   tranche-available-size:
     decimal18-mul(tranche-total-size tranche-space-available),
   tranch-io-ratio:
-    decimal18-mul(tranche-io-ratio io-ratio-multiplier);
-
-#calculate-io-sell
-  io-ratio-multiplier: uniswap-v3-twap-output-ratio(
-    reference-stable reference-stable-decimals
-    reference-reserve reference-reserve-decimals
-    twap-duration 0
-    [uniswap-v3-fee-low]
-  ),
-  amount io-ratio: call<'calculate-io>(io-ratio-multiplier);
-
-#calculate-io-buy
-  io-ratio-multiplier: uniswap-v3-twap-output-ratio(
-    reference-reserve reference-reserve-decimals
-    reference-stable reference-stable-decimals
-    twap-duration 0
-    [uniswap-v3-fee-low]
-  ),
-  amount io-ratio: call<'calculate-io>(io-ratio-multiplier);
+    decimal18-mul(tranche-io-ratio call<io-ratio-multiplier>());
 
 #handle-io
   now
-  _
-  _
   tranche-space-now
   _
   tranche-total-size:
