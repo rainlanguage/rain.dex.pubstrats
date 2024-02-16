@@ -65,10 +65,10 @@
     call<get-last-tranche>(),
   recharge-duration:
     int-sub<1>(now int-add(last-update-time tranche-space-recharge-delay)),
-  recharge-tranche-space:
+  recharged-tranche-space:
     decimal18-mul(int-to-decimal18(recharge-duration) tranche-space-per-second),
   tranche-space-now:
-    decimal18-sub<1>(tranche-space-before recharge-tranche-space),
+    decimal18-sub<1>(tranche-space-before recharged-tranche-space),
   tranche-space-available:
     decimal18-sub(1e18 decimal18-frac(tranche-space-now)),
   tranche-total-size:
