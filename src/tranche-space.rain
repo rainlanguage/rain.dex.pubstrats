@@ -30,12 +30,9 @@
 #update-time-key "update-time"
 
 #get-real-last-tranche
-  tranche-space-before:
-    get(hash(order-hash() tranche-space-key)),
-  last-update-time:
-    get(hash(order-hash() update-time-key)),
-  now:
-    block-timestamp();
+  tranche-space-before: get(hash(order-hash() tranche-space-key)),
+  last-update-time: get(hash(order-hash() update-time-key)),
+  now: block-timestamp();
 
 #set-real-last-tranche
   tranche-space now:,
@@ -63,78 +60,40 @@
 #calculate-tranche
   tranche-space-before
   last-update-time
-  now:
-    call<get-last-tranche>(),
-  recharge-duration:
-    int-sub<1>(now int-add(last-update-time tranche-space-recharge-delay)),
-  recharged-tranche-space:
-    decimal18-mul(int-to-decimal18(recharge-duration) tranche-space-per-second),
+  now: call<get-last-tranche>(),
+  recharge-duration: int-sub<1>(now int-add(last-update-time tranche-space-recharge-delay)),
+  recharged-tranche-space: decimal18-mul(int-to-decimal18(recharge-duration) tranche-space-per-second),
   /* repeat now for easy access by callers */
   _: now,
-  tranche-space-now:
-    decimal18-sub<1>(tranche-space-before recharged-tranche-space),
-  tranche-space-available:
-    decimal18-sub(1e18 decimal18-frac(tranche-space-now)),
-  tranche-total-size:
-    decimal18-mul(
-      tranche-size-base
-      decimal18-power(tranche-size-growth decimal18-floor(tranche-space-now))
-    );
+  tranche-space-now: decimal18-sub<1>(tranche-space-before recharged-tranche-space),
+  tranche-space-available: decimal18-sub(1e18 decimal18-frac(tranche-space-now)),
+  tranche-total-size: decimal18-mul(tranche-size-base decimal18-power(tranche-size-growth decimal18-floor(tranche-space-now)));
 
 #io-ratio-multiplier-sell
-  multiplier:
-    uniswap-v3-twap-output-ratio(
-      reference-stable reference-stable-decimals
-      reference-reserve reference-reserve-decimals
-      twap-duration 0
-      [uniswap-v3-fee-low]
-    );
+  multiplier: uniswap-v3-twap-output-ratio(reference-stable reference-stable-decimals reference-reserve reference-reserve-decimals twap-duration 0 [uniswap-v3-fee-low]);
 
 #io-ratio-multiplier-buy
-  multiplier:
-    uniswap-v3-twap-output-ratio(
-      reference-reserve reference-reserve-decimals
-      reference-stable reference-stable-decimals
-      twap-duration 0
-      [uniswap-v3-fee-low]
-    );
+  multiplier: uniswap-v3-twap-output-ratio(reference-reserve reference-reserve-decimals reference-stable reference-stable-decimals twap-duration 0 [uniswap-v3-fee-low]);
 
 #calculate-io
   tranche-space-now
   tranche-space-available
-  tranche-total-size:
-    call<'calculate-tranche>(),
-  tranche-io-ratio:
-    decimal18-mul(
-      io-ratio-base
-      decimal18-power(io-ratio-growth decimal18-floor(tranche-space-now))
-    ),
-  tranche-available-size:
-    decimal18-mul(tranche-total-size tranche-space-available),
-  tranch-io-ratio:
-    decimal18-mul(tranche-io-ratio call<io-ratio-multiplier>());
+  tranche-total-size: call<'calculate-tranche>(),
+  tranche-io-ratio: decimal18-mul(io-ratio-base decimal18-power(io-ratio-growth decimal18-floor(tranche-space-now))),
+  tranche-available-size: decimal18-mul(tranche-total-size tranche-space-available),
+  tranch-io-ratio: decimal18-mul(tranche-io-ratio call<io-ratio-multiplier>());
 
 #handle-io
   now
   tranche-space-now
   _
-  tranche-total-size:
-    call<'calculate-tranche>(),
-  tranche-space-diff:
-    decimal18-div(
-      int-to-decimal18(output-vault-balance-decrease())
-      int-to-decimal18(tranche-total-size)
-    ),
-  tranche-space-after:
-    decimal18-add(tranche-space-now tranche-space-diff),
+  tranche-total-size: call<'calculate-tranche>(),
+  tranche-space-diff: decimal18-div(decimal18-scale18-dynamic(output-token-decimals() output-vault-balance-decrease()) tranche-total-size),
+  tranche-space-after: decimal18-add(tranche-space-now tranche-space-diff),
   /* Snap tranche space to the nearest tranche to avoid dust issues at the edges */
-  tranche-space-after-snapped:
-    decimal18-snap-to-unit(tranche-space-snap-threshold tranche-space-after),
+  tranche-space-after-snapped: decimal18-snap-to-unit(tranche-space-snap-threshold tranche-space-after),
   :ensure(
-    greater-than-or-equal-to(
-      decimal18-sub<1>(tranche-space-after-snapped tranche-space-now)
-      min-tranche-space-diff
-    )
+    greater-than-or-equal-to(decimal18-sub<1>(tranche-space-after-snapped tranche-space-now) min-tranche-space-diff)
     "Minimum trade size not met."
   ),
   :call<set-last-tranche>(tranche-space-after-snapped now);
