@@ -1,0 +1,140 @@
+---
+#tranche-space-per-second !The amount of tranche space that is recharged per second as a normalized 18 decimal fixed point value.
+#tranche-space-recharge-delay !The duration in seconds that no recharging occurs after a trade occurs.
+
+#base-tranche-size-sell !Base tranche size is the size of the smallest tranche, denominated in output token.
+#base-tranche-size-buy !Base tranche size is the size of the smallest tranche, denominated in output token.
+
+#tranche-growth-factor !The exponential growth factor of the size of each tranche, as a decimal 18 fixed point number. E.g. 1e16 is 1% output amount growth per tranche.
+
+#base-io-ratio !The base IO ratio, as a decimal 18 fixed point number. This is the IO ratio at tranche space 0 and grows according to the growth factor per tranche.
+#io-ratio-growth-factor !The exponential growth factor of the IO ratio, as a decimal 18 fixed point number. E.g. 1e16 is 1% io-ratio growth per tranche.
+
+#reference-stable !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
+#reference-stable-decimals !The number of decimals of the reference stable token.
+#reference-reserve !The token that will be used to compare against the reference stable token to calculate the TWAP for dollar equivalent conversions.
+#reference-reserve-decimals !The number of decimals of the reserve token.
+#twap-duration !The duration in seconds of the TWAP window for dollar equivalence conversions.
+
+#min-tranche-space-diff !The minimum tranche space difference that is allowed per trade, as a decimal 18 fixed point number. Prevents dusting the strat to stop it recharging.
+#tranche-space-snap-threshold !The threshold in tranche space to snap to the nearest tranche to avoid dust issues at the edges.
+
+#test-base-tranche-size !Base tranche size is the size of the smallest tranche, denominated in token.
+#test-tranche-space-before !Tranche space is a decimal 18 number representing normalized tranche consumption.
+#test-now !Current block timestamp.
+#test-last-update-time !Last update time is the block timestamp of the last time we moved through tranche space.
+#test-io-ratio-multiplier !Decimal 18 ratio as a multiplier to transform the IO ratio from the batch denomination to the orderbook vault denomination.
+
+#tranche-space-key "tranche-space"
+#update-time-key "update-time"
+
+#last-tranche
+  tranche-space-before: get(hash(order-hash() tranche-space-key)),
+  last-update-time: get(hash(order-hash() update-time-key));
+
+/**
+ * To calculate a tranche without looping constructs, we have the idea of a 1D
+ * tranche space that has a lower bound at 0 and we move through it linearly
+ * as trades are made. Every decimal 18 unit of tranche space is a tranche.
+ * The amount and price is derived from where we are in tranche space, and the
+ * amount that we move through tranche space per trade is derived from real vault
+ * movements.
+ * Tranches are recharged at a constant rate in tranche space, which maps to a
+ * non linear rate in token space, according to the derived relationship.
+ */
+#calculate-tranche
+  base-tranche-size tranche-space-before now last-update-time:,
+  recharge-duration: int-sub<1>(now int-add(last-update-time tranche-space-recharge-delay)),
+  recharge-tranche-space: decimal18-mul(int-to-decimal18(recharge-duration) tranche-space-per-second),
+  tranche-space-now: decimal18-sub<1>(tranche-space-before recharge-tranche-space),
+  tranche-space-available: decimal18-sub(1e18 decimal18-frac(tranche-space-now)),
+  tranche-total-size: decimal18-mul(
+    base-tranche-size
+    decimal18-power(tranche-growth-factor decimal18-floor(tranche-space-now))
+  );
+
+#calculate-io
+  base-tranche-size tranche-space-before now last-update-time io-ratio-multiplier:,
+  tranche-space-now tranche-space-available tranche-total-size: call<'calculate-tranche>(base-tranche-size tranche-space-before now last-update-time),
+  tranche-io-ratio: decimal18-mul(
+    base-io-ratio
+    decimal18-power(io-ratio-growth-factor decimal18-floor(tranche-space-now))
+  ),
+  tranche-available-size: decimal18-mul(tranche-total-size tranche-space-available),
+  tranch-io-ratio: decimal18-mul(tranche-io-ratio io-ratio-multiplier);
+
+#calculate-io-sell
+  tranche-space-before last-update-time: call<'last-tranche>(),
+  io-ratio-multiplier: uniswap-v3-twap-output-ratio(
+    reference-stable reference-stable-decimals
+    reference-reserve reference-reserve-decimals
+    twap-duration 0
+    [uniswap-v3-fee-low]
+  ),
+  amount io-ratio: call<'calculate-io>(
+    base-tranche-size-sell
+    tranche-space-before
+    block-timestamp()
+    last-update-time
+    io-ratio-multiplier
+  );
+
+#calculate-io-buy
+  tranche-space-before last-update-time: call<'last-tranche>(),
+  io-ratio-multiplier: uniswap-v3-twap-output-ratio(
+    reference-reserve reference-reserve-decimals
+    reference-stable reference-stable-decimals
+    twap-duration 0
+    [uniswap-v3-fee-low]
+  ),
+  amount io-ratio: call<'calculate-io>(
+    base-tranche-size-buy
+    tranche-space-before
+    block-timestamp()
+    last-update-time
+    io-ratio-multiplier
+  );
+
+#calculate-io-test
+  amount io-ratio: call<'calculate-io>(
+    test-base-tranche-size
+    test-tranche-space-before
+    test-now
+    test-last-update-time
+    test-io-ratio-multiplier
+  );
+
+#handle-io
+  base-tranche-size:,
+  tranche-space-before last-update-time: call<'last-tranche>(),
+  tranche-space-now _ tranche-total-size: call<'calculate-tranche>(
+    base-tranche-size
+    tranche-space-before
+    block-timestamp()
+    last-update-time
+  ),
+  tranche-space-diff: decimal18-div(
+    int-to-decimal18(output-vault-balance-decrease())
+    int-to-decimal18(tranche-total-size)
+  ),
+  tranche-space-after: decimal18-add(tranche-space-now tranche-space-diff),
+  /* Snap tranche space to the nearest tranche to avoid dust issues at the edges */
+  tranche-space-after-snapped: decimal18-snap-to-unit(tranche-space-snap-threshold tranche-space-after),
+  :ensure(
+    greater-than-or-equal-to(
+      decimal18-sub<1>(tranche-space-after-snapped tranche-space-now)
+      min-tranche-space-diff
+    )
+    "Min trade size not met."
+  ),
+  :set(hash(order-hash() tranche-space-key) tranche-space-after-snapped),
+  :set(hash(order-hash() update-time-key) block-timestamp());
+
+#handle-io-sell
+  :call<'handle-io>(base-tranche-size-sell);
+
+#handle-io-buy
+  :call<'handle-io>(base-tranche-size-buy);
+
+#handle-io-test
+  :call<'handle-io>(test-base-tranche-size);
