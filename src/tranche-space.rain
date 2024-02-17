@@ -66,7 +66,7 @@
   /* repeat now for easy access by callers */
   _: now,
   tranche-space-now: decimal18-saturating-sub(tranche-space-before recharged-tranche-space),
-  tranche-space-available: decimal18-sub(1e18 decimal18-frac(tranche-space-now)),
+  tranche-space-available: decimal18-headroom(tranche-space-now),
   tranche-total-size: decimal18-mul(tranche-size-base decimal18-power(tranche-size-growth decimal18-floor(tranche-space-now)));
 
 #io-ratio-multiplier-sell
