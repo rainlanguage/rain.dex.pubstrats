@@ -61,11 +61,11 @@
   tranche-space-before
   last-update-time
   now: call<get-last-tranche>(),
-  recharge-duration: int-sub<1>(now int-add(last-update-time tranche-space-recharge-delay)),
+  recharge-duration: int-saturating-sub(now int-add(last-update-time tranche-space-recharge-delay)),
   recharged-tranche-space: decimal18-mul(int-to-decimal18(recharge-duration) tranche-space-per-second),
   /* repeat now for easy access by callers */
   _: now,
-  tranche-space-now: decimal18-sub<1>(tranche-space-before recharged-tranche-space),
+  tranche-space-now: decimal18-saturating-sub(tranche-space-before recharged-tranche-space),
   tranche-space-available: decimal18-sub(1e18 decimal18-frac(tranche-space-now)),
   tranche-total-size: decimal18-mul(tranche-size-base decimal18-power(tranche-size-growth decimal18-floor(tranche-space-now)));
 
@@ -93,7 +93,7 @@
   /* Snap tranche space to the nearest tranche to avoid dust issues at the edges */
   tranche-space-after-snapped: decimal18-snap-to-unit(tranche-space-snap-threshold tranche-space-after),
   :ensure(
-    greater-than-or-equal-to(decimal18-sub<1>(tranche-space-after-snapped tranche-space-now) min-tranche-space-diff)
+    greater-than-or-equal-to(decimal18-saturating-sub(tranche-space-after-snapped tranche-space-now) min-tranche-space-diff)
     "Minimum trade size not met."
   ),
   :call<set-last-tranche>(tranche-space-after-snapped now);
