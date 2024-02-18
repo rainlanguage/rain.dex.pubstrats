@@ -67,7 +67,7 @@
   _: now,
   tranche-space-now: decimal18-saturating-sub(tranche-space-before recharged-tranche-space),
   tranche-space-available: decimal18-headroom(tranche-space-now),
-  tranche-total-size: decimal18-mul(tranche-size-base decimal18-power(tranche-size-growth decimal18-floor(tranche-space-now)));
+  tranche-total-size: decimal18-exponential-growth(tranche-size-base tranche-size-growth decimal18-floor(tranche-space-now));
 
 #io-ratio-multiplier-sell
   multiplier: uniswap-v3-twap-output-ratio(reference-stable reference-stable-decimals reference-reserve reference-reserve-decimals twap-duration 0 [uniswap-v3-fee-low]);
@@ -79,7 +79,7 @@
   tranche-space-now
   tranche-space-available
   tranche-total-size: call<'calculate-tranche>(),
-  tranche-io-ratio: decimal18-mul(io-ratio-base decimal18-power(io-ratio-growth decimal18-floor(tranche-space-now))),
+  tranche-io-ratio: decimal18-exponential-growth(io-ratio-base io-ratio-growth decimal18-floor(tranche-space-now)),
   tranche-available-size: decimal18-mul(tranche-total-size tranche-space-available),
   tranch-io-ratio: decimal18-mul(tranche-io-ratio call<io-ratio-multiplier>());
 
