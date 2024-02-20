@@ -52,7 +52,7 @@
   output-amount
   io-ratio: call<'calculate-spread>(tranche-reserve-amount-available tranche-reserve-io-ratio);
 
-#tranche-space-snap-threshold !The threshold for snapping the tranche space.
+#tranche-space-edge-guard-threshold !The tranche space after cannot be this close to an upper or lower tranche edge.
 #handle-io
   tranche-space-before
   tranche-reserve-amount-total
@@ -69,11 +69,10 @@
     decimal18-add(tranche-space-before tranche-space-diff)
     decimal18-saturating-sub(tranche-space-before tranche-space-diff)
   ),
-  tranche-space-after-snapped: decimal18-snap-to-unit(tranche-space-snap-threshold tranche-space-after),
-  /* Don't use the snapped here in case we cause problems at the edges. */
-  /* If someone attempted to hit the min pre-snap that's good enough. */
   :ensure(
-    greater-than-or-equal-to(tranche-space-diff min-tranche-space-diff)
-    "Minimum trade size not met."
+    every(
+      greater-than-or-equal-to(decimal18-frac(tranche-space-after) tranche-space-edge-guard-threshold)
+      greater-than-or-equal-to(decimal18-headroom(tranche-space-after) tranche-space-edge-guard-threshold)
+    )
   ),
   :call<set-tranche-space>(tranche-space-after-snapped);
