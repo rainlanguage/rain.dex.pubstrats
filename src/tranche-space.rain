@@ -13,6 +13,7 @@
 #reference-reserve !The token that will be used to compare against the reference stable token to calculate the TWAP for dollar equivalent conversions.
 #reference-reserve-decimals !The number of decimals of the reserve token.
 #twap-duration !The duration in seconds of the TWAP window for dollar equivalence conversions.
+#twap-fee !The uniswap fee tier to use for the TWAP.
 
 #min-tranche-space-diff !The minimum tranche space difference that is allowed per trade, as a decimal 18 fixed point number. Prevents dusting the strat to stop it recharging.
 #tranche-space-snap-threshold !The threshold in tranche space to snap to the nearest tranche to avoid dust issues at the edges.
@@ -70,10 +71,10 @@
   tranche-total-size: decimal18-exponential-growth(tranche-size-base tranche-size-growth decimal18-floor(tranche-space-now));
 
 #io-ratio-multiplier-sell
-  multiplier: uniswap-v3-twap-output-ratio(reference-stable reference-stable-decimals reference-reserve reference-reserve-decimals twap-duration 0 [uniswap-v3-fee-low]);
+  multiplier: uniswap-v3-twap-output-ratio(reference-stable reference-stable-decimals reference-reserve reference-reserve-decimals twap-duration 0 twap-fee);
 
 #io-ratio-multiplier-buy
-  multiplier: uniswap-v3-twap-output-ratio(reference-reserve reference-reserve-decimals reference-stable reference-stable-decimals twap-duration 0 [uniswap-v3-fee-low]);
+  multiplier: uniswap-v3-twap-output-ratio(reference-reserve reference-reserve-decimals reference-stable reference-stable-decimals twap-duration 0 twap-fee);
 
 #calculate-io
   tranche-space-now
@@ -85,15 +86,15 @@
 
 #handle-io
   now
-  tranche-space-now
+  tranche-space-before
   _
   tranche-total-size: call<'calculate-tranche>(),
   tranche-space-diff: decimal18-div(decimal18-scale18-dynamic(output-token-decimals() output-vault-balance-decrease()) tranche-total-size),
-  tranche-space-after: decimal18-add(tranche-space-now tranche-space-diff),
+  tranche-space-after: decimal18-add(tranche-space-before tranche-space-diff),
   /* Snap tranche space to the nearest tranche to avoid dust issues at the edges */
   tranche-space-after-snapped: decimal18-snap-to-unit(tranche-space-snap-threshold tranche-space-after),
   :ensure(
-    greater-than-or-equal-to(decimal18-saturating-sub(tranche-space-after-snapped tranche-space-now) min-tranche-space-diff)
+    greater-than-or-equal-to(tranche-space-after-snapped decimal18-add(tranche-space-before min-tranche-space-diff))
     "Minimum trade size not met."
   ),
   :call<set-last-tranche>(tranche-space-after-snapped now);
