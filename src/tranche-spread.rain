@@ -60,7 +60,7 @@
   tranche-space-before
   tranche-reserve-amount-total
   _
-  tranche-reserve-io-ratio: call<'calculate-tranche-reserve'>(),
+  tranche-reserve-io-ratio: call<'calculate-tranche-reserve>(),
   is-distribution: equal-to(output-token() distribution-token),
   reserve-amount-diff: if(
     is-distribution
