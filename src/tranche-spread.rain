@@ -49,8 +49,9 @@
 #calculate-io
   tranche-reserve-amount-available
   tranche-reserve-io-ratio: call<'calculate-tranche-reserve>(),
-  output-amount
-  io-ratio: call<'calculate-spread>(tranche-reserve-amount-available tranche-reserve-io-ratio);
+  io-ratio output-amount: call<'calculate-spread>(tranche-reserve-amount-available tranche-reserve-io-ratio),
+  /* repeat io-ratio so it's where ob expects it */
+  _: io-ratio;
 
 #tranche-space-edge-guard-threshold !The tranche space after cannot be this close to an upper or lower tranche edge.
 #handle-io
