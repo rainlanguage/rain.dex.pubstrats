@@ -35,21 +35,21 @@
 #calculate-tranche-reserve
   tranche-space: call<get-tranche-space>(),
   tranche-reserve-amount-total: call<tranche-reserve-amount-growth>(tranche-space),
-  tranche-reserve-amount-available: decimal18-mul(decimal18-headroom(tranche-space) tranche-reserve-amount-total),
+  tranche-reserve-amount-left: decimal18-mul(decimal18-headroom(tranche-space) tranche-reserve-amount-total),
   tranche-reserve-io-ratio: call<tranche-reserve-io-ratio-growth>(tranche-space);
 
 #spread-ratio !The ratio of the spread. 101e16 is 1% difference between distribution and buyback.
 #calculate-spread
   reserve-amount
   reserve-io-ratio:,
-  is-distribution: equal-to(output-token-address() distribution-token),
-  spread-io-ratio: if(is-distribution decimal18-div<1>(spread-ratio reserve-io-ratio) reserve-io-ratio),
-  spread-amount: if(is-distribution decimal18-div<1>(reserve-amount spread-io-ratio) reserve-amount);
+  is-distribution: equal-to(output-token() distribution-token),
+  spread-io-ratio: if(is-distribution decimal18-div(spread-ratio reserve-io-ratio) reserve-io-ratio),
+  spread-amount: if(is-distribution decimal18-div(reserve-amount spread-io-ratio) reserve-amount);
 
 #calculate-io
-  tranche-reserve-amount-available
+  tranche-reserve-amount-left
   tranche-reserve-io-ratio: call<'calculate-tranche-reserve>(),
-  io-ratio output-amount: call<'calculate-spread>(tranche-reserve-amount-available tranche-reserve-io-ratio),
+  io-ratio output-amount: call<'calculate-spread>(tranche-reserve-amount-left tranche-reserve-io-ratio),
   /* repeat io-ratio so it's where ob expects it */
   _: io-ratio;
 
@@ -59,11 +59,11 @@
   tranche-reserve-amount-total
   _
   tranche-reserve-io-ratio: call<'calculate-tranche-reserve'>(),
-  is-distribution: equal-to(output-token-address() distribution-token),
+  is-distribution: equal-to(output-token() distribution-token),
   reserve-amount-diff: if(
     is-distribution
     decimal18-scale18-dynamic(input-token-decimals() input-vault-balance-increase())
-    decimal18-scale18-dynamic(output-token-decimals() output-vault-balance-increase())),
+    decimal18-scale18-dynamic(output-token-decimals() output-vault-balance-decrease())),
   tranche-space-diff: decimal18-div(reserve-amount-diff tranche-reserve-amount-total),
   tranche-space-after: if(
     is-distribution
