@@ -76,4 +76,4 @@
       greater-than-or-equal-to(decimal18-headroom(tranche-space-after) tranche-space-edge-guard-threshold)
     )
   ),
-  :call<set-tranche-space>(tranche-space-after-snapped);
+  :call<set-tranche-space>(tranche-space-after);
