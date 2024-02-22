@@ -30,7 +30,7 @@
 #tranche-reserve-io-ratio-base !Base tranche io ratio.
 #tranche-reserve-io-ratio-linear
   tranche-space:,
-  _: decimal18-mul(tranche-reserve-io-ratio-base decimal18-add(1 decimal18-floor(tranche-space)));
+  _: decimal18-mul(tranche-reserve-io-ratio-base decimal18-add(1e18 decimal18-floor(tranche-space)));
 
 #calculate-tranche-reserve
   tranche-space: call<get-tranche-space>(),
@@ -46,9 +46,7 @@
   spread-io-ratio: if(is-distribution decimal18-div(spread-ratio reserve-io-ratio) reserve-io-ratio),
   spread-amount: if(is-distribution decimal18-div(reserve-amount spread-io-ratio) reserve-amount);
 
-#orderbook-subparser !The subparser to use for the orderbook.
 #calculate-io
-  using-words-from orderbook-subparser
   tranche-reserve-amount-left
   tranche-reserve-io-ratio: call<'calculate-tranche-reserve>(),
   io-ratio output-amount: call<'calculate-spread>(tranche-reserve-amount-left tranche-reserve-io-ratio),
@@ -77,5 +75,6 @@
       greater-than-or-equal-to(decimal18-frac(tranche-space-after) tranche-space-edge-guard-threshold)
       greater-than-or-equal-to(decimal18-headroom(tranche-space-after) tranche-space-edge-guard-threshold)
     )
+    "Tranche threshold reached."
   ),
   :call<set-tranche-space>(tranche-space-after);
