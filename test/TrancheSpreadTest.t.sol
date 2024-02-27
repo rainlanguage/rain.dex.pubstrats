@@ -8,7 +8,7 @@ import {IInterpreterV2} from "rain.interpreter.interface/interface/unstable/IInt
 import {IInterpreterStoreV2} from "rain.interpreter.interface/interface/unstable/IInterpreterStoreV2.sol";
 import {ISubParserV2} from "rain.interpreter.interface/interface/unstable/ISubParserV2.sol";
 import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/unstable/IExpressionDeployerV3.sol";
-import {IInterpreterStoreV1} from "rain.interpreter.interface/interface/IInterpreterStoreV1.sol";
+// import {IInterpreterStoreV1} from "rain.interpreter.interface/interface/IInterpreterStoreV1.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "src/lib/LibEncodedDispatch.sol";
 import "src/lib/LibNamespace.sol";
@@ -66,7 +66,7 @@ contract TrancheSpreadTest is Test {
             (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
         }
         (uint256[] memory calculateStack,) = IInterpreterV2(INTERPRETER).eval2(
-                IInterpreterStoreV1(address(STORE)),
+                IInterpreterStoreV2(address(STORE)),
                 namespace,
                 LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
                 sellOrderContext,
@@ -83,7 +83,7 @@ contract TrancheSpreadTest is Test {
 
         
         (uint256[] memory buyStack,) = IInterpreterV2(INTERPRETER).eval2(
-                IInterpreterStoreV1(address(STORE)),
+                IInterpreterStoreV2(address(STORE)),
                 namespace,
                 LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
                 sellOrderContext,
