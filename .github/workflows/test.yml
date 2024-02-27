@@ -18,4 +18,5 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v4
       - uses: DeterminateSystems/magic-nix-cache-action@v2
 
+      - run: nix run .#rainix-sol-prelude
       - run: nix run .#rainix-sol-test
