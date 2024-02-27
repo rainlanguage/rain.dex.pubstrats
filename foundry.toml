@@ -1,6 +1,19 @@
 [profile.default]
-src = "src"
-out = "out"
-libs = ["lib"]
+src = 'src'
+out = 'out'
+libs = ['lib']
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config
+
+# Needed for dotrain compose
+ffi = true
+
+solc = "0.8.19"
+optimizer = true
+optimizer_runs = 100000
+
+bytecode_hash = "none"
+cbor_metadata = false
+
+[fuzz]
+runs = 1024

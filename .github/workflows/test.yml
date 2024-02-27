@@ -1,34 +1,21 @@
-name: test
-
-on: workflow_dispatch
-
-env:
-  FOUNDRY_PROFILE: ci
+name: Rainix CI
+on: [push]
 
 jobs:
-  check:
+  standard-tests:
     strategy:
       fail-fast: true
-
-    name: Foundry project
     runs-on: ubuntu-latest
+    env:
+      RPC_URL_POLYGON: ${{ secrets. RPC_URL_POLYGON}}
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+      - uses: DeterminateSystems/magic-nix-cache-action@v2
 
-      - name: Run Forge build
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
-
-      - name: Run Forge tests
-        run: |
-          forge test -vvv
-        id: test
+      - run: nix run .#rainix-sol-test
