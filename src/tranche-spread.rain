@@ -71,9 +71,12 @@
     decimal18-saturating-sub(tranche-space-before tranche-space-diff)
   ),
   :ensure(
-    every(
-      greater-than-or-equal-to(decimal18-frac(tranche-space-after) tranche-space-edge-guard-threshold)
-      greater-than-or-equal-to(decimal18-headroom(tranche-space-after) tranche-space-edge-guard-threshold)
+    any(
+      is-zero(decimal18-frac(tranche-space-after))
+      every(
+        greater-than-or-equal-to(decimal18-frac(tranche-space-after) tranche-space-edge-guard-threshold)
+        greater-than-or-equal-to(decimal18-headroom(tranche-space-after) tranche-space-edge-guard-threshold)
+      )
     )
     "Tranche threshold reached."
   ),
