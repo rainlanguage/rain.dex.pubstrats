@@ -17,7 +17,7 @@ import "src/lib/LibNamespace.sol";
 contract TrancheSpreadTest is Test {
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 54034442;
+    uint256 constant FORK_BLOCK_NUMBER = 54062608;
     uint256 constant CONTEXT_VAULT_IO_ROWS = 5;
 
     address constant DISTRIBUTOR_TOKEN = 0xd0e9c8f5Fae381459cf07Ec506C1d2896E8b5df6;
@@ -73,20 +73,68 @@ contract TrancheSpreadTest is Test {
                 new uint256[](0)
         ); 
 
-        uint256 depositedAmount = 1000e18; 
+        uint256 depositedAmount = 390000e18;
         
         // Output Tokens offered by order woner
         sellOrderContext[4][4] = depositedAmount;
 
         // Input Tokens to be received by owner
-        sellOrderContext[3][4] = (calculateStack[0] * depositedAmount)/1e18;
+        sellOrderContext[3][4] = (calculateStack[0] * depositedAmount)/1e18; 
 
-        
-        (uint256[] memory buyStack,) = IInterpreterV2(INTERPRETER).eval2(
+        console2.log("input : ",sellOrderContext[3][4]);
+        console2.log("output : ",sellOrderContext[4][4]);
+
+        IInterpreterV2(INTERPRETER).eval2(
                 IInterpreterStoreV2(address(STORE)),
                 namespace,
                 LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
                 sellOrderContext,
+                new uint256[](0)
+        );
+
+    }
+
+    function testTrancheBuyToken() public {
+
+        FullyQualifiedNamespace namespace =
+            LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
+
+        uint256[][] memory buyOrderContext = getBuyOrderContext(11223344);
+
+        address expression;
+        {
+            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
+                getTrancheSpreadOrder(
+                    vm, 
+                    address(ORDERBOOK_SUPARSER)
+                )
+            );
+            (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
+        }
+        (uint256[] memory calculateStack,) = IInterpreterV2(INTERPRETER).eval2(
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
+                buyOrderContext,
+                new uint256[](0)
+        ); 
+
+        uint256 depositedAmount = 100e18;
+        
+        // Output Tokens offered by order woner
+        buyOrderContext[4][4] = depositedAmount;
+
+        // Input Tokens to be received by owner
+        buyOrderContext[3][4] = (calculateStack[0] * depositedAmount)/1e18;
+
+        console2.log("input : ",buyOrderContext[3][4]);
+        console2.log("output : ",buyOrderContext[4][4]);
+        
+        IInterpreterV2(INTERPRETER).eval2(
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                buyOrderContext,
                 new uint256[](0)
         );
 
@@ -124,7 +172,7 @@ contract TrancheSpreadTest is Test {
         ffi[21] = "--bind";
         ffi[22] = "tranche-reserve-io-ratio-growth='tranche-reserve-io-ratio-linear";
         ffi[23] = "--bind";
-        ffi[24] = string.concat("tranche-reserve-io-ratio-base=", uint2str(326e18));
+        ffi[24] = string.concat("tranche-reserve-io-ratio-base=", uint2str(327e18));
         ffi[25] = "--bind";
         ffi[26] = string.concat("spread-ratio=", uint2str(101e16));
         ffi[27] = "--bind";
@@ -162,7 +210,7 @@ contract TrancheSpreadTest is Test {
         return string(bstr);
     } 
 
-    function getSellOrderContext(uint256 orderHash) internal view returns (uint256[][] memory context) {
+    function getSellOrderContext(uint256 orderHash) internal pure returns (uint256[][] memory context) {
         // Sell Order Context
         context = new uint256[][](5);
         {
@@ -189,6 +237,39 @@ contract TrancheSpreadTest is Test {
             {
                 uint256[] memory outputsContext = new uint256[](CONTEXT_VAULT_IO_ROWS);
                 outputsContext[0] = uint256(uint160(DISTRIBUTOR_TOKEN));
+                outputsContext[1] = 18;
+                context[4] = outputsContext;
+            }
+        }
+    }
+
+    function getBuyOrderContext(uint256 orderHash) internal pure returns (uint256[][] memory context) {
+        // Buy Order Context
+        context = new uint256[][](5);
+        {
+            {
+                uint256[] memory baseContext = new uint256[](2);
+                context[0] = baseContext;
+            }
+            {
+                uint256[] memory callingContext = new uint256[](3);
+                // order hash
+                callingContext[0] = orderHash;
+                context[1] = callingContext;
+            }
+            {
+                uint256[] memory calculationsContext = new uint256[](0);
+                context[2] = calculationsContext;
+            }
+            {
+                uint256[] memory inputsContext = new uint256[](CONTEXT_VAULT_IO_ROWS);
+                inputsContext[0] = uint256(uint160(DISTRIBUTOR_TOKEN));
+                inputsContext[1] = 18;
+                context[3] = inputsContext;
+            }
+            {
+                uint256[] memory outputsContext = new uint256[](CONTEXT_VAULT_IO_ROWS);
+                outputsContext[0] = uint256(uint160(RESERVE_TOKEN));
                 outputsContext[1] = 18;
                 context[4] = outputsContext;
             }
