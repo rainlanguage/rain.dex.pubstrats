@@ -60,6 +60,7 @@
   /* repeat io-ratio so it's where ob expects it */
   _: io-ratio;
 
+#tranche-space-snap-threshold !The threshold under which the tranche space after will snap to the closest unit. Should be significantly less than the spread as the snapped dust is not available as profit on the round trip.
 #tranche-space-edge-guard-threshold !The tranche space after cannot be this close to an upper or lower tranche edge.
 #handle-io
   tranche-space-before
@@ -77,14 +78,15 @@
     decimal18-add(tranche-space-before tranche-space-diff)
     decimal18-saturating-sub(tranche-space-before tranche-space-diff)
   ),
+  tranche-space-after-snapped: decimal18-snap-to-unit(tranche-space-snap-threshold tranche-space-after),
   :ensure(
     any(
-      is-zero(decimal18-frac(tranche-space-after))
+      is-zero(decimal18-frac(tranche-space-after-snapped))
       every(
-        greater-than-or-equal-to(decimal18-frac(tranche-space-after) tranche-space-edge-guard-threshold)
-        greater-than-or-equal-to(decimal18-headroom(tranche-space-after) tranche-space-edge-guard-threshold)
+        greater-than-or-equal-to(decimal18-frac(tranche-space-after-snapped) tranche-space-edge-guard-threshold)
+        greater-than-or-equal-to(decimal18-headroom(tranche-space-after-snapped) tranche-space-edge-guard-threshold)
       )
     )
     "Tranche threshold reached."
   ),
-  :call<set-tranche-space>(tranche-space-after);
+  :call<set-tranche-space>(tranche-space-after-snapped);
