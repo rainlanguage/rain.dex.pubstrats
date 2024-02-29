@@ -11,18 +11,7 @@
       let
         pkgs = rainix.pkgs.${system};
       in {
-        packages = rec {
-          uniswap-prelude = rainix.mkTask.${system} {
-            name = "uniswap-prelude";
-            body = ''
-              set -euxo pipefail
-
-              FOUNDRY_PROFILE=reference forge build --force
-              FOUNDRY_PROFILE=quoter forge build --force
-            '';
-            additionalBuildInputs = rainix.sol-build-inputs.${system};
-          };
-        } // rainix.packages.${system};
+        packages = rainix.packages.${system};
         devShells = rainix.devShells.${system};
       }
     );
