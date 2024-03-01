@@ -17,6 +17,8 @@ import "src/lib/LibNamespace.sol";
 
 contract TrancheSpreadTest is Test {
     using Strings for address;
+    using Strings for uint256;
+
 
     using LibFixedPointDecimalArithmeticOpenZeppelin for uint256;
     using LibFixedPointDecimalScale for uint256;
@@ -26,8 +28,8 @@ contract TrancheSpreadTest is Test {
     uint256 TRANCHE_RESERVE_BASE_IO_RATIO = 327e18;
     uint256 SPREAD_RATIO = 101e16;
     uint256 TRANCHE_EDGE_THRESHOLD = 2e17;
-
-
+    uint256 INITIAL_TRANCHE_SPACE = 1e18;
+    uint256 TRANCHE_SPACE_SNAP_THRESHOLD = 1e12;
 
     uint256 constant FORK_BLOCK_NUMBER = 54062608;
     uint256 constant CONTEXT_VAULT_IO_ROWS = 5;
@@ -57,7 +59,55 @@ contract TrancheSpreadTest is Test {
         INTERPRETER = IInterpreterV2(0x8bb0e1Ade233f386668f6e3c11762f18bF8293b3);
         EXPRESSION_DEPLOYER = IExpressionDeployerV3(0xB16bbF12ECE3414af72F660aB63F4dDa1D7250FA);
         ORDERBOOK_SUPARSER = ISubParserV2(0x14c5D39dE54D498aFD3C803D3B5c88bbEcadcc48);
-    } 
+    }
+
+    function testTrancheSnapThreshold() public { 
+
+        FullyQualifiedNamespace namespace =
+            LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
+
+        uint256[][] memory sellOrderContext = getSellOrderContext(11223344); 
+
+        address expression;
+        {
+            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
+                getTrancheTestSpreadOrder(
+                    vm, 
+                    address(ORDERBOOK_SUPARSER),
+                    0,
+                    101e16
+                )
+            );
+            (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
+        }
+        // Eval above snap threshold
+        {
+            sellOrderContext[3][4] = 2000e18 + TRANCHE_SPACE_SNAP_THRESHOLD; 
+            (uint256[] memory calculateStack, ) = IInterpreterV2(INTERPRETER).eval2(
+                    IInterpreterStoreV2(address(STORE)),
+                    namespace,
+                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                    sellOrderContext,
+                    new uint256[](0)
+            );
+            // Assert snapped amount 
+            assertEq(calculateStack[0],2e18); 
+        }
+        // Eval below snap threshold
+        {
+            sellOrderContext[3][4] = 2000e18 - TRANCHE_SPACE_SNAP_THRESHOLD; 
+            (uint256[] memory calculateStack, ) = IInterpreterV2(INTERPRETER).eval2(
+                    IInterpreterStoreV2(address(STORE)),
+                    namespace,
+                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                    sellOrderContext,
+                    new uint256[](0)
+            );
+            // Assert snapped amount 
+            assertEq(calculateStack[0],2e18);
+        }  
+
+    }
 
     function testTrancheSellToken() public {
 
@@ -420,6 +470,67 @@ contract TrancheSpreadTest is Test {
         }
     } 
 
+    function testIntialTrancheSpace() public {
+
+        FullyQualifiedNamespace namespace =
+            LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
+
+        uint256[][] memory sellOrderContext = getSellOrderContext(11223344);
+        uint256[][] memory buyOrderContext = getBuyOrderContext(11223344);
+
+        address expression;
+        {
+            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
+                getTrancheSpreadOrder(
+                    vm, 
+                    address(ORDERBOOK_SUPARSER)
+                )
+            );
+            (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);   
+        }
+        sellOrderContext[3][4] = TRANCHE_RESERVE_BASE_AMOUNT;
+        buyOrderContext[4][4] =  TRANCHE_RESERVE_BASE_AMOUNT;
+
+        // Sell Orders
+        for(uint256 i = 0 ; i < 10 ; i++){ 
+            uint256 trancheSpaceBefore = INITIAL_TRANCHE_SPACE * (i + 1);
+            uint256 trancheSpaceAfter = INITIAL_TRANCHE_SPACE * (i + 2);
+
+            (uint256[] memory handleStack, uint256[] memory handleKvs) = IInterpreterV2(INTERPRETER).eval2(
+                    IInterpreterStoreV2(address(STORE)),
+                    namespace,
+                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                    sellOrderContext,
+                    new uint256[](0)
+            );
+            assertEq(handleStack[handleStack.length-1],trancheSpaceBefore);
+            assertEq(handleStack[0],trancheSpaceAfter); 
+            STORE.set(
+                StateNamespace.wrap(uint256(uint160(ORDER_OWNER))),
+                handleKvs
+            );  
+        }
+        // Buy Orders
+        for(uint256 i = 10 ; i > 0 ; i--){ 
+            uint256 trancheSpaceBefore = INITIAL_TRANCHE_SPACE * (i + 1);
+            uint256 trancheSpaceAfter = INITIAL_TRANCHE_SPACE * i;
+
+            (uint256[] memory handleStack, uint256[] memory handleKvs) = IInterpreterV2(INTERPRETER).eval2(
+                    IInterpreterStoreV2(address(STORE)),
+                    namespace,
+                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                    buyOrderContext,
+                    new uint256[](0)
+            ); 
+            assertEq(handleStack[handleStack.length-1],trancheSpaceBefore);
+            assertEq(handleStack[0],trancheSpaceAfter); 
+            STORE.set(
+                StateNamespace.wrap(uint256(uint160(ORDER_OWNER))),
+                handleKvs
+            );  
+        }   
+    }
+     
     function getTrancheSpreadOrder(
         Vm vm,
         address orderBookSubparser
@@ -427,7 +538,7 @@ contract TrancheSpreadTest is Test {
         internal
         returns (bytes memory trancheRefill)
     {
-        string[] memory ffi = new string[](29);
+        string[] memory ffi = new string[](33);
         ffi[0] = "rain";
         ffi[1] = "dotrain";
         ffi[2] = "compose";
@@ -448,16 +559,19 @@ contract TrancheSpreadTest is Test {
         ffi[17] = "--bind";
         ffi[18] = "tranche-reserve-amount-growth='tranche-reserve-amount-growth-constant";
         ffi[19] = "--bind";
-        ffi[20] = string.concat("tranche-reserve-amount-base=", uint2str(TRANCHE_RESERVE_BASE_AMOUNT));
+        ffi[20] = string.concat("tranche-reserve-amount-base=", TRANCHE_RESERVE_BASE_AMOUNT.toString());
         ffi[21] = "--bind";
         ffi[22] = "tranche-reserve-io-ratio-growth='tranche-reserve-io-ratio-linear";
         ffi[23] = "--bind";
-        ffi[24] = string.concat("tranche-reserve-io-ratio-base=", uint2str(TRANCHE_RESERVE_BASE_IO_RATIO));
+        ffi[24] = string.concat("tranche-reserve-io-ratio-base=", TRANCHE_RESERVE_BASE_IO_RATIO.toString());
         ffi[25] = "--bind";
-        ffi[26] = string.concat("spread-ratio=", uint2str(SPREAD_RATIO));
+        ffi[26] = string.concat("spread-ratio=", SPREAD_RATIO.toString());
         ffi[27] = "--bind";
-        ffi[28] = string.concat("tranche-space-edge-guard-threshold=", uint2str(TRANCHE_EDGE_THRESHOLD));
-        
+        ffi[28] = string.concat("tranche-space-edge-guard-threshold=", TRANCHE_EDGE_THRESHOLD.toString());
+        ffi[29] = "--bind";
+        ffi[30] = string.concat("initial-tranche-space=", INITIAL_TRANCHE_SPACE.toString());
+        ffi[31] = "--bind";
+        ffi[32] = string.concat("tranche-space-snap-threshold=", TRANCHE_SPACE_SNAP_THRESHOLD.toString());
         
         trancheRefill = bytes.concat(getSubparserPrelude(orderBookSubparser), vm.ffi(ffi));
     }
@@ -471,7 +585,7 @@ contract TrancheSpreadTest is Test {
         internal
         returns (bytes memory trancheRefill)
     {
-        string[] memory ffi = new string[](31);
+        string[] memory ffi = new string[](35);
         ffi[0] = "rain";
         ffi[1] = "dotrain";
         ffi[2] = "compose";
@@ -490,22 +604,25 @@ contract TrancheSpreadTest is Test {
         ffi[15] = "--bind";
         ffi[16] = "set-tranche-space='set-test-tranche-space";
         ffi[17] = "--bind";
-        ffi[18] = string.concat("test-tranche-space=", uint2str(testTrancheSpace));
+        ffi[18] = string.concat("test-tranche-space=", testTrancheSpace.toString());
         ffi[19] = "--bind";
         ffi[20] = "tranche-reserve-amount-growth='tranche-reserve-amount-growth-constant";
         ffi[21] = "--bind";
-        ffi[22] = string.concat("tranche-reserve-amount-base=", uint2str(TRANCHE_RESERVE_BASE_AMOUNT));
+        ffi[22] = string.concat("tranche-reserve-amount-base=", TRANCHE_RESERVE_BASE_AMOUNT.toString());
         ffi[23] = "--bind";
         ffi[24] = "tranche-reserve-io-ratio-growth='tranche-reserve-io-ratio-linear";
         ffi[25] = "--bind";
-        ffi[26] = string.concat("tranche-reserve-io-ratio-base=", uint2str(TRANCHE_RESERVE_BASE_IO_RATIO));
+        ffi[26] = string.concat("tranche-reserve-io-ratio-base=", TRANCHE_RESERVE_BASE_IO_RATIO.toString());
         ffi[27] = "--bind";
-        ffi[28] = string.concat("spread-ratio=", uint2str(spreadRatio));
+        ffi[28] = string.concat("spread-ratio=", spreadRatio.toString());
         ffi[29] = "--bind";
-        ffi[30] = string.concat("tranche-space-edge-guard-threshold=", uint2str(TRANCHE_EDGE_THRESHOLD));
+        ffi[30] = string.concat("tranche-space-edge-guard-threshold=", TRANCHE_EDGE_THRESHOLD.toString());
+        ffi[31] = "--bind";
+        ffi[32] = string.concat("initial-tranche-space=", INITIAL_TRANCHE_SPACE.toString());
+        ffi[33] = "--bind";
+        ffi[34] = string.concat("tranche-space-snap-threshold=", TRANCHE_SPACE_SNAP_THRESHOLD.toString());
         
-        
-        trancheRefill = bytes.concat(getSubparserPrelude(orderBookSubparser), vm.ffi(ffi));
+        trancheRefill = bytes.concat(getSubparserPrelude(orderBookSubparser),vm.ffi(ffi));
     }
 
     function getSubparserPrelude(address obSubparser) internal pure returns (bytes memory) {
@@ -513,28 +630,6 @@ contract TrancheSpreadTest is Test {
             bytes(string.concat("using-words-from ", obSubparser.toHexString(), " "));
         return RAINSTRING_OB_SUBPARSER;
     }
-    
-    function uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
-        if (_i == 0) {
-            return "0";
-        }
-        uint256 j = _i;
-        uint256 len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint256 k = len;
-        while (_i != 0) {
-            k = k - 1;
-            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            _i /= 10;
-        }
-        return string(bstr);
-    } 
 
     function getSellOrderContext(uint256 orderHash) internal pure returns (uint256[][] memory context) {
         // Sell Order Context
