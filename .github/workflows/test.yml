@@ -1,0 +1,22 @@
+name: Rainix CI
+on: [push]
+
+jobs:
+  standard-tests:
+    strategy:
+      fail-fast: true
+    runs-on: ubuntu-latest
+    env:
+      RPC_URL_POLYGON: ${{ secrets. RPC_URL_POLYGON}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+      - uses: DeterminateSystems/magic-nix-cache-action@v2
+
+      - run: nix run .#rainix-sol-prelude
+      - run: nix run .#rainix-sol-test
