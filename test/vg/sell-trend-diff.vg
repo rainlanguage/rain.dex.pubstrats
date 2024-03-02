@@ -1,0 +1,116 @@
+{
+    "$schema": "https://vega.github.io/schema/vega/v5.json",
+    "title": {
+      "text": "Twap trend strategy",
+      "subtitle": [
+        "",
+        "Buy mean USDT amount : $200",
+        "Sell mean USDT amount : $100",
+        "Sell trend up factor : 0.33",
+        "Sell trend down factor : 3",
+        "Buy trend up factor : 3",
+        "Buy trend down factor : 0.33",
+        "Jittery Binomial Bits: 20"
+
+      ],
+      "encode":{
+        "title": {
+          "update": {
+            "fontSize": {"value": 15}
+          }
+        },
+        "subtitle": {
+          "interactive": true,
+          "hover": {
+            "fontStyle": {"value": "normal"}
+          }
+        }
+      }
+    },
+    "width": 800,
+    "height": 500,
+    "padding": 15,
+    "autosize": "pad",
+    "data": [{
+      "name": "sell-trend-diff",
+      "transform": [
+        { "type": "formula","as": "amountDiff", "expr": "(datum.buyAmount - datum.sellAmount)/(1e+6)" },
+        { "type": "formula","as": "rescaledTwap", "expr": "(datum.sellTrendRatio)/1e+18" }
+      ],
+      "format": {
+        "type": "csv",
+        "parse": {
+          "sellAmount": "number",
+          "buyAmount": "number",
+          "sellTrendRatio": "number"
+        },
+        
+        "header": ["sellAmount", "buyAmount","sellTrendRatio"]
+      },
+      "url": "../csvs/sell-trend-diff.csv"
+    }],
+    "scales": [{
+      "name": "x",
+      "type": "log",
+      "range": "width",
+      "domain": {"data": "sell-trend-diff", "field": "rescaledTwap"}
+    }, {
+      "name": "y",
+      "type": "linear",
+      "range": "height",
+      "domain": {"data": "sell-trend-diff", "field": "amountDiff"}
+    }],
+    "axes": [
+      {
+        "orient": "bottom",
+        "scale": "x",
+        "title": "Twap price trend",
+        "encode": {
+          "labels": {
+            "update": {
+              "fontSize": {"value": 14}
+            }
+          },
+          "title": {
+            "update": {
+              "fontSize": {"value": 14}
+            }
+          }
+        }
+      },
+      {
+        "orient": "left",
+        "scale": "y",
+        "grid": true,
+        "title": "Net buy amount (USDT)",
+        "encode": {
+          "labels": {
+            "update": {
+              "text": {"signal": "format(datum.value, '$,')"},
+              "fontSize": {"value": 14}
+            }
+          },
+          "title": {
+            "update": {
+              "fontSize": {"value": 14}
+            }
+          }
+        }
+      }
+      
+    ],
+    "marks": [{
+      "type": "symbol",
+      "from": {"data": "sell-trend-diff"},
+      "encode": {
+        "enter": {
+          "x": {"type": "quantitative","scale": "x", "field": "rescaledTwap"},
+          "y": {"type": "quantitative","scale": "y", "field": "amountDiff"},
+          "fill": {"value": "steelblue"},
+          "angle": {"value": 45},
+          "shape": {"value": "cross"},
+          "size": {"value": 5}
+        }
+      }
+    }]
+  }

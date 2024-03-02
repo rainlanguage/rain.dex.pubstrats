@@ -15,5 +15,9 @@ optimizer_runs = 100000
 bytecode_hash = "none"
 cbor_metadata = false
 
+fs_permissions = [
+  { access = "read-write", path = "test/csvs"}
+]
+
 [fuzz]
 runs = 1024
