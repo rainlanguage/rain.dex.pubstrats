@@ -1,0 +1,178 @@
+---
+#tkn-address !The address of TKN to be tracking the price of.
+#tkn-decimals !The decimals of TKN to be tracking the price of.
+#reserve-address !The address of the reserve token to be tracking price against.
+#reserve-decimals !The decimals of the reserve token to be tracking price against.
+#buy-mean-reserve-amount18 !The mean amount of reserve to offer per buy trade as normalized 18 decimals.
+#sell-mean-reserve-amount18 !The mean amount of reserve to offer per sell trade as normalized 18 decimals.
+#mean-cooldown !The mean cooldown time in seconds.
+#bounty !The bounty to offer for the trade as normalized 18 decimal reserve amount.
+#jittery-binomial-bits !The number of bits to use for the binomial distribution.
+
+#twap-long-time !The long time period for the twap based trend detection as seconds.
+#twap-short-time !The short time period for the twap based trend detection as seconds.
+
+#sell-trend-up-factor !The factor to multiply the trend with when the trend is up as normalized 18 decimals.
+#sell-trend-down-factor !The factor to multiply the trend with when the trend is down as normalized 18 decimals.
+
+#buy-trend-up-factor !The factor to multiply the trend with when the trend is up as normalized 18 decimals.
+#buy-trend-down-factor !The factor to multiply the trend with when the trend is down as normalized 18 decimals.
+
+#test-mean-reserve-amount18 !The mean amount of reserve to offer per trade as normalized 18 decimals.
+#test-last-time !The last time a trade cleared as unix timestamp in seconds.
+#test-now !The current time as unix timestamp in seconds.
+#test-trend-numerator !The numerator of the trend as 18 decimals.
+#test-trend-denominator !The denominator of the trend as 18 decimals.
+#test-trend-up-factor !The factor to multiply the trend with when the trend is up.
+#test-trend-down-factor !The factor to multiply the trend with when the trend is down.
+
+#times
+  last-time:
+    get(order-hash()),
+  now:
+    block-timestamp(),
+  :set(order-hash() now);
+
+#jittery-binomial
+  seed:,
+  binomial18-10:
+    int-to-decimal18(bitwise-count-ones(bitwise-decode<0 jittery-binomial-bits>(hash(seed)))),
+  noise18-1:
+    int-mod(hash(seed 0) 1e18),
+  jittery-combined:
+    decimal18-add(binomial18-10 noise18-1),
+  jittery-combined-normalized:
+    decimal18-div(jittery-combined decimal18-add(1e18 int-to-decimal18(jittery-binomial-bits)));
+
+#ensure-cooldown
+  last-time
+  now:,
+  /* hash the last-time here to make sure the seed wont collide with the seed in target-reserve */
+  random-multiplier18: call<'jittery-binomial>(hash(last-time)),
+  cooldown18: decimal18-mul(
+    decimal18-mul(int-to-decimal18(mean-cooldown) 2e18)
+    random-multiplier18
+  ),
+  cooldown: decimal18-scale-n<0>(cooldown18),
+  :ensure(less-than(int-add(last-time cooldown) now) "Trade cooldown.");
+
+#calculate-reserve
+  last-time
+  now
+  mean-reserve-amount18
+  trend-numerator
+  trend-denominator
+  trend-up-factor
+  trend-down-factor:,
+  :call<'ensure-cooldown>(
+    last-time
+    now
+  ),
+  random-multiplier18: call<'jittery-binomial>(last-time),
+  jittered-amount-reserve18: decimal18-mul(
+    decimal18-mul(mean-reserve-amount18 2e18)
+    random-multiplier18
+  ),
+  trend-ratio: decimal18-div(trend-numerator trend-denominator),
+  skewed-trend-ratio: if(
+    greater-than(trend-ratio 1e18)
+    decimal18-power(trend-ratio trend-up-factor)
+    decimal18-power(trend-ratio trend-down-factor)
+  ),
+  amount-reserve18: decimal18-mul(jittered-amount-reserve18 skewed-trend-ratio),
+  amount-reserve: decimal18-scale-n<reserve-decimals>(amount-reserve18);
+
+#test-calculate-io
+  trend-ratio
+  skewed-trend-ratio
+  amount-reserve18
+  amount-reserve: call<'calculate-reserve>(
+    test-last-time
+    test-now
+    test-mean-reserve-amount18
+    test-trend-numerator
+    test-trend-denominator
+    test-trend-up-factor
+    test-trend-down-factor
+  );
+
+#test-handle-io
+  :;
+
+#sell-calculate-io
+  last-time now: call<'times>(),
+  trend-numerator: uniswap-v3-twap-output-ratio(
+    reserve-address reserve-decimals
+    tkn-address tkn-decimals
+    twap-short-time 0
+    [uniswap-v3-fee-high]
+  ),
+  trend-denominator: uniswap-v3-twap-output-ratio(
+    reserve-address reserve-decimals
+    tkn-address tkn-decimals
+    twap-long-time 0
+    [uniswap-v3-fee-high]
+  ),
+  trend-ratio _ amount-reserve18 amount-reserve: call<'calculate-reserve>(
+    last-time
+    now
+    sell-mean-reserve-amount18
+    trend-numerator
+    trend-denominator
+    sell-trend-up-factor
+    sell-trend-down-factor
+  ),
+  tkn-amount18 last-price-timestamp: uniswap-v2-quote-exact-output<1>(
+    tkn-address reserve-address amount-reserve
+  ),
+  :ensure(less-than(last-price-timestamp now) "Sell price change."),
+  order-output-max18: tkn-amount18,
+  io-ratio: decimal18-div(decimal18-sub(amount-reserve18 bounty) order-output-max18);
+
+#sell-handle-io
+  :ensure(
+    greater-than-or-equal-to(
+      output-vault-balance-decrease()
+      calculated-max-output()
+    )
+    "Partial sell."
+  );
+
+#buy-calculate-io
+  last-time now: call<'times>(),
+  trend-numerator: uniswap-v3-twap-output-ratio(
+    tkn-address tkn-decimals
+    reserve-address reserve-decimals
+    twap-short-time 0
+    [uniswap-v3-fee-high]
+  ),
+  trend-denominator: uniswap-v3-twap-output-ratio(
+    tkn-address tkn-decimals
+    reserve-address reserve-decimals
+    twap-long-time 0
+    [uniswap-v3-fee-high]
+  ),
+  trend-ratio _ amount-reserve18 amount-reserve: call<'calculate-reserve>(
+    last-time
+    now
+    buy-mean-reserve-amount18
+    trend-numerator
+    trend-denominator
+    buy-trend-up-factor
+    buy-trend-down-factor
+  ),
+  tkn-amount18 last-price-timestamp: uniswap-v2-quote-exact-input<1>(
+    reserve-address tkn-address amount-reserve
+  ),
+  :ensure(less-than(last-price-timestamp now) "Buy price change."),
+  order-output-max18: decimal18-add(amount-reserve18 bounty),
+  io-ratio: decimal18-div(tkn-amount18 order-output-max18);
+
+#buy-handle-io
+  :ensure(
+    greater-than-or-equal-to(
+      output-vault-balance-decrease()
+      decimal18-scale-n<tkn-decimals>(calculated-max-output())
+    )
+    "Partial buy."
+  );
