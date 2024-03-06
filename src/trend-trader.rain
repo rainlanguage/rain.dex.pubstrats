@@ -19,19 +19,24 @@
 #buy-trend-down-factor !The factor to multiply the trend with when the trend is down as normalized 18 decimals.
 
 #test-mean-reserve-amount18 !The mean amount of reserve to offer per trade as normalized 18 decimals.
-#test-last-time !The last time a trade cleared as unix timestamp in seconds.
-#test-now !The current time as unix timestamp in seconds.
 #test-trend-numerator !The numerator of the trend as 18 decimals.
 #test-trend-denominator !The denominator of the trend as 18 decimals.
 #test-trend-up-factor !The factor to multiply the trend with when the trend is up.
 #test-trend-down-factor !The factor to multiply the trend with when the trend is down.
 
-#times
+#times !The expression to get the last time and now as unix timestamps in seconds.
+
+#real-times
   last-time:
     get(order-hash()),
   now:
     block-timestamp(),
   :set(order-hash() now);
+
+#test-last-time !The last time a trade cleared as unix timestamp in seconds.
+#test-now !The current time as unix timestamp in seconds.
+#test-times
+  _ _: test-last-time test-now;
 
 #jittery-binomial
   seed:,
@@ -57,13 +62,12 @@
   :ensure(less-than(int-add(last-time cooldown) now) "Trade cooldown.");
 
 #calculate-reserve
-  last-time
-  now
   mean-reserve-amount18
   trend-numerator
   trend-denominator
   trend-up-factor
   trend-down-factor:,
+  last-time now: call<times>,
   :call<'ensure-cooldown>(
     last-time
     now
@@ -87,8 +91,6 @@
   skewed-trend-ratio
   amount-reserve18
   amount-reserve: call<'calculate-reserve>(
-    test-last-time
-    test-now
     test-mean-reserve-amount18
     test-trend-numerator
     test-trend-denominator
@@ -100,7 +102,6 @@
   :;
 
 #sell-calculate-io
-  last-time now: call<'times>(),
   trend-numerator: uniswap-v3-twap-output-ratio(
     reserve-address reserve-decimals
     tkn-address tkn-decimals
@@ -114,8 +115,6 @@
     [uniswap-v3-fee-high]
   ),
   trend-ratio _ amount-reserve18 amount-reserve: call<'calculate-reserve>(
-    last-time
-    now
     sell-mean-reserve-amount18
     trend-numerator
     trend-denominator
@@ -139,7 +138,6 @@
   );
 
 #buy-calculate-io
-  last-time now: call<'times>(),
   trend-numerator: uniswap-v3-twap-output-ratio(
     tkn-address tkn-decimals
     reserve-address reserve-decimals
@@ -153,8 +151,6 @@
     [uniswap-v3-fee-high]
   ),
   trend-ratio _ amount-reserve18 amount-reserve: call<'calculate-reserve>(
-    last-time
-    now
     buy-mean-reserve-amount18
     trend-numerator
     trend-denominator
