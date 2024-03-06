@@ -4,7 +4,7 @@ pragma solidity =0.8.19;
 import {Vm} from "forge-std/Vm.sol";
 import {Test, console2} from "forge-std/Test.sol";
 import {IParserV1} from "rain.interpreter.interface/interface/IParserV1.sol";
-import {IInterpreterV2,SourceIndexV2} from "rain.interpreter.interface/interface/IInterpreterV2.sol";
+import {IInterpreterV2, SourceIndexV2} from "rain.interpreter.interface/interface/IInterpreterV2.sol";
 import {IInterpreterStoreV2} from "rain.interpreter.interface/interface/IInterpreterStoreV2.sol";
 import {ISubParserV2} from "rain.interpreter.interface/interface/ISubParserV2.sol";
 import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/IExpressionDeployerV3.sol";
@@ -15,15 +15,13 @@ import "rain.math.fixedpoint/lib/LibFixedPointDecimalArithmeticOpenZeppelin.sol"
 import "rain.math.fixedpoint/lib/LibFixedPointDecimalScale.sol";
 import "rain.interpreter.interface/lib/caller/LibEncodedDispatch.sol";
 import "rain.interpreter.interface/lib/ns/LibNamespace.sol";
- 
-
 
 contract TrancheSpaceTest is Test {
     using Strings for address;
     using Strings for uint256;
 
     using LibFixedPointDecimalArithmeticOpenZeppelin for uint256;
-    using LibFixedPointDecimalScale for uint256; 
+    using LibFixedPointDecimalScale for uint256;
 
     IParserV1 public PARSER;
     IInterpreterV2 public INTERPRETER;
@@ -54,7 +52,7 @@ contract TrancheSpaceTest is Test {
         INTERPRETER = IInterpreterV2(0xbbe5a04A9a20c47b1A93e755aE712cb84538cd5a);
         EXPRESSION_DEPLOYER = IExpressionDeployerV3(0xc64B01aB4b5549dE91e5A4425883Dff87Ceaaf29);
         ORDERBOOK_SUPARSER = ISubParserV2(0x14c5D39dE54D498aFD3C803D3B5c88bbEcadcc48);
-    } 
+    }
 
     function testSpaceModelling() public {
         string memory file = "./test/csvs/tranche-space.csv";
@@ -69,7 +67,8 @@ contract TrancheSpaceTest is Test {
             uint256 trancheSpace = uint256(1e17 * i);
             address expression;
             {
-                LibTrancheSpaceOrders.TestTrancheSpaceOrder memory testTrancheSpaceOrderConfig = LibTrancheSpaceOrders.TestTrancheSpaceOrder(
+                LibTrancheSpaceOrders.TestTrancheSpaceOrder memory testTrancheSpaceOrderConfig = LibTrancheSpaceOrders
+                    .TestTrancheSpaceOrder(
                     TRANCHE_SPACE_PER_SECOND,
                     TRANCHE_SPACE_RECHARGE_DELAY,
                     TRANCHE_SIZE_BASE,
@@ -87,14 +86,12 @@ contract TrancheSpaceTest is Test {
                     REFERENCE_STABLE,
                     REFERENCE_RESERVE
                 );
-                (bytes memory bytecode, uint256[] memory constants) =  PARSER.parse(
-                        LibTrancheSpaceOrders.getTestTrancheSpaceOrder(
-                        vm,
-                        address(ORDERBOOK_SUPARSER),
-                        testTrancheSpaceOrderConfig
+                (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
+                    LibTrancheSpaceOrders.getTestTrancheSpaceOrder(
+                        vm, address(ORDERBOOK_SUPARSER), testTrancheSpaceOrderConfig
                     )
                 );
-                (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants); 
+                (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
             }
             (uint256[] memory sellStack,) = IInterpreterV2(INTERPRETER).eval2(
                 IInterpreterStoreV2(address(STORE)),
@@ -104,12 +101,12 @@ contract TrancheSpaceTest is Test {
                 new uint256[](0)
             );
 
-            string memory line = string.concat(trancheSpace.toString(), ",", sellStack[1].toString(), ",", sellStack[0].toString());
+            string memory line =
+                string.concat(trancheSpace.toString(), ",", sellStack[1].toString(), ",", sellStack[0].toString());
 
-            vm.writeLine(file, line); 
-        } 
-
-    } 
+            vm.writeLine(file, line);
+        }
+    }
 
     function testCalculateTranche(uint256 trancheSpaceBefore, uint256 delay) public {
         trancheSpaceBefore = bound(trancheSpaceBefore, 0, 100e18);
@@ -120,20 +117,15 @@ contract TrancheSpaceTest is Test {
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
         uint256[][] memory sellOrderContext = getSellOrderContext(11223344);
-        
+
         address expression;
         {
-
-            (bytes memory bytecode, uint256[] memory constants) =  PARSER.parse(
-                    LibTrancheSpaceOrders.getCalculateTranche(
-                    vm,
-                    address(ORDERBOOK_SUPARSER),
-                    trancheSpaceBefore,
-                    lastTimeUpdate,
-                    lastTimeUpdate + delay
+            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
+                LibTrancheSpaceOrders.getCalculateTranche(
+                    vm, address(ORDERBOOK_SUPARSER), trancheSpaceBefore, lastTimeUpdate, lastTimeUpdate + delay
                 )
             );
-            (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants); 
+            (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
         }
         (uint256[] memory stack,) = IInterpreterV2(INTERPRETER).eval2(
             IInterpreterStoreV2(address(STORE)),
@@ -144,8 +136,7 @@ contract TrancheSpaceTest is Test {
         );
         assertEq(stack[2], SaturatingMath.saturatingSub(trancheSpaceBefore, stack[4]));
         assertEq(stack[3], lastTimeUpdate + delay);
-
-    } 
+    }
 
     function testHandleIo(uint256 outputTokenTraded, uint256 trancheSpaceBefore, uint256 delay) public {
         outputTokenTraded = bound(outputTokenTraded, 1e18, 1000000e18);
@@ -161,17 +152,13 @@ contract TrancheSpaceTest is Test {
         {
             address calculateTrancheExpression;
             {
-
-                (bytes memory calculateTrancheBytecode, uint256[] memory calculateTrancheConstants) =  PARSER.parse(
-                        LibTrancheSpaceOrders.getCalculateTranche(
-                        vm,
-                        address(ORDERBOOK_SUPARSER),
-                        trancheSpaceBefore,
-                        lastTimeUpdate,
-                        lastTimeUpdate + delay
+                (bytes memory calculateTrancheBytecode, uint256[] memory calculateTrancheConstants) = PARSER.parse(
+                    LibTrancheSpaceOrders.getCalculateTranche(
+                        vm, address(ORDERBOOK_SUPARSER), trancheSpaceBefore, lastTimeUpdate, lastTimeUpdate + delay
                     )
                 );
-                (,, calculateTrancheExpression,) = EXPRESSION_DEPLOYER.deployExpression2(calculateTrancheBytecode, calculateTrancheConstants); 
+                (,, calculateTrancheExpression,) =
+                    EXPRESSION_DEPLOYER.deployExpression2(calculateTrancheBytecode, calculateTrancheConstants);
             }
             (uint256[] memory calculateTrancheStack,) = IInterpreterV2(INTERPRETER).eval2(
                 IInterpreterStoreV2(address(STORE)),
@@ -183,11 +170,7 @@ contract TrancheSpaceTest is Test {
 
             (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
                 LibTrancheSpaceOrders.getHandleIo(
-                    vm,
-                    address(ORDERBOOK_SUPARSER),
-                    trancheSpaceBefore,
-                    lastTimeUpdate,
-                    lastTimeUpdate + delay
+                    vm, address(ORDERBOOK_SUPARSER), trancheSpaceBefore, lastTimeUpdate, lastTimeUpdate + delay
                 )
             );
             (,, address handleIoExpression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
@@ -208,7 +191,6 @@ contract TrancheSpaceTest is Test {
                 new uint256[](0)
             );
         }
-        
     }
 
     function getSellOrderContext(uint256 orderHash) internal pure returns (uint256[][] memory context) {
@@ -242,8 +224,5 @@ contract TrancheSpaceTest is Test {
                 context[4] = outputsContext;
             }
         }
-    } 
-
-
-    
+    }
 }

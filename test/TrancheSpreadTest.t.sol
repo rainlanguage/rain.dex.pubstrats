@@ -14,17 +14,15 @@ import "rain.math.fixedpoint/lib/LibFixedPointDecimalScale.sol";
 import "rain.interpreter.interface/lib/caller/LibEncodedDispatch.sol";
 import "rain.interpreter.interface/lib/ns/LibNamespace.sol";
 
-
 contract TrancheSpreadTest is Test {
     using Strings for address;
     using Strings for uint256;
-
 
     using LibFixedPointDecimalArithmeticOpenZeppelin for uint256;
     using LibFixedPointDecimalScale for uint256;
 
     // Strategy Params
-    uint256 TRANCHE_RESERVE_BASE_AMOUNT = 1000e18 ;
+    uint256 TRANCHE_RESERVE_BASE_AMOUNT = 1000e18;
     uint256 TRANCHE_RESERVE_BASE_IO_RATIO = 327e18;
     uint256 SPREAD_RATIO = 101e16;
     uint256 TRANCHE_EDGE_THRESHOLD = 2e17;
@@ -37,7 +35,6 @@ contract TrancheSpreadTest is Test {
     address constant DISTRIBUTOR_TOKEN = 0xd0e9c8f5Fae381459cf07Ec506C1d2896E8b5df6;
     address constant RESERVE_TOKEN = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
     address constant ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
-
 
     IParserV1 public PARSER;
     IInterpreterV2 public INTERPRETER;
@@ -61,71 +58,56 @@ contract TrancheSpreadTest is Test {
         ORDERBOOK_SUPARSER = ISubParserV2(0x14c5D39dE54D498aFD3C803D3B5c88bbEcadcc48);
     }
 
-    function testTrancheSnapThreshold() public { 
-
+    function testTrancheSnapThreshold() public {
         FullyQualifiedNamespace namespace =
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
-        uint256[][] memory sellOrderContext = getSellOrderContext(11223344); 
+        uint256[][] memory sellOrderContext = getSellOrderContext(11223344);
 
         address expression;
         {
-            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                getTrancheTestSpreadOrder(
-                    vm, 
-                    address(ORDERBOOK_SUPARSER),
-                    0,
-                    101e16
-                )
-            );
+            (bytes memory bytecode, uint256[] memory constants) =
+                PARSER.parse(getTrancheTestSpreadOrder(vm, address(ORDERBOOK_SUPARSER), 0, 101e16));
             (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
         }
         // Eval above snap threshold
         {
-            sellOrderContext[3][4] = 2000e18 + TRANCHE_SPACE_SNAP_THRESHOLD; 
-            (uint256[] memory calculateStack, ) = IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                    sellOrderContext,
-                    new uint256[](0)
+            sellOrderContext[3][4] = 2000e18 + TRANCHE_SPACE_SNAP_THRESHOLD;
+            (uint256[] memory calculateStack,) = IInterpreterV2(INTERPRETER).eval2(
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                sellOrderContext,
+                new uint256[](0)
             );
-            // Assert snapped amount 
-            assertEq(calculateStack[0],2e18); 
+            // Assert snapped amount
+            assertEq(calculateStack[0], 2e18);
         }
         // Eval below snap threshold
         {
-            sellOrderContext[3][4] = 2000e18 - TRANCHE_SPACE_SNAP_THRESHOLD; 
-            (uint256[] memory calculateStack, ) = IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                    sellOrderContext,
-                    new uint256[](0)
+            sellOrderContext[3][4] = 2000e18 - TRANCHE_SPACE_SNAP_THRESHOLD;
+            (uint256[] memory calculateStack,) = IInterpreterV2(INTERPRETER).eval2(
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                sellOrderContext,
+                new uint256[](0)
             );
-            // Assert snapped amount 
-            assertEq(calculateStack[0],2e18);
-        }  
-
+            // Assert snapped amount
+            assertEq(calculateStack[0], 2e18);
+        }
     }
 
     function testTrancheSellToken() public {
-
         FullyQualifiedNamespace namespace =
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
-        uint256[][] memory sellOrderContext = getSellOrderContext(11223344); 
+        uint256[][] memory sellOrderContext = getSellOrderContext(11223344);
 
         address expression;
         {
-            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                getTrancheTestSpreadOrder(
-                    vm, 
-                    address(ORDERBOOK_SUPARSER),
-                    0,
-                    101e16
-                )
-            );
+            (bytes memory bytecode, uint256[] memory constants) =
+                PARSER.parse(getTrancheTestSpreadOrder(vm, address(ORDERBOOK_SUPARSER), 0, 101e16));
             (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
         }
 
@@ -134,22 +116,22 @@ contract TrancheSpreadTest is Test {
             sellOrderContext[3][4] = 199e18;
             vm.expectRevert("Tranche threshold reached.");
             IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                    sellOrderContext,
-                    new uint256[](0)
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                sellOrderContext,
+                new uint256[](0)
             );
         }
         // Eval just above tranche limit : : (0 + 0.2)
         {
-            sellOrderContext[3][4] = 200e18; 
+            sellOrderContext[3][4] = 200e18;
             IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                    sellOrderContext,
-                    new uint256[](0)
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                sellOrderContext,
+                new uint256[](0)
             );
         }
         // Eval just above headroom threshold : (0 + 0.801)
@@ -157,45 +139,42 @@ contract TrancheSpreadTest is Test {
             sellOrderContext[3][4] = 801e18;
             vm.expectRevert("Tranche threshold reached.");
             IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                    sellOrderContext,
-                    new uint256[](0)
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                sellOrderContext,
+                new uint256[](0)
             );
         }
         // Eval just at headroom threshold : (0 + 0.8)
         {
             sellOrderContext[3][4] = 800e18;
             IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                    sellOrderContext,
-                    new uint256[](0)
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                sellOrderContext,
+                new uint256[](0)
             );
         }
         // Eval at tranche end
         {
             sellOrderContext[3][4] = 1000e18;
             IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                    sellOrderContext,
-                    new uint256[](0)
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                sellOrderContext,
+                new uint256[](0)
             );
         }
-        
-
     }
 
     function testTrancheBuyToken() public {
-
         FullyQualifiedNamespace namespace =
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
-        uint256[][] memory buyOrderContext = getBuyOrderContext(11223344); 
+        uint256[][] memory buyOrderContext = getBuyOrderContext(11223344);
 
         // tranche space 1.5
         address tranche0;
@@ -203,82 +182,70 @@ contract TrancheSpreadTest is Test {
         address tranche1;
 
         {
-            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                getTrancheTestSpreadOrder(
-                    vm, 
-                    address(ORDERBOOK_SUPARSER),
-                    15e17,
-                    101e16
-                )
-            );
+            (bytes memory bytecode, uint256[] memory constants) =
+                PARSER.parse(getTrancheTestSpreadOrder(vm, address(ORDERBOOK_SUPARSER), 15e17, 101e16));
             (,, tranche0,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
         }
         {
-            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                getTrancheTestSpreadOrder(
-                    vm, 
-                    address(ORDERBOOK_SUPARSER),
-                    2e18,
-                    101e16
-                )
-            );
+            (bytes memory bytecode, uint256[] memory constants) =
+                PARSER.parse(getTrancheTestSpreadOrder(vm, address(ORDERBOOK_SUPARSER), 2e18, 101e16));
             (,, tranche1,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
         }
-        // Eval just below tranche threshold : (1.5 - 0.301)   
+        // Eval just below tranche threshold : (1.5 - 0.301)
         {
             buyOrderContext[4][4] = 301e18;
             vm.expectRevert("Tranche threshold reached.");
             IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(tranche0, SourceIndexV2.wrap(1), type(uint32).max),
-                    buyOrderContext,
-                    new uint256[](0)
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(tranche0, SourceIndexV2.wrap(1), type(uint32).max),
+                buyOrderContext,
+                new uint256[](0)
             );
         }
-        // Eval just above tranche threshold : (1.5 - 0.3)    
+        // Eval just above tranche threshold : (1.5 - 0.3)
         {
             buyOrderContext[4][4] = 300e18;
             IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(tranche0, SourceIndexV2.wrap(1), type(uint32).max),
-                    buyOrderContext,
-                    new uint256[](0)
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(tranche0, SourceIndexV2.wrap(1), type(uint32).max),
+                buyOrderContext,
+                new uint256[](0)
             );
-        } 
-        // Eval just below above headroom threshold : (2 - 0.199)  
+        }
+        // Eval just below above headroom threshold : (2 - 0.199)
         {
             buyOrderContext[4][4] = 199e18;
             vm.expectRevert("Tranche threshold reached.");
             IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(tranche1, SourceIndexV2.wrap(1), type(uint32).max),
-                    buyOrderContext,
-                    new uint256[](0)
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(tranche1, SourceIndexV2.wrap(1), type(uint32).max),
+                buyOrderContext,
+                new uint256[](0)
             );
         }
-        // Eval just at headroom threshold : (2 - 0.2)   
+        // Eval just at headroom threshold : (2 - 0.2)
         {
             buyOrderContext[4][4] = 200e18;
             IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(tranche1, SourceIndexV2.wrap(1), type(uint32).max),
-                    buyOrderContext,
-                    new uint256[](0)
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(tranche1, SourceIndexV2.wrap(1), type(uint32).max),
+                buyOrderContext,
+                new uint256[](0)
             );
         }
         // Eval just at tranche end : (2 - 1)
         {
             buyOrderContext[4][4] = 1000e18;
             IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(tranche1, SourceIndexV2.wrap(1), type(uint32).max),
-                    buyOrderContext,
-                    new uint256[](0)
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(tranche1, SourceIndexV2.wrap(1), type(uint32).max),
+                buyOrderContext,
+                new uint256[](0)
             );
         }
     }
@@ -288,190 +255,163 @@ contract TrancheSpreadTest is Test {
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
         uint256[][] memory sellOrderContext = getSellOrderContext(11223344);
-        uint256[][] memory buyOrderContext = getBuyOrderContext(11223344); 
-
+        uint256[][] memory buyOrderContext = getBuyOrderContext(11223344);
 
         // Sell Order
         uint256 distributedTokenOut;
         uint256 reserveTokenIn;
-        {   
+        {
             address expression;
             {
-                (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                    getTrancheTestSpreadOrder(
-                        vm, 
-                        address(ORDERBOOK_SUPARSER),
-                        0,
-                        101e16
-                    )
-                );
-                (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);   
+                (bytes memory bytecode, uint256[] memory constants) =
+                    PARSER.parse(getTrancheTestSpreadOrder(vm, address(ORDERBOOK_SUPARSER), 0, 101e16));
+                (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
             }
-            (uint256[] memory calculateStack, ) = IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
-                    sellOrderContext,
-                    new uint256[](0)
-            ); 
+            (uint256[] memory calculateStack,) = IInterpreterV2(INTERPRETER).eval2(
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
+                sellOrderContext,
+                new uint256[](0)
+            );
             // Output Tokens offered by order owner
             sellOrderContext[4][4] = calculateStack[1];
-            sellOrderContext[3][4] = calculateStack[1].fixedPointMul(calculateStack[0],Math.Rounding.Up);
+            sellOrderContext[3][4] = calculateStack[1].fixedPointMul(calculateStack[0], Math.Rounding.Up);
 
             distributedTokenOut = sellOrderContext[4][4];
             reserveTokenIn = sellOrderContext[3][4];
 
-            (uint256[] memory handleStack ,) = IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                    sellOrderContext,
-                    new uint256[](0)
+            (uint256[] memory handleStack,) = IInterpreterV2(INTERPRETER).eval2(
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                sellOrderContext,
+                new uint256[](0)
             );
-            assertEq(handleStack[0],1e18);
+            assertEq(handleStack[0], 1e18);
         }
 
         // Buy Order
         uint256 distributedTokenIn;
-        {   
+        {
             address expression;
             {
-                (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                    getTrancheTestSpreadOrder(
-                        vm, 
-                        address(ORDERBOOK_SUPARSER),
-                        1e18,
-                        101e16
-                    )
-                );
-                (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);   
+                (bytes memory bytecode, uint256[] memory constants) =
+                    PARSER.parse(getTrancheTestSpreadOrder(vm, address(ORDERBOOK_SUPARSER), 1e18, 101e16));
+                (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
             }
-            (uint256[] memory calculateStack, ) = IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
-                    buyOrderContext,
-                    new uint256[](0)
+            (uint256[] memory calculateStack,) = IInterpreterV2(INTERPRETER).eval2(
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
+                buyOrderContext,
+                new uint256[](0)
             );
             // Output Tokens offered by order owner
             buyOrderContext[4][4] = reserveTokenIn;
-            buyOrderContext[3][4] = reserveTokenIn.fixedPointMul(calculateStack[0],Math.Rounding.Up);
+            buyOrderContext[3][4] = reserveTokenIn.fixedPointMul(calculateStack[0], Math.Rounding.Up);
             distributedTokenIn = buyOrderContext[3][4];
 
-             (uint256[] memory handleStack ,) = IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                    buyOrderContext,
-                    new uint256[](0)
+            (uint256[] memory handleStack,) = IInterpreterV2(INTERPRETER).eval2(
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                buyOrderContext,
+                new uint256[](0)
             );
 
-            assertEq(handleStack[0],0);
-        } 
+            assertEq(handleStack[0], 0);
+        }
 
-        console2.log("distributedTokenOut : ",distributedTokenOut);
-        console2.log("distributedTokenIn : ",distributedTokenIn);
+        console2.log("distributedTokenOut : ", distributedTokenOut);
+        console2.log("distributedTokenIn : ", distributedTokenIn);
 
-        assertGe(distributedTokenIn,distributedTokenOut);
+        assertGe(distributedTokenIn, distributedTokenOut);
     }
 
-    function testTrancheNSellBuy() public { 
-
+    function testTrancheNSellBuy() public {
         FullyQualifiedNamespace namespace =
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
         uint256[][] memory sellOrderContext = getSellOrderContext(11223344);
         uint256[][] memory buyOrderContext = getBuyOrderContext(11223344);
 
-        for(uint256 i = 0; i < 10; i++){
+        for (uint256 i = 0; i < 10; i++) {
             uint256 trancheSpaceBefore = (i + 1) * 1e18;
             uint256 trancheSpaceAfter = (i + 2) * 1e18;
 
             // Sell Order
             uint256 distributedTokenOut;
             uint256 reserveTokenIn;
-            {   
-
+            {
                 address expression;
                 {
                     (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                        getTrancheTestSpreadOrder(
-                            vm, 
-                            address(ORDERBOOK_SUPARSER),
-                            trancheSpaceBefore,
-                            101e16
-                        )
+                        getTrancheTestSpreadOrder(vm, address(ORDERBOOK_SUPARSER), trancheSpaceBefore, 101e16)
                     );
-                    (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);   
+                    (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
                 }
-                (uint256[] memory calculateStack, ) = IInterpreterV2(INTERPRETER).eval2(
-                        IInterpreterStoreV2(address(STORE)),
-                        namespace,
-                        LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
-                        sellOrderContext,
-                        new uint256[](0)
-                ); 
+                (uint256[] memory calculateStack,) = IInterpreterV2(INTERPRETER).eval2(
+                    IInterpreterStoreV2(address(STORE)),
+                    namespace,
+                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
+                    sellOrderContext,
+                    new uint256[](0)
+                );
                 // Output Tokens offered by order owner
                 sellOrderContext[4][4] = calculateStack[1];
-                sellOrderContext[3][4] = calculateStack[1].fixedPointMul(calculateStack[0],Math.Rounding.Up);
+                sellOrderContext[3][4] = calculateStack[1].fixedPointMul(calculateStack[0], Math.Rounding.Up);
 
                 distributedTokenOut = sellOrderContext[4][4];
                 reserveTokenIn = sellOrderContext[3][4];
 
-                (uint256[] memory handleStack ,) = IInterpreterV2(INTERPRETER).eval2(
-                        IInterpreterStoreV2(address(STORE)),
-                        namespace,
-                        LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                        sellOrderContext,
-                        new uint256[](0)
-                ); 
+                (uint256[] memory handleStack,) = IInterpreterV2(INTERPRETER).eval2(
+                    IInterpreterStoreV2(address(STORE)),
+                    namespace,
+                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                    sellOrderContext,
+                    new uint256[](0)
+                );
 
-                assertEq(handleStack[0],trancheSpaceAfter);
+                assertEq(handleStack[0], trancheSpaceAfter);
             }
 
             // Buy Order
             uint256 distributedTokenIn;
-            {   
+            {
                 address expression;
                 {
                     (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                        getTrancheTestSpreadOrder(
-                            vm, 
-                            address(ORDERBOOK_SUPARSER),
-                            trancheSpaceAfter,
-                            101e16
-                        )
+                        getTrancheTestSpreadOrder(vm, address(ORDERBOOK_SUPARSER), trancheSpaceAfter, 101e16)
                     );
-                    (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);   
+                    (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
                 }
-                (uint256[] memory calculateStack, ) = IInterpreterV2(INTERPRETER).eval2(
-                        IInterpreterStoreV2(address(STORE)),
-                        namespace,
-                        LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
-                        buyOrderContext,
-                        new uint256[](0)
+                (uint256[] memory calculateStack,) = IInterpreterV2(INTERPRETER).eval2(
+                    IInterpreterStoreV2(address(STORE)),
+                    namespace,
+                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
+                    buyOrderContext,
+                    new uint256[](0)
                 );
                 // Output Tokens offered by order owner
                 buyOrderContext[4][4] = reserveTokenIn;
-                buyOrderContext[3][4] = reserveTokenIn.fixedPointMul(calculateStack[0],Math.Rounding.Up);
+                buyOrderContext[3][4] = reserveTokenIn.fixedPointMul(calculateStack[0], Math.Rounding.Up);
                 distributedTokenIn = buyOrderContext[3][4];
 
-                (uint256[] memory handleStack ,) = IInterpreterV2(INTERPRETER).eval2(
-                        IInterpreterStoreV2(address(STORE)),
-                        namespace,
-                        LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                        buyOrderContext,
-                        new uint256[](0)
-                ); 
-                assertEq(handleStack[0],trancheSpaceBefore);
-
-            } 
-            assertGe(distributedTokenIn,distributedTokenOut);
+                (uint256[] memory handleStack,) = IInterpreterV2(INTERPRETER).eval2(
+                    IInterpreterStoreV2(address(STORE)),
+                    namespace,
+                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                    buyOrderContext,
+                    new uint256[](0)
+                );
+                assertEq(handleStack[0], trancheSpaceBefore);
+            }
+            assertGe(distributedTokenIn, distributedTokenOut);
         }
-    } 
+    }
 
     function testIntialTrancheSpace() public {
-
         FullyQualifiedNamespace namespace =
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
@@ -480,64 +420,48 @@ contract TrancheSpreadTest is Test {
 
         address expression;
         {
-            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                getTrancheSpreadOrder(
-                    vm, 
-                    address(ORDERBOOK_SUPARSER)
-                )
-            );
-            (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);   
+            (bytes memory bytecode, uint256[] memory constants) =
+                PARSER.parse(getTrancheSpreadOrder(vm, address(ORDERBOOK_SUPARSER)));
+            (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
         }
         sellOrderContext[3][4] = TRANCHE_RESERVE_BASE_AMOUNT;
-        buyOrderContext[4][4] =  TRANCHE_RESERVE_BASE_AMOUNT;
+        buyOrderContext[4][4] = TRANCHE_RESERVE_BASE_AMOUNT;
 
         // Sell Orders
-        for(uint256 i = 0 ; i < 10 ; i++){ 
+        for (uint256 i = 0; i < 10; i++) {
             uint256 trancheSpaceBefore = INITIAL_TRANCHE_SPACE * (i + 1);
             uint256 trancheSpaceAfter = INITIAL_TRANCHE_SPACE * (i + 2);
 
             (uint256[] memory handleStack, uint256[] memory handleKvs) = IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                    sellOrderContext,
-                    new uint256[](0)
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                sellOrderContext,
+                new uint256[](0)
             );
-            assertEq(handleStack[handleStack.length-1],trancheSpaceBefore);
-            assertEq(handleStack[0],trancheSpaceAfter); 
-            STORE.set(
-                StateNamespace.wrap(uint256(uint160(ORDER_OWNER))),
-                handleKvs
-            );  
+            assertEq(handleStack[handleStack.length - 1], trancheSpaceBefore);
+            assertEq(handleStack[0], trancheSpaceAfter);
+            STORE.set(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), handleKvs);
         }
         // Buy Orders
-        for(uint256 i = 10 ; i > 0 ; i--){ 
+        for (uint256 i = 10; i > 0; i--) {
             uint256 trancheSpaceBefore = INITIAL_TRANCHE_SPACE * (i + 1);
             uint256 trancheSpaceAfter = INITIAL_TRANCHE_SPACE * i;
 
             (uint256[] memory handleStack, uint256[] memory handleKvs) = IInterpreterV2(INTERPRETER).eval2(
-                    IInterpreterStoreV2(address(STORE)),
-                    namespace,
-                    LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                    buyOrderContext,
-                    new uint256[](0)
-            ); 
-            assertEq(handleStack[handleStack.length-1],trancheSpaceBefore);
-            assertEq(handleStack[0],trancheSpaceAfter); 
-            STORE.set(
-                StateNamespace.wrap(uint256(uint160(ORDER_OWNER))),
-                handleKvs
-            );  
-        }   
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                buyOrderContext,
+                new uint256[](0)
+            );
+            assertEq(handleStack[handleStack.length - 1], trancheSpaceBefore);
+            assertEq(handleStack[0], trancheSpaceAfter);
+            STORE.set(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), handleKvs);
+        }
     }
-     
-    function getTrancheSpreadOrder(
-        Vm vm,
-        address orderBookSubparser
-    )
-        internal
-        returns (bytes memory trancheRefill)
-    {
+
+    function getTrancheSpreadOrder(Vm vm, address orderBookSubparser) internal returns (bytes memory trancheRefill) {
         string[] memory ffi = new string[](33);
         ffi[0] = "rain";
         ffi[1] = "dotrain";
@@ -572,16 +496,11 @@ contract TrancheSpreadTest is Test {
         ffi[30] = string.concat("initial-tranche-space=", INITIAL_TRANCHE_SPACE.toString());
         ffi[31] = "--bind";
         ffi[32] = string.concat("tranche-space-snap-threshold=", TRANCHE_SPACE_SNAP_THRESHOLD.toString());
-        
+
         trancheRefill = bytes.concat(getSubparserPrelude(orderBookSubparser), vm.ffi(ffi));
     }
 
-    function getTrancheTestSpreadOrder(
-        Vm vm,
-        address orderBookSubparser,
-        uint256 testTrancheSpace,
-        uint256 spreadRatio
-    )
+    function getTrancheTestSpreadOrder(Vm vm, address orderBookSubparser, uint256 testTrancheSpace, uint256 spreadRatio)
         internal
         returns (bytes memory trancheRefill)
     {
@@ -621,13 +540,12 @@ contract TrancheSpreadTest is Test {
         ffi[32] = string.concat("initial-tranche-space=", INITIAL_TRANCHE_SPACE.toString());
         ffi[33] = "--bind";
         ffi[34] = string.concat("tranche-space-snap-threshold=", TRANCHE_SPACE_SNAP_THRESHOLD.toString());
-        
-        trancheRefill = bytes.concat(getSubparserPrelude(orderBookSubparser),vm.ffi(ffi));
+
+        trancheRefill = bytes.concat(getSubparserPrelude(orderBookSubparser), vm.ffi(ffi));
     }
 
     function getSubparserPrelude(address obSubparser) internal pure returns (bytes memory) {
-        bytes memory RAINSTRING_OB_SUBPARSER =
-            bytes(string.concat("using-words-from ", obSubparser.toHexString(), " "));
+        bytes memory RAINSTRING_OB_SUBPARSER = bytes(string.concat("using-words-from ", obSubparser.toHexString(), " "));
         return RAINSTRING_OB_SUBPARSER;
     }
 
