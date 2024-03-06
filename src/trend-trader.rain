@@ -98,9 +98,6 @@
     test-trend-down-factor
   );
 
-#test-handle-io
-  :;
-
 #sell-calculate-io
   trend-numerator: uniswap-v3-twap-output-ratio(
     reserve-address reserve-decimals
@@ -127,15 +124,6 @@
   :ensure(less-than(last-price-timestamp now) "Sell price change."),
   order-output-max18: tkn-amount18,
   io-ratio: decimal18-div(decimal18-sub(amount-reserve18 bounty) order-output-max18);
-
-#sell-handle-io
-  :ensure(
-    greater-than-or-equal-to(
-      output-vault-balance-decrease()
-      calculated-max-output()
-    )
-    "Partial sell."
-  );
 
 #buy-calculate-io
   trend-numerator: uniswap-v3-twap-output-ratio(
@@ -164,11 +152,11 @@
   order-output-max18: decimal18-add(amount-reserve18 bounty),
   io-ratio: decimal18-div(tkn-amount18 order-output-max18);
 
-#buy-handle-io
+#handle-io
   :ensure(
     greater-than-or-equal-to(
       output-vault-balance-decrease()
-      decimal18-scale-n<tkn-decimals>(calculated-max-output())
+      decimal18-scale-n-dynamic(output-token-decimals() calculated-max-output())
     )
-    "Partial buy."
+    "Partial trade."
   );
