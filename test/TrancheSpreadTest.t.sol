@@ -4,15 +4,15 @@ pragma solidity =0.8.19;
 import {Vm} from "forge-std/Vm.sol";
 import {Test, console2} from "forge-std/Test.sol";
 import {IParserV1} from "rain.interpreter.interface/interface/IParserV1.sol";
-import {IInterpreterV2} from "rain.interpreter.interface/interface/unstable/IInterpreterV2.sol";
-import {IInterpreterStoreV2} from "rain.interpreter.interface/interface/unstable/IInterpreterStoreV2.sol";
-import {ISubParserV2} from "rain.interpreter.interface/interface/unstable/ISubParserV2.sol";
-import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/unstable/IExpressionDeployerV3.sol";
+import {IInterpreterV2} from "rain.interpreter.interface/interface/IInterpreterV2.sol";
+import {IInterpreterStoreV2} from "rain.interpreter.interface/interface/IInterpreterStoreV2.sol";
+import {ISubParserV2} from "rain.interpreter.interface/interface/ISubParserV2.sol";
+import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/IExpressionDeployerV3.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "rain.math.fixedpoint/lib/LibFixedPointDecimalArithmeticOpenZeppelin.sol";
 import "rain.math.fixedpoint/lib/LibFixedPointDecimalScale.sol";
-import "src/lib/LibEncodedDispatch.sol";
-import "src/lib/LibNamespace.sol";
+import "rain.interpreter.interface/lib/caller/LibEncodedDispatch.sol";
+import "rain.interpreter.interface/lib/ns/LibNamespace.sol";
 
 
 contract TrancheSpreadTest is Test {
