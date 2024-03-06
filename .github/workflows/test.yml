@@ -17,6 +17,6 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v4
       - uses: DeterminateSystems/magic-nix-cache-action@v2
-
+      - run: mkdir -p test/csvs
       - run: nix run .#rainix-sol-prelude
       - run: nix run .#rainix-sol-test
