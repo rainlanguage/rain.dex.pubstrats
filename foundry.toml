@@ -31,9 +31,5 @@ fs_permissions = [
   { access = "read-write", path = "test/csvs"}
 ]
 
-remappings = [
-  "rain.math.saturating/=lib/rain.math.fixedpoint/lib/rain.math.saturating"
-]
-
 [fuzz]
 runs = 1024

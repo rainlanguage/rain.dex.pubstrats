@@ -9,7 +9,7 @@ import {IInterpreterStoreV2} from "rain.interpreter.interface/interface/IInterpr
 import {ISubParserV2} from "rain.interpreter.interface/interface/ISubParserV2.sol";
 import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/IExpressionDeployerV3.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import "rain.math.saturating/src/SaturatingMath.sol";
+import "rain.math.saturating/SaturatingMath.sol";
 import "src/lib/LibTrancheSpaceOrders.sol";
 import "rain.math.fixedpoint/lib/LibFixedPointDecimalArithmeticOpenZeppelin.sol";
 import "rain.math.fixedpoint/lib/LibFixedPointDecimalScale.sol";
