@@ -29,6 +29,8 @@
 
 #io-ratio-multiplier !The binding to get the IO ratio multiplier.
 
+#amount-is-output !Whether the amount is an output or input amount. Non-zero means output (i.e. normal orderbook behaviour), zero means input.
+
 #tranche-space-key "tranche-space"
 #update-time-key "update-time"
 
@@ -98,8 +100,10 @@
   tranche-space-available
   tranche-total-size: call<'calculate-tranche>(),
   tranche-io-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth decimal18-floor(tranche-space-now)),
-  amount: decimal18-mul(tranche-total-size tranche-space-available),
-  io-ratio: decimal18-mul(tranche-io-ratio call<io-ratio-multiplier>());
+  final-io-ratio: decimal18-mul(tranche-io-ratio call<io-ratio-multiplier>()),
+  amount-available: decimal18-mul(tranche-total-size tranche-space-available),
+  amount: if(amount-is-output amount-available decimal18-div(amount-available final-io-ratio)),
+  io-ratio: final-io-ratio;
 
 #handle-io
   now
