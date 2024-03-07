@@ -2,9 +2,11 @@
 #tranche-space-per-second !The amount of tranche space that is recharged per second as a normalized 18 decimal fixed point value.
 #tranche-space-recharge-delay !The duration in seconds that no recharging occurs after a trade occurs.
 
+#tranche-size-expr !The binding to get the tranche size for the current tranche space.
 #tranche-size-base !Base tranche size is the size of the smallest tranche, denominated in output token.
 #tranche-size-growth !The exponential growth factor of the size of each tranche, as a decimal 18 fixed point number. E.g. 1e16 is 1% output amount growth per tranche.
 
+#io-ratio-expr !The binding to get the IO ratio for the current tranche space.
 #io-ratio-base !The base IO ratio, as a decimal 18 fixed point number. This is the IO ratio at tranche space 0 and grows according to the growth factor per tranche.
 #io-ratio-growth !The exponential growth factor of the IO ratio, as a decimal 18 fixed point number. E.g. 1e16 is 1% io-ratio growth per tranche.
 
@@ -27,6 +29,8 @@
 
 #io-ratio-multiplier !The binding to get the IO ratio multiplier.
 
+#amount-is-output !Whether the amount is an output or input amount. Non-zero means output (i.e. normal orderbook behaviour), zero means input.
+
 #tranche-space-key "tranche-space"
 #update-time-key "update-time"
 
@@ -48,6 +52,18 @@
 #set-test-last-tranche
   tranche-space now:;
 
+#exponential-growth
+  base rate t:,
+  _: decimal18-exponential-growth(base rate t);
+
+#linear-growth
+  base rate t:,
+  _: decimal18-linear-growth(base rate t);
+
+#constant-growth
+  base _ _:,
+  _: base;
+
 /**
  * To calculate a tranche without looping constructs, we have the idea of a 1D
  * tranche space that has a lower bound at 0 and we move through it linearly
@@ -68,7 +84,7 @@
   _: now,
   tranche-space-now: decimal18-saturating-sub(tranche-space-before recharged-tranche-space),
   tranche-space-available: decimal18-headroom(tranche-space-now),
-  tranche-total-size: decimal18-exponential-growth(tranche-size-base tranche-size-growth decimal18-floor(tranche-space-now));
+  tranche-total-size: call<'tranche-size-expr>(tranche-size-base tranche-size-growth decimal18-floor(tranche-space-now));
 
 #io-ratio-multiplier-sell
   multiplier: uniswap-v3-twap-output-ratio(reference-stable reference-stable-decimals reference-reserve reference-reserve-decimals twap-duration 0 twap-fee);
@@ -76,20 +92,29 @@
 #io-ratio-multiplier-buy
   multiplier: uniswap-v3-twap-output-ratio(reference-reserve reference-reserve-decimals reference-stable reference-stable-decimals twap-duration 0 twap-fee);
 
+#io-ratio-multiplier-identity
+  multiplier: 1e18;
+
 #calculate-io
   tranche-space-now
   tranche-space-available
   tranche-total-size: call<'calculate-tranche>(),
-  tranche-io-ratio: decimal18-exponential-growth(io-ratio-base io-ratio-growth decimal18-floor(tranche-space-now)),
-  tranche-available-size: decimal18-mul(tranche-total-size tranche-space-available),
-  tranch-io-ratio: decimal18-mul(tranche-io-ratio call<io-ratio-multiplier>());
+  tranche-io-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth decimal18-floor(tranche-space-now)),
+  final-io-ratio: decimal18-mul(tranche-io-ratio call<io-ratio-multiplier>()),
+  amount-available: decimal18-mul(tranche-total-size tranche-space-available),
+  amount: if(amount-is-output amount-available decimal18-div(amount-available final-io-ratio)),
+  io-ratio: final-io-ratio;
 
 #handle-io
   now
   tranche-space-before
   _
   tranche-total-size: call<'calculate-tranche>(),
-  tranche-space-diff: decimal18-div(decimal18-scale18-dynamic(output-token-decimals() output-vault-balance-decrease()) tranche-total-size),
+  tranche-amount-diff: if(
+    amount-is-output
+    decimal18-scale-18-dynamic(output-token-decimals() output-vault-balance-decrease())
+    decimal18-scale-18-dynamic(input-token-decimals() input-vault-balance-increase())),
+  tranche-space-diff: decimal18-div(tranche-amount-diff tranche-total-size),
   tranche-space-after: decimal18-add(tranche-space-before tranche-space-diff),
   /* Snap tranche space to the nearest tranche to avoid dust issues at the edges */
   tranche-space-after-snapped: decimal18-snap-to-unit(tranche-space-snap-threshold tranche-space-after),

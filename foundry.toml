@@ -9,11 +9,27 @@ libs = ['lib']
 ffi = true
 
 solc = "0.8.19"
+
+# Try to make sure the optimizer doesn't touch the output in a way that can break
+# source maps for debugging.
+# via_ir = false
+# optimizer = false
+# optimizer_runs = 0
+# optimizer_steps = 0
+
+# These settings should be used for snapshots
 optimizer = true
-optimizer_runs = 100000
+optimizer_runs = 1000000
 
 bytecode_hash = "none"
 cbor_metadata = false
+
+
+# Build metadata used for testing rain meta aware contracts in this folder rather
+# than expose ffi to forge.
+fs_permissions = [
+  { access = "read-write", path = "test/csvs"}
+]
 
 [fuzz]
 runs = 1024
