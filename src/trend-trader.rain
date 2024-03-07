@@ -9,20 +9,11 @@
 #bounty !The bounty to offer for the trade as normalized 18 decimal reserve amount.
 #jittery-binomial-bits !The number of bits to use for the binomial distribution.
 
-#twap-long-time !The long time period for the twap based trend detection as seconds.
-#twap-short-time !The short time period for the twap based trend detection as seconds.
-
 #sell-trend-up-factor !The factor to multiply the trend with when the trend is up as normalized 18 decimals.
 #sell-trend-down-factor !The factor to multiply the trend with when the trend is down as normalized 18 decimals.
 
 #buy-trend-up-factor !The factor to multiply the trend with when the trend is up as normalized 18 decimals.
 #buy-trend-down-factor !The factor to multiply the trend with when the trend is down as normalized 18 decimals.
-
-#test-mean-reserve-amount18 !The mean amount of reserve to offer per trade as normalized 18 decimals.
-#test-trend-numerator !The numerator of the trend as 18 decimals.
-#test-trend-denominator !The denominator of the trend as 18 decimals.
-#test-trend-up-factor !The factor to multiply the trend with when the trend is up.
-#test-trend-down-factor !The factor to multiply the trend with when the trend is down.
 
 #times !The expression to get the last time and now as unix timestamps in seconds.
 
@@ -61,10 +52,28 @@
   cooldown: decimal18-scale-n<0>(cooldown18),
   :ensure(less-than(int-add(last-time cooldown) now) "Trade cooldown.");
 
+#trend-ratio-exp !Expression to get the trend ratio as 18 decimal fixed point.
+
+#twap-trend-ratio-long-time !The long time period for the twap based trend detection as seconds.
+#twap-trend-ratio-short-time !The short time period for the twap based trend detection as seconds.
+#twap-trend-ratio-fee !The pool fee to use for the twap based trend detection.
+#uni-v3-twap-trend-ratio
+  numerator: uniswap-v3-twap-output-ratio(
+    input-token() input-token-decimals()
+    output-token() output-token-decimals()
+    twap-trend-ratio-short-time 0
+    twap-trend-ratio-fee
+  ),
+  denominator: uniswap-v3-twap-output-ratio(
+    input-token() input-token-decimals()
+    output-token() output-token-decimals()
+    twap-trend-ratio-long-time 0
+    twap-trend-ratio-fee
+  ),
+  trend-ratio: decimal18-div(numerator denominator);
+
 #calculate-reserve
   mean-reserve-amount18
-  trend-numerator
-  trend-denominator
   trend-up-factor
   trend-down-factor:,
   last-time now: call<times>,
@@ -77,7 +86,7 @@
     decimal18-mul(mean-reserve-amount18 2e18)
     random-multiplier18
   ),
-  trend-ratio: decimal18-div(trend-numerator trend-denominator),
+  trend-ratio: call<'trend-ratio-exp>(),
   skewed-trend-ratio: if(
     greater-than(trend-ratio 1e18)
     decimal18-power(trend-ratio trend-up-factor)
@@ -86,31 +95,7 @@
   amount-reserve18: decimal18-mul(jittered-amount-reserve18 skewed-trend-ratio),
   amount-reserve: decimal18-scale-n<reserve-decimals>(amount-reserve18);
 
-#test-calculate-io
-  trend-ratio
-  skewed-trend-ratio
-  amount-reserve18
-  amount-reserve: call<'calculate-reserve>(
-    test-mean-reserve-amount18
-    test-trend-numerator
-    test-trend-denominator
-    test-trend-up-factor
-    test-trend-down-factor
-  );
-
 #sell-calculate-io
-  trend-numerator: uniswap-v3-twap-output-ratio(
-    reserve-address reserve-decimals
-    tkn-address tkn-decimals
-    twap-short-time 0
-    [uniswap-v3-fee-high]
-  ),
-  trend-denominator: uniswap-v3-twap-output-ratio(
-    reserve-address reserve-decimals
-    tkn-address tkn-decimals
-    twap-long-time 0
-    [uniswap-v3-fee-high]
-  ),
   trend-ratio _ amount-reserve18 amount-reserve: call<'calculate-reserve>(
     sell-mean-reserve-amount18
     trend-numerator
@@ -126,18 +111,6 @@
   io-ratio: decimal18-div(decimal18-sub(amount-reserve18 bounty) order-output-max18);
 
 #buy-calculate-io
-  trend-numerator: uniswap-v3-twap-output-ratio(
-    tkn-address tkn-decimals
-    reserve-address reserve-decimals
-    twap-short-time 0
-    [uniswap-v3-fee-high]
-  ),
-  trend-denominator: uniswap-v3-twap-output-ratio(
-    tkn-address tkn-decimals
-    reserve-address reserve-decimals
-    twap-long-time 0
-    [uniswap-v3-fee-high]
-  ),
   trend-ratio _ amount-reserve18 amount-reserve: call<'calculate-reserve>(
     buy-mean-reserve-amount18
     trend-numerator
