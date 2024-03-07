@@ -98,8 +98,6 @@
 #sell-calculate-io
   trend-ratio _ amount-reserve18 amount-reserve: call<'calculate-reserve>(
     sell-mean-reserve-amount18
-    trend-numerator
-    trend-denominator
     sell-trend-up-factor
     sell-trend-down-factor
   ),
@@ -113,8 +111,6 @@
 #buy-calculate-io
   trend-ratio _ amount-reserve18 amount-reserve: call<'calculate-reserve>(
     buy-mean-reserve-amount18
-    trend-numerator
-    trend-denominator
     buy-trend-up-factor
     buy-trend-down-factor
   ),
