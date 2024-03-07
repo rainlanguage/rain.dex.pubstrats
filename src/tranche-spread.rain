@@ -70,8 +70,8 @@
   is-distribution: equal-to(output-token() distribution-token),
   reserve-amount-diff: if(
     is-distribution
-    decimal18-scale18-dynamic(input-token-decimals() input-vault-balance-increase())
-    decimal18-scale18-dynamic(output-token-decimals() output-vault-balance-decrease())),
+    decimal18-scale-18-dynamic(input-token-decimals() input-vault-balance-increase())
+    decimal18-scale-18-dynamic(output-token-decimals() output-vault-balance-decrease())),
   tranche-space-diff: decimal18-div(reserve-amount-diff tranche-reserve-amount-total),
   tranche-space-after: if(
     is-distribution
