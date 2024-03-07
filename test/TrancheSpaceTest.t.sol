@@ -62,9 +62,10 @@ contract TrancheSpaceTest is Test {
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
         uint256[][] memory sellOrderContext = getSellOrderContext(11223344);
+        sellOrderContext[3][4] = 5000e6;
 
-        for (uint256 i = 0; i < 200; i++) {
-            uint256 trancheSpace = uint256(1e17 * i);
+        for (uint256 i = 0; i < 10; i++) {
+            uint256 trancheSpace = uint256(1e18*i);
             address expression;
             {
                 LibTrancheSpaceOrders.TestTrancheSpaceOrder memory testTrancheSpaceOrderConfig = LibTrancheSpaceOrders
@@ -93,7 +94,7 @@ contract TrancheSpaceTest is Test {
                 );
                 (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
             }
-            (uint256[] memory sellStack,) = IInterpreterV2(INTERPRETER).eval2(
+            (uint256[] memory sellCalculateStack,) = IInterpreterV2(INTERPRETER).eval2(
                 IInterpreterStoreV2(address(STORE)),
                 namespace,
                 LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
@@ -101,8 +102,16 @@ contract TrancheSpaceTest is Test {
                 new uint256[](0)
             );
 
+            (uint256[] memory sellHandleStack,) = IInterpreterV2(INTERPRETER).eval2(
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
+                sellOrderContext,
+                new uint256[](0)
+            );
+
             string memory line =
-                string.concat(trancheSpace.toString(), ",", sellStack[1].toString(), ",", sellStack[0].toString());
+                string.concat(trancheSpace.toString(), ",", sellCalculateStack[1].toString(), ",", sellCalculateStack[0].toString(),",", sellHandleStack[2].toString());
 
             vm.writeLine(file, line);
         }
@@ -136,61 +145,61 @@ contract TrancheSpaceTest is Test {
         );
         assertEq(stack[2], SaturatingMath.saturatingSub(trancheSpaceBefore, stack[4]));
         assertEq(stack[3], lastTimeUpdate + delay);
-    }
+    } 
 
-    function testHandleIo(uint256 outputTokenTraded, uint256 trancheSpaceBefore, uint256 delay) public {
-        outputTokenTraded = bound(outputTokenTraded, 1e18, 1000000e18);
-        trancheSpaceBefore = bound(trancheSpaceBefore, 0, 100e18);
-        delay = bound(delay, 1, 86400);
-        uint256 lastTimeUpdate = block.timestamp;
-
+    function testHandleIo(uint256 trancheSpaceBefore, uint256 inputAmountTraded) public {
+        inputAmountTraded = bound(inputAmountTraded, 1e6, 100000e6);
+        trancheSpaceBefore = bound(trancheSpaceBefore, 0, 10e18);
         FullyQualifiedNamespace namespace =
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
-        uint256[][] memory sellOrderContext = getSellOrderContext(12345);
+        uint256[][] memory sellOrderContext = getSellOrderContext(12345); 
+        sellOrderContext[3][4] = inputAmountTraded;
+        uint256 trancheSpaceBefore = trancheSpaceBefore;
 
+        address orderExpression;
         {
-            address calculateTrancheExpression;
-            {
-                (bytes memory calculateTrancheBytecode, uint256[] memory calculateTrancheConstants) = PARSER.parse(
-                    LibTrancheSpaceOrders.getCalculateTranche(
-                        vm, address(ORDERBOOK_SUPARSER), trancheSpaceBefore, lastTimeUpdate, lastTimeUpdate + delay
-                    )
-                );
-                (,, calculateTrancheExpression,) =
-                    EXPRESSION_DEPLOYER.deployExpression2(calculateTrancheBytecode, calculateTrancheConstants);
-            }
-            (uint256[] memory calculateTrancheStack,) = IInterpreterV2(INTERPRETER).eval2(
-                IInterpreterStoreV2(address(STORE)),
-                namespace,
-                LibEncodedDispatch.encode2(calculateTrancheExpression, SourceIndexV2.wrap(0), type(uint32).max),
-                sellOrderContext,
-                new uint256[](0)
+            LibTrancheSpaceOrders.TestTrancheSpaceOrder memory testTrancheSpaceOrderConfig = LibTrancheSpaceOrders
+                .TestTrancheSpaceOrder(
+                TRANCHE_SPACE_PER_SECOND,
+                TRANCHE_SPACE_RECHARGE_DELAY,
+                TRANCHE_SIZE_BASE,
+                TRANCHE_SIZE_GROWTH,
+                IO_RATIO_BASE,
+                IO_RATIO_GROWTH,
+                MIN_TRANCHE_SPACE_DIFF,
+                TRANCHE_SNAP_THRESHOLD,
+                AMOUNT_IS_OUTPUT,
+                REFERENCE_STABLE_DECIMALS,
+                REFERENCE_RESERVE_DECIMALS,
+                trancheSpaceBefore,
+                block.timestamp,
+                block.timestamp + 1,
+                REFERENCE_STABLE,
+                REFERENCE_RESERVE
             );
-
             (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                LibTrancheSpaceOrders.getHandleIo(
-                    vm, address(ORDERBOOK_SUPARSER), trancheSpaceBefore, lastTimeUpdate, lastTimeUpdate + delay
+                LibTrancheSpaceOrders.getTestTrancheSpaceOrder(
+                    vm, address(ORDERBOOK_SUPARSER), testTrancheSpaceOrderConfig
                 )
             );
-            (,, address handleIoExpression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
+            (,, orderExpression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
+        } 
+        uint256 trancheSpaceAmountDiff = inputAmountTraded.scale18(6, 0).fixedPointDiv(TRANCHE_SIZE_BASE,Math.Rounding.Down);
+        uint256 trancheSpaceAfter = trancheSpaceBefore + trancheSpaceAmountDiff;
 
-            sellOrderContext[4][4] = outputTokenTraded;
-            uint256 trancheSpaceAfter =
-                trancheSpaceBefore + outputTokenTraded.fixedPointDiv(calculateTrancheStack[0], Math.Rounding.Down);
-
-            if (trancheSpaceAfter < (trancheSpaceBefore + MIN_TRANCHE_SPACE_DIFF)) {
+        if (trancheSpaceAfter < (trancheSpaceBefore + MIN_TRANCHE_SPACE_DIFF)) {
                 vm.expectRevert(bytes("Minimum trade size not met."));
-            }
-
-            IInterpreterV2(INTERPRETER).eval2(
-                IInterpreterStoreV2(address(STORE)),
-                namespace,
-                LibEncodedDispatch.encode2(handleIoExpression, SourceIndexV2.wrap(0), type(uint16).max),
-                sellOrderContext,
-                new uint256[](0)
-            );
         }
+        (uint256[] memory sellHandleStack,) = IInterpreterV2(INTERPRETER).eval2(
+            IInterpreterStoreV2(address(STORE)),
+            namespace,
+            LibEncodedDispatch.encode2(orderExpression, SourceIndexV2.wrap(1), type(uint32).max),
+            sellOrderContext,
+            new uint256[](0)
+        ); 
+ 
+
     }
 
     function getSellOrderContext(uint256 orderHash) internal pure returns (uint256[][] memory context) {

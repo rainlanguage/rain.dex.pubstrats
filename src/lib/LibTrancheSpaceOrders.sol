@@ -5,7 +5,7 @@ import {Vm} from "forge-std/Vm.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 // STRATEGY PARAMS
-uint256 constant TRANCHE_SPACE_PER_SECOND = 11574074e6;
+uint256 constant TRANCHE_SPACE_PER_SECOND = 0;
 uint256 constant TRANCHE_SPACE_RECHARGE_DELAY = 0;
 uint256 constant TRANCHE_SIZE_BASE = 5000e18;
 uint256 constant TRANCHE_SIZE_GROWTH = 1e18;
@@ -226,7 +226,7 @@ library LibTrancheSpaceOrders {
         uint256 testLastTimeUpdate,
         uint256 testNow
     ) internal returns (bytes memory calculateTranche) {
-        string[] memory ffi = new string[](31);
+        string[] memory ffi = new string[](33);
         ffi[0] = "rain";
         ffi[1] = "dotrain";
         ffi[2] = "compose";
@@ -258,6 +258,8 @@ library LibTrancheSpaceOrders {
         ffi[28] = string.concat("test-last-update-time=", testLastTimeUpdate.toString());
         ffi[29] = "--bind";
         ffi[30] = string.concat("test-now=", testNow.toString());
+        ffi[31] = "--bind";
+        ffi[32] = string.concat("amount-is-output=", AMOUNT_IS_OUTPUT.toString());
 
         calculateTranche = bytes.concat(getSubparserPrelude(orderBookSubparser), vm.ffi(ffi));
     }

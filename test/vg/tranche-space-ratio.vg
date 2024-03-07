@@ -4,7 +4,7 @@
       "text": "Tranche Space Strategy: Sell Order",
       "subtitle": [
         "",
-        "Tranche space per second : 11574074",
+        "Tranche space per second : 0",
         "Tranche space recharge delay : 0",
         "Tranche size base : 5000",
         "Tranche size growth: 1",
@@ -37,7 +37,8 @@
       "transform": [
         { "type": "formula","as": "trancheSpaceScaled", "expr": "(datum.trancheSpace)/(1e+18)" },
         { "type": "formula","as": "amountScaled", "expr": "(datum.amount)/(1e+18)" },
-        { "type": "formula","as": "ratioScaled", "expr": "(datum.ratio)/(1e+18)" }
+        { "type": "formula","as": "ratioScaled", "expr": "(datum.ratio)/(1e+18)" },
+        { "type": "formula","as": "trancheSpaceDiffScaled", "expr": "(datum.trancheSpaceDiff)/(1e+18)" }
 
       ],
       "format": {
@@ -47,7 +48,7 @@
           "amount": "number",
           "ratio": "number"
         },
-        "header": ["trancheSpace","amount","ratio"]
+        "header": ["trancheSpace","amount","ratio","trancheSpaceDiff"]
       },
       "url": "../csvs/tranche-space.csv"
     }],
@@ -55,7 +56,7 @@
       "name": "x",
       "type": "linear",
       "range": "width",
-      "domain": {"data": "tranche-space", "field": "trancheSpaceScaled"}
+      "domain": {"data": "tranche-space", "field": "amountScaled"}
     }, {
       "name": "y",
       "domainMin": 5.9,
@@ -67,7 +68,7 @@
       {
         "orient": "bottom",
         "scale": "x",
-        "title": "Tranche space",
+        "title": "Amount",
         "encode": {
           "labels": {
             "update": {
@@ -102,11 +103,11 @@
       
     ],
     "marks": [{
-      "type": "line",
+      "type": "symbol",
       "from": {"data": "tranche-space"},
       "encode": {
         "enter": {
-          "x": {"type": "quantitative","scale": "x", "field": "trancheSpaceScaled"},
+          "x": {"type": "quantitative","scale": "x", "field": "amountScaled"},
           "y": {"type": "quantitative","scale": "y", "field": "ratioScaled"},
           
           "angle": {"value": 45},
