@@ -3,17 +3,9 @@
 #tkn-decimals !The decimals of TKN to be tracking the price of.
 #reserve-address !The address of the reserve token to be tracking price against.
 #reserve-decimals !The decimals of the reserve token to be tracking price against.
-#buy-mean-reserve-amount18 !The mean amount of reserve to offer per buy trade as normalized 18 decimals.
-#sell-mean-reserve-amount18 !The mean amount of reserve to offer per sell trade as normalized 18 decimals.
 #mean-cooldown !The mean cooldown time in seconds.
 #bounty !The bounty to offer for the trade as normalized 18 decimal reserve amount.
 #jittery-binomial-bits !The number of bits to use for the binomial distribution.
-
-#sell-trend-up-factor !The factor to multiply the trend with when the trend is up as normalized 18 decimals.
-#sell-trend-down-factor !The factor to multiply the trend with when the trend is down as normalized 18 decimals.
-
-#buy-trend-up-factor !The factor to multiply the trend with when the trend is up as normalized 18 decimals.
-#buy-trend-down-factor !The factor to multiply the trend with when the trend is down as normalized 18 decimals.
 
 #times !The expression to get the last time and now as unix timestamps in seconds.
 
@@ -72,10 +64,10 @@
   ),
   trend-ratio: decimal18-div(numerator denominator);
 
+#mean-reserve-amount18 !The mean amount of reserve to offer per trade as normalized 18 decimals.
+#trend-up-factor !The factor to multiply the trend with when the trend is up as normalized 18 decimals.
+#trend-down-factor !The factor to multiply the trend with when the trend is down as normalized 18 decimals.
 #calculate-reserve
-  mean-reserve-amount18
-  trend-up-factor
-  trend-down-factor:,
   last-time now: call<times>,
   :call<'ensure-cooldown>(
     last-time
@@ -96,11 +88,7 @@
   amount-reserve: decimal18-scale-n<reserve-decimals>(amount-reserve18);
 
 #sell-calculate-io
-  trend-ratio _ amount-reserve18 amount-reserve: call<'calculate-reserve>(
-    sell-mean-reserve-amount18
-    sell-trend-up-factor
-    sell-trend-down-factor
-  ),
+  trend-ratio _ amount-reserve18 amount-reserve: call<'calculate-reserve>(),
   tkn-amount18 last-price-timestamp: uniswap-v2-quote-exact-output<1>(
     tkn-address reserve-address amount-reserve
   ),
@@ -109,11 +97,7 @@
   io-ratio: decimal18-div(decimal18-sub(amount-reserve18 bounty) order-output-max18);
 
 #buy-calculate-io
-  trend-ratio _ amount-reserve18 amount-reserve: call<'calculate-reserve>(
-    buy-mean-reserve-amount18
-    buy-trend-up-factor
-    buy-trend-down-factor
-  ),
+  trend-ratio _ amount-reserve18 amount-reserve: call<'calculate-reserve>(),
   tkn-amount18 last-price-timestamp: uniswap-v2-quote-exact-input<1>(
     reserve-address tkn-address amount-reserve
   ),
