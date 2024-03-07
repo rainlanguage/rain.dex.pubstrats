@@ -29,7 +29,7 @@ contract TrancheSpreadTest is Test {
     uint256 INITIAL_TRANCHE_SPACE = 1e18;
     uint256 TRANCHE_SPACE_SNAP_THRESHOLD = 1e12;
 
-    uint256 constant FORK_BLOCK_NUMBER = 54062608;
+    uint256 constant FORK_BLOCK_NUMBER = 54342303;
     uint256 constant CONTEXT_VAULT_IO_ROWS = 5;
 
     address constant DISTRIBUTOR_TOKEN = 0xd0e9c8f5Fae381459cf07Ec506C1d2896E8b5df6;
@@ -51,10 +51,10 @@ contract TrancheSpreadTest is Test {
     function setUp() public {
         selectPolygonFork();
 
-        PARSER = IParserV1(0xbe7eF1c2E86cd36642Be685715a089ecc1a15f5C);
-        STORE = IInterpreterStoreV2(0xCCe6D0653B6DAC3B5fAd3F2A8E47cCE537126aD0);
-        INTERPRETER = IInterpreterV2(0x8bb0e1Ade233f386668f6e3c11762f18bF8293b3);
-        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0xB16bbF12ECE3414af72F660aB63F4dDa1D7250FA);
+        PARSER = IParserV1(0x42354C16c8FcFf044c5ee73798F250138ef0A813);
+        STORE = IInterpreterStoreV2(0x9Ba76481F8cF7F52e440B13981e0003De474A9f7);
+        INTERPRETER = IInterpreterV2(0xbbe5a04A9a20c47b1A93e755aE712cb84538cd5a);
+        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0xc64B01aB4b5549dE91e5A4425883Dff87Ceaaf29);
         ORDERBOOK_SUPARSER = ISubParserV2(0x14c5D39dE54D498aFD3C803D3B5c88bbEcadcc48);
     }
 
