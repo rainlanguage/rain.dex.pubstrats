@@ -155,7 +155,6 @@ contract TrancheSpaceTest is Test {
 
         uint256[][] memory sellOrderContext = getSellOrderContext(12345); 
         sellOrderContext[3][4] = inputAmountTraded;
-        uint256 trancheSpaceBefore = trancheSpaceBefore;
 
         address orderExpression;
         {
@@ -191,7 +190,7 @@ contract TrancheSpaceTest is Test {
         if (trancheSpaceAfter < (trancheSpaceBefore + MIN_TRANCHE_SPACE_DIFF)) {
                 vm.expectRevert(bytes("Minimum trade size not met."));
         }
-        (uint256[] memory sellHandleStack,) = IInterpreterV2(INTERPRETER).eval2(
+        IInterpreterV2(INTERPRETER).eval2(
             IInterpreterStoreV2(address(STORE)),
             namespace,
             LibEncodedDispatch.encode2(orderExpression, SourceIndexV2.wrap(1), type(uint32).max),
