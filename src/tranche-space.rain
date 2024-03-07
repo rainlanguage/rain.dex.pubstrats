@@ -110,7 +110,11 @@
   tranche-space-before
   _
   tranche-total-size: call<'calculate-tranche>(),
-  tranche-space-diff: decimal18-div(decimal18-scale-18-dynamic(output-token-decimals() output-vault-balance-decrease()) tranche-total-size),
+  tranche-amount-diff: if(
+    amount-is-output
+    decimal18-scale-18-dynamic(output-token-decimals() output-vault-balance-decrease())
+    decimal18-scale-18-dynamic(input-token-decimals() input-vault-balance-increase())),
+  tranche-space-diff: decimal18-div(tranche-amount-diff tranche-total-size),
   tranche-space-after: decimal18-add(tranche-space-before tranche-space-diff),
   /* Snap tranche space to the nearest tranche to avoid dust issues at the edges */
   tranche-space-after-snapped: decimal18-snap-to-unit(tranche-space-snap-threshold tranche-space-after),
