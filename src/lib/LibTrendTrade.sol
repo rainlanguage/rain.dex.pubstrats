@@ -57,7 +57,7 @@ library LibTrendTrade {
         ffi[7] = "--entrypoint";
         ffi[8] = "handle-io"; 
         ffi[9] = "--bind";
-        ffi[10] = string.concat("reserve-address=",tradeTestConifg.reserveToken.toHexString());
+        ffi[10] = string.concat("reserve-token=",tradeTestConifg.reserveToken.toHexString());
         ffi[11] = "--bind";
         ffi[12] = string.concat("reserve-decimals=",tradeTestConifg.reserveDecimals.toString());
         ffi[13] = "--bind";
@@ -110,7 +110,7 @@ library LibTrendTrade {
         ffi[7] = "--entrypoint";
         ffi[8] = "handle-io"; 
         ffi[9] = "--bind";
-        ffi[10] = string.concat("reserve-address=",trendOrderConfig.reserveToken.toHexString());
+        ffi[10] = string.concat("reserve-token=",trendOrderConfig.reserveToken.toHexString());
         ffi[11] = "--bind";
         ffi[12] = string.concat("reserve-decimals=",trendOrderConfig.reserveDecimals.toString());
         ffi[13] = "--bind";
