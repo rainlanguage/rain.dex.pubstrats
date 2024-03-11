@@ -4,8 +4,8 @@
       "text": "Twap trend strategy",
       "subtitle": [
         "",
-        "Buy mean USDT amount : $200",
-        "Sell mean USDT amount : $100",
+        "Buy mean USDT amount : $160",
+        "Sell mean USDT amount : $150",
         "Sell trend up factor : 0.33",
         "Sell trend down factor : 3",
         "Buy trend up factor : 3",
@@ -34,7 +34,7 @@
     "data": [{
       "name": "sell-trend-diff",
       "transform": [
-        { "type": "formula","as": "amountDiff", "expr": "(datum.buyAmount - datum.sellAmount)/(1e+6)" },
+        { "type": "formula","as": "amountDiff", "expr": "(datum.buyAmount - datum.sellAmount)/(1e+18)" },
         { "type": "formula","as": "rescaledTwap", "expr": "(datum.sellTrendRatio)/1e+18" }
       ],
       "format": {
@@ -47,7 +47,7 @@
         
         "header": ["sellAmount", "buyAmount","sellTrendRatio"]
       },
-      "url": "../csvs/sell-trend-diff.csv"
+      "url": "../csvs/trend-trader.csv"
     }],
     "scales": [{
       "name": "x",

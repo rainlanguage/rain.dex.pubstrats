@@ -60,6 +60,12 @@
   ),
   trend-ratio: decimal18-div(numerator denominator);
 
+ 
+#test-numerator !Test numerator.
+#test-denominator !Test denominator.
+#test-uni-v3-twap-trend-ratio
+  test-trend-ratio: decimal18-div(test-numerator test-denominator);
+
 #mean-reserve-amount18 !The mean amount of reserve to offer per trade as normalized 18 decimals.
 #trend-up-factor !The factor to multiply the trend with when the trend is up as normalized 18 decimals.
 #trend-down-factor !The factor to multiply the trend with when the trend is down as normalized 18 decimals.
@@ -98,7 +104,7 @@
 #bounty !The bounty to offer for the trade as normalized 18 decimal reserve amount.
 
 #calculate-io
-  reserve-amount18: call<'calculate-reserve-amount18>(),
+  trend-ratio _ reserve-amount18: call<'calculate-reserve-amount18>(),
   tkn-amount18: call<'calculate-tkn-amount18>(reserve-amount18),
   is-buying-tkn: equal-to(output-token() reserve-token),
   amount: if(
