@@ -5,9 +5,8 @@ import {Vm} from "forge-std/Vm.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 library LibTrendTrade {
-
     using Strings for address;
-    using Strings for uint256; 
+    using Strings for uint256;
 
     struct TrendTradeTest {
         address reserveToken;
@@ -23,7 +22,7 @@ library LibTrendTrade {
         uint256 trendUpFactor;
         uint256 trendDownFactor;
         uint256 bounty;
-    } 
+    }
 
     struct TrendTrade {
         address reserveToken;
@@ -44,22 +43,21 @@ library LibTrendTrade {
         TrendTradeTest memory tradeTestConifg,
         address orderBookSubparser,
         address uniswapSubparser
-    ) internal returns (bytes memory testTrend){
-
+    ) internal returns (bytes memory testTrend) {
         string[] memory ffi = new string[](39);
         ffi[0] = "rain";
         ffi[1] = "dotrain";
         ffi[2] = "compose";
         ffi[3] = "-i";
-        ffi[4] = "src/trend-trader.rain"; 
+        ffi[4] = "src/trend-trader.rain";
         ffi[5] = "--entrypoint";
-        ffi[6] = "calculate-io"; 
+        ffi[6] = "calculate-io";
         ffi[7] = "--entrypoint";
-        ffi[8] = "handle-io"; 
+        ffi[8] = "handle-io";
         ffi[9] = "--bind";
-        ffi[10] = string.concat("reserve-token=",tradeTestConifg.reserveToken.toHexString());
+        ffi[10] = string.concat("reserve-token=", tradeTestConifg.reserveToken.toHexString());
         ffi[11] = "--bind";
-        ffi[12] = string.concat("reserve-decimals=",tradeTestConifg.reserveDecimals.toString());
+        ffi[12] = string.concat("reserve-decimals=", tradeTestConifg.reserveDecimals.toString());
         ffi[13] = "--bind";
         ffi[14] = string.concat("times='test-times");
         ffi[15] = "--bind";
@@ -86,8 +84,8 @@ library LibTrendTrade {
         ffi[36] = string.concat("test-last-time=", tradeTestConifg.testLastTime.toString());
         ffi[37] = "--bind";
         ffi[38] = string.concat("test-now=", tradeTestConifg.testNow.toString());
-        
-        testTrend = bytes.concat(getSubparserPrelude(orderBookSubparser,uniswapSubparser), vm.ffi(ffi));
+
+        testTrend = bytes.concat(getSubparserPrelude(orderBookSubparser, uniswapSubparser), vm.ffi(ffi));
     }
 
     function getTrendOrder(
@@ -95,24 +93,21 @@ library LibTrendTrade {
         TrendTrade memory trendOrderConfig,
         address orderBookSubparser,
         address uniswapSubparser
-    )
-        internal
-        returns (bytes memory trendOrder)
-    {
+    ) internal returns (bytes memory trendOrder) {
         string[] memory ffi = new string[](35);
         ffi[0] = "rain";
         ffi[1] = "dotrain";
         ffi[2] = "compose";
         ffi[3] = "-i";
-        ffi[4] = "src/trend-trader.rain"; 
+        ffi[4] = "src/trend-trader.rain";
         ffi[5] = "--entrypoint";
-        ffi[6] = "calculate-io"; 
+        ffi[6] = "calculate-io";
         ffi[7] = "--entrypoint";
-        ffi[8] = "handle-io"; 
+        ffi[8] = "handle-io";
         ffi[9] = "--bind";
-        ffi[10] = string.concat("reserve-token=",trendOrderConfig.reserveToken.toHexString());
+        ffi[10] = string.concat("reserve-token=", trendOrderConfig.reserveToken.toHexString());
         ffi[11] = "--bind";
-        ffi[12] = string.concat("reserve-decimals=",trendOrderConfig.reserveDecimals.toString());
+        ffi[12] = string.concat("reserve-decimals=", trendOrderConfig.reserveDecimals.toString());
         ffi[13] = "--bind";
         ffi[14] = string.concat("times='real-times");
         ffi[15] = "--bind";
@@ -135,17 +130,13 @@ library LibTrendTrade {
         ffi[32] = string.concat("trend-down-factor=", trendOrderConfig.trendDownFactor.toString());
         ffi[33] = "--bind";
         ffi[34] = string.concat("bounty=", trendOrderConfig.bounty.toString());
-        
-        trendOrder = bytes.concat(getSubparserPrelude(orderBookSubparser,uniswapSubparser), vm.ffi(ffi));
+
+        trendOrder = bytes.concat(getSubparserPrelude(orderBookSubparser, uniswapSubparser), vm.ffi(ffi));
     }
 
     function getSubparserPrelude(address obSubparser, address uniswapWords) internal pure returns (bytes memory) {
-        bytes memory RAINSTRING_OB_SUBPARSER = bytes(
-            string.concat(
-                "using-words-from ", obSubparser.toHexString(), " ", uniswapWords.toHexString(), " "
-            )
-        );
+        bytes memory RAINSTRING_OB_SUBPARSER =
+            bytes(string.concat("using-words-from ", obSubparser.toHexString(), " ", uniswapWords.toHexString(), " "));
         return RAINSTRING_OB_SUBPARSER;
     }
-
 }

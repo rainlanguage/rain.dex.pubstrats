@@ -65,7 +65,7 @@ contract TrancheSpaceTest is Test {
         sellOrderContext[3][4] = 5000e6;
 
         for (uint256 i = 0; i < 10; i++) {
-            uint256 trancheSpace = uint256(1e18*i);
+            uint256 trancheSpace = uint256(1e18 * i);
             address expression;
             {
                 LibTrancheSpaceOrders.TestTrancheSpaceOrder memory testTrancheSpaceOrderConfig = LibTrancheSpaceOrders
@@ -110,8 +110,15 @@ contract TrancheSpaceTest is Test {
                 new uint256[](0)
             );
 
-            string memory line =
-                string.concat(trancheSpace.toString(), ",", sellCalculateStack[1].toString(), ",", sellCalculateStack[0].toString(),",", sellHandleStack[2].toString());
+            string memory line = string.concat(
+                trancheSpace.toString(),
+                ",",
+                sellCalculateStack[1].toString(),
+                ",",
+                sellCalculateStack[0].toString(),
+                ",",
+                sellHandleStack[2].toString()
+            );
 
             vm.writeLine(file, line);
         }
@@ -145,7 +152,7 @@ contract TrancheSpaceTest is Test {
         );
         assertEq(stack[2], SaturatingMath.saturatingSub(trancheSpaceBefore, stack[4]));
         assertEq(stack[3], lastTimeUpdate + delay);
-    } 
+    }
 
     function testHandleIo(uint256 trancheSpaceBefore, uint256 inputAmountTraded) public {
         inputAmountTraded = bound(inputAmountTraded, 1e6, 100000e6);
@@ -153,7 +160,7 @@ contract TrancheSpaceTest is Test {
         FullyQualifiedNamespace namespace =
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
-        uint256[][] memory sellOrderContext = getSellOrderContext(12345); 
+        uint256[][] memory sellOrderContext = getSellOrderContext(12345);
         sellOrderContext[3][4] = inputAmountTraded;
 
         address orderExpression;
@@ -183,12 +190,13 @@ contract TrancheSpaceTest is Test {
                 )
             );
             (,, orderExpression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
-        } 
-        uint256 trancheSpaceAmountDiff = inputAmountTraded.scale18(6, 0).fixedPointDiv(TRANCHE_SIZE_BASE,Math.Rounding.Down);
+        }
+        uint256 trancheSpaceAmountDiff =
+            inputAmountTraded.scale18(6, 0).fixedPointDiv(TRANCHE_SIZE_BASE, Math.Rounding.Down);
         uint256 trancheSpaceAfter = trancheSpaceBefore + trancheSpaceAmountDiff;
 
         if (trancheSpaceAfter < (trancheSpaceBefore + MIN_TRANCHE_SPACE_DIFF)) {
-                vm.expectRevert(bytes("Minimum trade size not met."));
+            vm.expectRevert(bytes("Minimum trade size not met."));
         }
         IInterpreterV2(INTERPRETER).eval2(
             IInterpreterStoreV2(address(STORE)),
@@ -196,9 +204,7 @@ contract TrancheSpaceTest is Test {
             LibEncodedDispatch.encode2(orderExpression, SourceIndexV2.wrap(1), type(uint32).max),
             sellOrderContext,
             new uint256[](0)
-        ); 
- 
-
+        );
     }
 
     function getSellOrderContext(uint256 orderHash) internal pure returns (uint256[][] memory context) {

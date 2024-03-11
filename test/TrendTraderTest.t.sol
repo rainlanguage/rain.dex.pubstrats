@@ -15,8 +15,6 @@ import "rain.interpreter.interface/lib/caller/LibEncodedDispatch.sol";
 import "rain.interpreter.interface/lib/ns/LibNamespace.sol";
 import "src/lib/LibTrendTrade.sol";
 
-
-
 contract TrancheSpreadTest is Test {
     using Strings for address;
     using Strings for uint256;
@@ -50,14 +48,12 @@ contract TrancheSpreadTest is Test {
     uint256 constant SELL_TREND_UP_FACTOR = 33e16;
     uint256 constant SELL_TREND_DOWN_FACTOR = 3e18;
 
-
     IParserV1 public PARSER;
     IInterpreterV2 public INTERPRETER;
     IInterpreterStoreV2 public STORE;
     IExpressionDeployerV3 public EXPRESSION_DEPLOYER;
     ISubParserV2 public ORDERBOOK_SUPARSER;
     ISubParserV2 public UNISWAP_WORDS;
-
 
     function selectPolygonFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_POLYGON"));
@@ -76,21 +72,19 @@ contract TrancheSpreadTest is Test {
         UNISWAP_WORDS = ISubParserV2(0x42758Ca92093f6dc94afD33c03C79D9c5221d933);
     }
 
-    function testModelTrendTrader(uint256 lastTime,uint256 trendNumerator) public {
-        lastTime = uint32(bound(lastTime, 0, type(uint32).max/uint32(2)));
+    function testModelTrendTrader(uint256 lastTime, uint256 trendNumerator) public {
+        lastTime = uint32(bound(lastTime, 0, type(uint32).max / uint32(2)));
         trendNumerator = bound(trendNumerator, 3e17, 2e18);
         uint256 trendDenominator = 1e18;
         uint256 testNow = type(uint32).max;
 
-
         address buyExpression;
         address sellExpression;
         FullyQualifiedNamespace namespace =
-                LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this)); 
+            LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
         uint256[][] memory sellOrderContext = getSellOrderContext(uint256(keccak256(abi.encode("sell order"))));
         uint256[][] memory buyOrderContext = getBuyOrderContext(uint256(keccak256(abi.encode("buy order"))));
-
 
         bytes memory sellOrderRainlang;
         bytes memory buyOrderRainlang;
@@ -111,12 +105,8 @@ contract TrancheSpreadTest is Test {
                 SELL_TREND_DOWN_FACTOR,
                 BOUNTY
             );
-            sellOrderRainlang = LibTrendTrade.getTestTrendOrder(
-                    vm, 
-                    sellTestTrend,
-                    address(ORDERBOOK_SUPARSER),
-                    address(UNISWAP_WORDS)
-            );
+            sellOrderRainlang =
+                LibTrendTrade.getTestTrendOrder(vm, sellTestTrend, address(ORDERBOOK_SUPARSER), address(UNISWAP_WORDS));
             LibTrendTrade.TrendTradeTest memory buyTestTrend = LibTrendTrade.TrendTradeTest(
                 RESERVE_ADDRESS,
                 RESERVE_DECIMALS,
@@ -132,22 +122,18 @@ contract TrancheSpreadTest is Test {
                 BUY_TREND_DOWN_FACTOR,
                 BOUNTY
             );
-            buyOrderRainlang = LibTrendTrade.getTestTrendOrder(
-                    vm, 
-                    buyTestTrend,
-                    address(ORDERBOOK_SUPARSER),
-                    address(UNISWAP_WORDS)
-            );
+            buyOrderRainlang =
+                LibTrendTrade.getTestTrendOrder(vm, buyTestTrend, address(ORDERBOOK_SUPARSER), address(UNISWAP_WORDS));
         }
 
         {
             {
                 (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(buyOrderRainlang);
-                (,,buyExpression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
+                (,, buyExpression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
             }
             {
                 (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(sellOrderRainlang);
-                (,,sellExpression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
+                (,, sellExpression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
             }
         }
 
@@ -165,19 +151,14 @@ contract TrancheSpreadTest is Test {
             LibEncodedDispatch.encode2(sellExpression, SourceIndexV2.wrap(0), type(uint16).max),
             sellOrderContext,
             new uint256[](0)
-        ); 
-        
+        );
+
         string memory file = string.concat("./test/csvs/trend-trader", ".csv");
 
-        vm.writeLine(file, string.concat(
-            sellStack[0].toString(),
-            ",",
-            buyStack[0].toString(),
-            ",",
-            sellStack[6].toString()
-        ));
+        vm.writeLine(
+            file, string.concat(sellStack[0].toString(), ",", buyStack[0].toString(), ",", sellStack[6].toString())
+        );
     }
-    
 
     function getSellOrderContext(uint256 orderHash) internal view returns (uint256[][] memory context) {
         // Sell Order Context
@@ -244,5 +225,4 @@ contract TrancheSpreadTest is Test {
             }
         }
     }
-    
 }

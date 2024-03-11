@@ -64,7 +64,7 @@
 #trend-up-factor !The factor to multiply the trend with when the trend is up as normalized 18 decimals.
 #trend-down-factor !The factor to multiply the trend with when the trend is down as normalized 18 decimals.
 #calculate-reserve-amount18
-  last-time now: call<'times>(),
+  last-time now: call<times>(),
   :call<'ensure-cooldown>(last-time now),
   random-multiplier18: call<'jittery-binomial>(last-time),
   jittered-reserve-amount18: decimal18-mul(
@@ -81,12 +81,19 @@
 
 #calculate-tkn-amount18
   reserve-amount18:,
-  now: call<'times>(),
-    tkn-amount18 last-price-timestamp: uniswap-v2-quote-exact-input<1>(
-      output-token() input-token() decimal18-scale-n<reserve-decimals>(reserve-amount18)
+  now: call<times>(),
+  tkn-amount18-exact-input last-price-timestamp: uniswap-v2-quote-exact-input<1>(
+    output-token() input-token() decimal18-scale-n<reserve-decimals>(reserve-amount18)
   ),
   :ensure(less-than(last-price-timestamp now) "Price change in same block."),
-  _: tkn-amount18;
+  tkn-amount18-exact-output: uniswap-v2-quote-exact-output(
+    output-token() input-token() decimal18-scale-n<reserve-decimals>(reserve-amount18)
+  ),
+  _: if(
+    equal-to(output-token() reserve-token)
+    tkn-amount18-exact-input
+    tkn-amount18-exact-output
+  );
 
 #bounty !The bounty to offer for the trade as normalized 18 decimal reserve amount.
 
@@ -102,7 +109,7 @@
     is-buying-tkn
     decimal18-div(tkn-amount18 amount)
     decimal18-div(decimal18-sub(reserve-amount18 bounty) amount));
-  
+
 #handle-io
   :ensure(
     greater-than-or-equal-to(
