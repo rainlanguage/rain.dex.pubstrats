@@ -42,6 +42,10 @@
 
 #trend-ratio-exp !Expression to get the trend ratio as 18 decimal fixed point.
 
+#test-trend-ratio-value !The trend ratio as 18 decimal fixed point.
+#test-trend-ratio
+  _: test-trend-ratio-value;
+
 #twap-trend-ratio-long-time !The long time period for the twap based trend detection as seconds.
 #twap-trend-ratio-short-time !The short time period for the twap based trend detection as seconds.
 #twap-trend-ratio-fee !The pool fee to use for the twap based trend detection.
@@ -59,12 +63,6 @@
     twap-trend-ratio-fee
   ),
   trend-ratio: decimal18-div(numerator denominator);
-
- 
-#test-numerator !Test numerator.
-#test-denominator !Test denominator.
-#test-uni-v3-twap-trend-ratio
-  test-trend-ratio: decimal18-div(test-numerator test-denominator);
 
 #mean-reserve-amount18 !The mean amount of reserve to offer per trade as normalized 18 decimals.
 #trend-up-factor !The factor to multiply the trend with when the trend is up as normalized 18 decimals.
