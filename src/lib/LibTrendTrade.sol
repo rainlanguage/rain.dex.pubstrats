@@ -15,8 +15,7 @@ library LibTrendTrade {
         uint256 testNow;
         uint256 jitteryBinomialBits;
         uint256 meanCooldown;
-        uint256 testNemurator;
-        uint256 testDenominator;
+        uint256 testTrendRatioValue;
         uint256 meanReserveAmount18;
         uint256 trendUpFactor;
         uint256 trendDownFactor;
@@ -43,7 +42,7 @@ library LibTrendTrade {
         address orderBookSubparser,
         address uniswapSubparser
     ) internal returns (bytes memory testTrend) {
-        string[] memory ffi = new string[](37);
+        string[] memory ffi = new string[](35);
         ffi[0] = "rain";
         ffi[1] = "dotrain";
         ffi[2] = "compose";
@@ -64,23 +63,21 @@ library LibTrendTrade {
         ffi[17] = "--bind";
         ffi[18] = string.concat("mean-cooldown=", tradeTestConifg.meanCooldown.toString());
         ffi[19] = "--bind";
-        ffi[20] = string.concat("trend-ratio-exp='test-uni-v3-twap-trend-ratio");
+        ffi[20] = string.concat("trend-ratio-exp='test-trend-ratio");
         ffi[21] = "--bind";
-        ffi[22] = string.concat("test-numerator=", tradeTestConifg.testNemurator.toString());
+        ffi[22] = string.concat("test-trend-ratio-value=", tradeTestConifg.testTrendRatioValue.toString());
         ffi[23] = "--bind";
-        ffi[24] = string.concat("test-denominator=", tradeTestConifg.testDenominator.toString());
+        ffi[24] = string.concat("mean-reserve-amount18=", tradeTestConifg.meanReserveAmount18.toString());
         ffi[25] = "--bind";
-        ffi[26] = string.concat("mean-reserve-amount18=", tradeTestConifg.meanReserveAmount18.toString());
+        ffi[26] = string.concat("trend-up-factor=", tradeTestConifg.trendUpFactor.toString());
         ffi[27] = "--bind";
-        ffi[28] = string.concat("trend-up-factor=", tradeTestConifg.trendUpFactor.toString());
+        ffi[28] = string.concat("trend-down-factor=", tradeTestConifg.trendDownFactor.toString());
         ffi[29] = "--bind";
-        ffi[30] = string.concat("trend-down-factor=", tradeTestConifg.trendDownFactor.toString());
+        ffi[30] = string.concat("bounty=", tradeTestConifg.bounty.toString());
         ffi[31] = "--bind";
-        ffi[32] = string.concat("bounty=", tradeTestConifg.bounty.toString());
+        ffi[32] = string.concat("test-last-time=", tradeTestConifg.testLastTime.toString());
         ffi[33] = "--bind";
-        ffi[34] = string.concat("test-last-time=", tradeTestConifg.testLastTime.toString());
-        ffi[35] = "--bind";
-        ffi[36] = string.concat("test-now=", tradeTestConifg.testNow.toString());
+        ffi[34] = string.concat("test-now=", tradeTestConifg.testNow.toString());
 
         testTrend = bytes.concat(getSubparserPrelude(orderBookSubparser, uniswapSubparser), vm.ffi(ffi));
     }
@@ -184,6 +181,26 @@ library LibTrendTrade {
         ffi[8] = string.concat("mean-cooldown=", meanCooldown.toString());
         ffi[9] = "--bind";
         ffi[10] = string.concat("jittery-binomial-bits=", jitteryBinomialBits.toString());
+        
+        twapSources = bytes.concat(getSubparserPrelude(orderBookSubparser,uniswapSubparser), vm.ffi(ffi));
+    }
+
+    function getHandleIo(
+        Vm vm,
+        address orderBookSubparser,
+        address uniswapSubparser
+    )
+        internal
+        returns (bytes memory twapSources)
+    {
+        string[] memory ffi = new string[](7);
+        ffi[0] = "rain";
+        ffi[1] = "dotrain";
+        ffi[2] = "compose";
+        ffi[3] = "-i";
+        ffi[4] = "src/trend-trader.rain"; 
+        ffi[5] = "--entrypoint";
+        ffi[6] = "handle-io";
         
         twapSources = bytes.concat(getSubparserPrelude(orderBookSubparser,uniswapSubparser), vm.ffi(ffi));
     }

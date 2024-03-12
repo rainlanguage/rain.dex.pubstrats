@@ -124,6 +124,7 @@ contract TrancheSpreadTest is Test {
 
         address buyExpression;
         address sellExpression;
+
         FullyQualifiedNamespace namespace =
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
@@ -133,7 +134,7 @@ contract TrancheSpreadTest is Test {
         bytes memory sellOrderRainlang;
         bytes memory buyOrderRainlang;
 
-        {
+        {   
             LibTrendTrade.TrendTradeTest memory sellTestTrend = LibTrendTrade.TrendTradeTest(
                 RESERVE_ADDRESS,
                 RESERVE_DECIMALS,
@@ -141,8 +142,7 @@ contract TrancheSpreadTest is Test {
                 testNow,
                 JITTERY_BINOMIAL_BITS,
                 MEAN_COOLDOWN, 
-                trendNumerator,
-                trendDenominator,
+                trendNumerator.fixedPointDiv(trendDenominator,Math.Rounding.Down),
                 SELL_MEAN_AMOUNT,
                 SELL_TREND_UP_FACTOR,
                 SELL_TREND_DOWN_FACTOR,
@@ -150,6 +150,7 @@ contract TrancheSpreadTest is Test {
             );
             sellOrderRainlang =
                 LibTrendTrade.getTestTrendOrder(vm, sellTestTrend, address(ORDERBOOK_SUPARSER), address(UNISWAP_WORDS));
+
             LibTrendTrade.TrendTradeTest memory buyTestTrend = LibTrendTrade.TrendTradeTest(
                 RESERVE_ADDRESS,
                 RESERVE_DECIMALS,
@@ -157,8 +158,7 @@ contract TrancheSpreadTest is Test {
                 testNow,
                 JITTERY_BINOMIAL_BITS,
                 MEAN_COOLDOWN,
-                trendDenominator,
-                trendNumerator,
+                trendDenominator.fixedPointDiv(trendNumerator,Math.Rounding.Down),
                 BUY_MEAN_AMOUNT,
                 BUY_TREND_UP_FACTOR,
                 BUY_TREND_DOWN_FACTOR,
@@ -229,7 +229,7 @@ contract TrancheSpreadTest is Test {
         {   
             uint256 sellTrend = 11e70;
             for(uint256 i = 0 ; i < 5; i++){            
-                (uint256[] memory twapSourceStack,uint256[] memory twapSourceKvs) = IInterpreterV2(INTERPRETER).eval2(
+                (uint256[] memory twapSourceStack,) = IInterpreterV2(INTERPRETER).eval2(
                     IInterpreterStoreV2(address(STORE)),
                     namespace,
                     LibEncodedDispatch.encode2(twapSourceExp, SourceIndexV2.wrap(0), type(uint16).max),
@@ -252,7 +252,7 @@ contract TrancheSpreadTest is Test {
         {   
             uint256 sellTrend = 0;
             for(uint256 i = 0 ; i < 5; i++){            
-                (uint256[] memory twapSourceStack,uint256[] memory twapSourceKvs) = IInterpreterV2(INTERPRETER).eval2(
+                (uint256[] memory twapSourceStack,) = IInterpreterV2(INTERPRETER).eval2(
                     IInterpreterStoreV2(address(STORE)),
                     namespace,
                     LibEncodedDispatch.encode2(twapSourceExp, SourceIndexV2.wrap(0), type(uint16).max),
@@ -401,6 +401,58 @@ contract TrancheSpreadTest is Test {
             );
         }
         
+    } 
+
+    function testHandleIO(uint256 outputVaultBalanceDecrease, uint256 calculatedOutputMax) public {
+
+        FullyQualifiedNamespace namespace =
+            LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
+
+        address handleIoExpression;
+        {
+            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
+                LibTrendTrade.getHandleIo(
+                    vm,
+                    address(ORDERBOOK_SUPARSER),
+                    address(UNISWAP_WORDS)
+                )
+            );
+            (,, handleIoExpression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
+        }
+        // Sell Order
+        {   
+            uint256[][] memory sellOrderContext = getSellOrderContext(uint256(keccak256(abi.encode("sell order"))));
+            sellOrderContext[4][4] = outputVaultBalanceDecrease;
+            sellOrderContext[2][0] = calculatedOutputMax;
+
+            if(outputVaultBalanceDecrease < calculatedOutputMax)
+                vm.expectRevert(bytes("Partial trade."));
+
+            IInterpreterV2(INTERPRETER).eval2(
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(handleIoExpression, SourceIndexV2.wrap(0), type(uint16).max),
+                sellOrderContext,
+                new uint256[](0)
+            );
+        }
+        // Buy Order
+        {
+            uint256[][] memory buyOrderContext = getBuyOrderContext(uint256(keccak256(abi.encode("buy order"))));
+            buyOrderContext[4][4] = outputVaultBalanceDecrease;
+            buyOrderContext[2][0] = calculatedOutputMax;
+
+            if(outputVaultBalanceDecrease < calculatedOutputMax.scaleN(RESERVE_DECIMALS,0))
+                vm.expectRevert(bytes("Partial trade."));
+
+            IInterpreterV2(INTERPRETER).eval2(
+                IInterpreterStoreV2(address(STORE)),
+                namespace,
+                LibEncodedDispatch.encode2(handleIoExpression, SourceIndexV2.wrap(0), type(uint16).max),
+                buyOrderContext,
+                new uint256[](0)
+            );
+        }
     }
 
     function moveExternalPrice(
@@ -427,7 +479,7 @@ contract TrancheSpreadTest is Test {
         vm.stopPrank();
     }
 
-    function getSellOrderContext(uint256 orderHash) internal view returns (uint256[][] memory context) {
+    function getSellOrderContext(uint256 orderHash) internal pure returns (uint256[][] memory context) {
         // Sell Order Context
         context = new uint256[][](5);
         {
@@ -460,7 +512,7 @@ contract TrancheSpreadTest is Test {
         }
     }
 
-    function getBuyOrderContext(uint256 orderHash) internal view returns (uint256[][] memory context) {
+    function getBuyOrderContext(uint256 orderHash) internal pure returns (uint256[][] memory context) {
         // Sell Order Context
         context = new uint256[][](5);
         {
