@@ -22,7 +22,7 @@ address constant RESERVE_ADDRESS = address(0xc2132D05D31c914a87C6611C10748AEb04B
 // TRADE token holder.
 address constant POLYGON_TRADE_HOLDER = 0xD6216fC19DB775Df9774a6E33526131dA7D19a2c;
 // USDT token holder.
-address constant POLYGON_USDT_HOLDER = 0xF977814e90dA44bFA03b6295A0616a897441aceC; 
+address constant POLYGON_USDT_HOLDER = 0xF977814e90dA44bFA03b6295A0616a897441aceC;
 
 uint256 constant TOKEN_DECIMALS = 18;
 uint256 constant RESERVE_DECIMALS = 6;
@@ -43,28 +43,27 @@ uint256 constant SELL_MEAN_AMOUNT = 150e18;
 uint256 constant SELL_TREND_UP_FACTOR = 33e16;
 uint256 constant SELL_TREND_DOWN_FACTOR = 3e18;
 
-function getSushiV2TradeSellRoute(address toAddress)  pure returns (bytes memory){
-    bytes memory ROUTE_PRELUDE = 
-    hex"02692AC1e363ae34b6B489148152b12e2785a3d8d601ffff006777DBf38f67B448174412bAaF21F38e058b1f4B01";
-    return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(toAddress)));
-}
-
-function getSushiV2TradeBuyRoute(address toAddress)  pure returns (bytes memory){
-    bytes memory ROUTE_PRELUDE = 
-    hex"02c2132d05d31c914a87c6611c10748aeb04b58e8f01ffff006777DBf38f67B448174412bAaF21F38e058b1f4B00";
-    return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(toAddress)));
-}
-
-function getUniV3TradeBuyRoute(address toAddress)  pure returns (bytes memory){
-    bytes memory ROUTE_PRELUDE = 
-    hex"02c2132D05D31c914a87C6611C10748AEb04B58e8F01ffff01362D0401ED74Db25219b6D02Ac1791cFE3542D6800";
-    return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(toAddress)));
-    
-}
-
-function getUniV3TradeSellRoute(address toAddress) pure returns (bytes memory){
+function getSushiV2TradeSellRoute(address toAddress) pure returns (bytes memory) {
     bytes memory ROUTE_PRELUDE =
-    hex"02692AC1e363ae34b6B489148152b12e2785a3d8d601ffff01362D0401ED74Db25219b6D02Ac1791cFE3542D6801";
+        hex"02692AC1e363ae34b6B489148152b12e2785a3d8d601ffff006777DBf38f67B448174412bAaF21F38e058b1f4B01";
+    return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(toAddress)));
+}
+
+function getSushiV2TradeBuyRoute(address toAddress) pure returns (bytes memory) {
+    bytes memory ROUTE_PRELUDE =
+        hex"02c2132d05d31c914a87c6611c10748aeb04b58e8f01ffff006777DBf38f67B448174412bAaF21F38e058b1f4B00";
+    return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(toAddress)));
+}
+
+function getUniV3TradeBuyRoute(address toAddress) pure returns (bytes memory) {
+    bytes memory ROUTE_PRELUDE =
+        hex"02c2132D05D31c914a87C6611C10748AEb04B58e8F01ffff01362D0401ED74Db25219b6D02Ac1791cFE3542D6800";
+    return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(toAddress)));
+}
+
+function getUniV3TradeSellRoute(address toAddress) pure returns (bytes memory) {
+    bytes memory ROUTE_PRELUDE =
+        hex"02692AC1e363ae34b6B489148152b12e2785a3d8d601ffff01362D0401ED74Db25219b6D02Ac1791cFE3542D6801";
     return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(toAddress)));
 }
 
@@ -116,7 +115,7 @@ contract TrancheSpreadTest is Test {
         UNISWAP_WORDS = ISubParserV2(0x42758Ca92093f6dc94afD33c03C79D9c5221d933);
     }
 
-    function testModelTrendTrader(uint256 lastTime,uint256 trendNumerator) public {
+    function testModelTrendTrader(uint256 lastTime, uint256 trendNumerator) public {
         lastTime = uint32(bound(lastTime, 0, type(uint32).max / uint32(2)));
         trendNumerator = bound(trendNumerator, 3e17, 2e18);
         uint256 trendDenominator = 1e18;
@@ -134,15 +133,15 @@ contract TrancheSpreadTest is Test {
         bytes memory sellOrderRainlang;
         bytes memory buyOrderRainlang;
 
-        {   
+        {
             LibTrendTrade.TrendTradeTest memory sellTestTrend = LibTrendTrade.TrendTradeTest(
                 RESERVE_ADDRESS,
                 RESERVE_DECIMALS,
                 lastTime,
                 testNow,
                 JITTERY_BINOMIAL_BITS,
-                MEAN_COOLDOWN, 
-                trendNumerator.fixedPointDiv(trendDenominator,Math.Rounding.Down),
+                MEAN_COOLDOWN,
+                trendNumerator.fixedPointDiv(trendDenominator, Math.Rounding.Down),
                 SELL_MEAN_AMOUNT,
                 SELL_TREND_UP_FACTOR,
                 SELL_TREND_DOWN_FACTOR,
@@ -158,7 +157,7 @@ contract TrancheSpreadTest is Test {
                 testNow,
                 JITTERY_BINOMIAL_BITS,
                 MEAN_COOLDOWN,
-                trendDenominator.fixedPointDiv(trendNumerator,Math.Rounding.Down),
+                trendDenominator.fixedPointDiv(trendNumerator, Math.Rounding.Down),
                 BUY_MEAN_AMOUNT,
                 BUY_TREND_UP_FACTOR,
                 BUY_TREND_DOWN_FACTOR,
@@ -196,39 +195,34 @@ contract TrancheSpreadTest is Test {
         );
 
         string memory file = string.concat("./test/csvs/trend-trader", ".csv");
-        
-        vm.writeLine(file, string.concat(
-            sellStack[4].toString(),
-            ",",
-            buyStack[4].toString(),
-            ",",
-            sellStack[6].toString()
-        ));
-    } 
+
+        vm.writeLine(
+            file, string.concat(sellStack[4].toString(), ",", buyStack[4].toString(), ",", sellStack[6].toString())
+        );
+    }
 
     function testUniswapV3TwapSource() public {
-
         FullyQualifiedNamespace namespace =
-                LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this)); 
+            LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
-        uint256[][] memory sellOrderContext = getSellOrderContext(uint256(keccak256(abi.encode("sell order")))); 
+        uint256[][] memory sellOrderContext = getSellOrderContext(uint256(keccak256(abi.encode("sell order"))));
 
         address twapSourceExp;
-        {   
-                bytes memory twapSource = LibTrendTrade.getTwapTrendSource(
-                        vm,
-                        address(ORDERBOOK_SUPARSER),
-                        address(UNISWAP_WORDS),
-                        TWAP_LONG_TIME,
-                        TWAP_SHORT_TIME,
-                        TWAP_TREND_RATIO_FEE
+        {
+            bytes memory twapSource = LibTrendTrade.getTwapTrendSource(
+                vm,
+                address(ORDERBOOK_SUPARSER),
+                address(UNISWAP_WORDS),
+                TWAP_LONG_TIME,
+                TWAP_SHORT_TIME,
+                TWAP_TREND_RATIO_FEE
             );
             (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(twapSource);
-            (,,twapSourceExp,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
+            (,, twapSourceExp,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
         }
-        {   
+        {
             uint256 sellTrend = 11e70;
-            for(uint256 i = 0 ; i < 5; i++){            
+            for (uint256 i = 0; i < 5; i++) {
                 (uint256[] memory twapSourceStack,) = IInterpreterV2(INTERPRETER).eval2(
                     IInterpreterStoreV2(address(STORE)),
                     namespace,
@@ -236,7 +230,7 @@ contract TrancheSpreadTest is Test {
                     sellOrderContext,
                     new uint256[](0)
                 );
-                
+
                 moveExternalPrice(
                     address(RESERVE_ADDRESS),
                     address(TOKEN_ADDRESS),
@@ -244,14 +238,14 @@ contract TrancheSpreadTest is Test {
                     100000e6,
                     getUniV3TradeBuyRoute(address(this))
                 );
-                vm.warp(block.timestamp + (MEAN_COOLDOWN*2) + 1);
+                vm.warp(block.timestamp + (MEAN_COOLDOWN * 2) + 1);
                 assertLe(twapSourceStack[0], sellTrend);
-                sellTrend = twapSourceStack[0]; 
+                sellTrend = twapSourceStack[0];
             }
         }
-        {   
+        {
             uint256 sellTrend = 0;
-            for(uint256 i = 0 ; i < 5; i++){            
+            for (uint256 i = 0; i < 5; i++) {
                 (uint256[] memory twapSourceStack,) = IInterpreterV2(INTERPRETER).eval2(
                     IInterpreterStoreV2(address(STORE)),
                     namespace,
@@ -267,16 +261,14 @@ contract TrancheSpreadTest is Test {
                     100000e18,
                     getUniV3TradeSellRoute(address(this))
                 );
-                vm.warp(block.timestamp + (MEAN_COOLDOWN*2) + 1);
+                vm.warp(block.timestamp + (MEAN_COOLDOWN * 2) + 1);
                 assertGe(twapSourceStack[0], sellTrend);
-                sellTrend = twapSourceStack[0]; 
+                sellTrend = twapSourceStack[0];
             }
-
         }
-    } 
+    }
 
     function testCardanoCheck() public {
-
         address sellExpression;
         FullyQualifiedNamespace namespace =
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
@@ -299,7 +291,7 @@ contract TrancheSpreadTest is Test {
                 BOUNTY
             );
             sellOrderRainlang =
-                LibTrendTrade.getTrendOrder(vm, sellTestTrend, address(ORDERBOOK_SUPARSER), address(UNISWAP_WORDS)); 
+                LibTrendTrade.getTrendOrder(vm, sellTestTrend, address(ORDERBOOK_SUPARSER), address(UNISWAP_WORDS));
         }
         {
             (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(sellOrderRainlang);
@@ -307,14 +299,14 @@ contract TrancheSpreadTest is Test {
         }
         //Move external market
         moveExternalPrice(
-                    address(RESERVE_ADDRESS),
-                    address(TOKEN_ADDRESS),
-                    POLYGON_USDT_HOLDER,
-                    100e6,
-                    getSushiV2TradeBuyRoute(address(this))
+            address(RESERVE_ADDRESS),
+            address(TOKEN_ADDRESS),
+            POLYGON_USDT_HOLDER,
+            100e6,
+            getSushiV2TradeBuyRoute(address(this))
         );
         // Revert if price change within same block.
-        {   
+        {
             vm.expectRevert(bytes("Price change in same block."));
             IInterpreterV2(INTERPRETER).eval2(
                 IInterpreterStoreV2(address(STORE)),
@@ -322,10 +314,10 @@ contract TrancheSpreadTest is Test {
                 LibEncodedDispatch.encode2(sellExpression, SourceIndexV2.wrap(0), type(uint16).max),
                 sellOrderContext,
                 new uint256[](0)
-            ); 
+            );
         }
         // Evals when block time increase, i.e new block is mined.
-        {   
+        {
             vm.warp(block.timestamp + 1);
             IInterpreterV2(INTERPRETER).eval2(
                 IInterpreterStoreV2(address(STORE)),
@@ -333,13 +325,11 @@ contract TrancheSpreadTest is Test {
                 LibEncodedDispatch.encode2(sellExpression, SourceIndexV2.wrap(0), type(uint16).max),
                 sellOrderContext,
                 new uint256[](0)
-            ); 
+            );
         }
-        
-    } 
+    }
 
     function testCooldown() public {
-
         FullyQualifiedNamespace namespace =
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
@@ -347,11 +337,7 @@ contract TrancheSpreadTest is Test {
         {
             (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
                 LibTrendTrade.getEnsureCooldownSource(
-                    vm,
-                    address(ORDERBOOK_SUPARSER),
-                    address(UNISWAP_WORDS),
-                    MEAN_COOLDOWN,
-                    JITTERY_BINOMIAL_BITS
+                    vm, address(ORDERBOOK_SUPARSER), address(UNISWAP_WORDS), MEAN_COOLDOWN, JITTERY_BINOMIAL_BITS
                 )
             );
             (,, ensureCoolDown,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
@@ -374,7 +360,7 @@ contract TrancheSpreadTest is Test {
         // Less than the cooldown spread.
         {
             uint256[] memory inputs = new uint256[](2);
-            inputs[0] = block.timestamp + (MEAN_COOLDOWN/2); //now
+            inputs[0] = block.timestamp + (MEAN_COOLDOWN / 2); //now
             inputs[1] = block.timestamp; //last-time
 
             vm.expectRevert(bytes("Trade cooldown."));
@@ -400,33 +386,27 @@ contract TrancheSpreadTest is Test {
                 inputs
             );
         }
-        
-    } 
+    }
 
     function testHandleIO(uint256 outputVaultBalanceDecrease, uint256 calculatedOutputMax) public {
-
         FullyQualifiedNamespace namespace =
             LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
 
         address handleIoExpression;
         {
-            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                LibTrendTrade.getHandleIo(
-                    vm,
-                    address(ORDERBOOK_SUPARSER),
-                    address(UNISWAP_WORDS)
-                )
-            );
+            (bytes memory bytecode, uint256[] memory constants) =
+                PARSER.parse(LibTrendTrade.getHandleIo(vm, address(ORDERBOOK_SUPARSER), address(UNISWAP_WORDS)));
             (,, handleIoExpression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
         }
         // Sell Order
-        {   
+        {
             uint256[][] memory sellOrderContext = getSellOrderContext(uint256(keccak256(abi.encode("sell order"))));
             sellOrderContext[4][4] = outputVaultBalanceDecrease;
             sellOrderContext[2][0] = calculatedOutputMax;
 
-            if(outputVaultBalanceDecrease < calculatedOutputMax)
+            if (outputVaultBalanceDecrease < calculatedOutputMax) {
                 vm.expectRevert(bytes("Partial trade."));
+            }
 
             IInterpreterV2(INTERPRETER).eval2(
                 IInterpreterStoreV2(address(STORE)),
@@ -442,8 +422,9 @@ contract TrancheSpreadTest is Test {
             buyOrderContext[4][4] = outputVaultBalanceDecrease;
             buyOrderContext[2][0] = calculatedOutputMax;
 
-            if(outputVaultBalanceDecrease < calculatedOutputMax.scaleN(RESERVE_DECIMALS,0))
+            if (outputVaultBalanceDecrease < calculatedOutputMax.scaleN(RESERVE_DECIMALS, 0)) {
                 vm.expectRevert(bytes("Partial trade."));
+            }
 
             IInterpreterV2(INTERPRETER).eval2(
                 IInterpreterStoreV2(address(STORE)),
@@ -550,5 +531,4 @@ contract TrancheSpreadTest is Test {
         token.safeTransfer(to, amount);
         vm.stopPrank();
     }
-    
 }
