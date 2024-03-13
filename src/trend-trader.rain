@@ -10,10 +10,10 @@
     block-timestamp(),
   :set(order-hash() now);
 
-#test-last-time !The last time a trade cleared as unix timestamp in seconds.
-#test-now !The current time as unix timestamp in seconds.
-#test-times
-  _ _: test-last-time test-now;
+#constant-last-time !The last time a trade cleared as unix timestamp in seconds.
+#constant-now !The current time as unix timestamp in seconds.
+#constant-times
+  _ _: constant-last-time constant-now;
 
 #jittery-binomial-bits !The number of bits to use for the binomial distribution.
 #jittery-binomial
@@ -42,9 +42,9 @@
 
 #trend-ratio-exp !Expression to get the trend ratio as 18 decimal fixed point.
 
-#test-trend-ratio-value !The trend ratio as 18 decimal fixed point.
-#test-trend-ratio
-  _: test-trend-ratio-value;
+#constant-trend-ratio-value !The trend ratio as 18 decimal fixed point.
+#constant-trend-ratio
+  _: constant-trend-ratio-value;
 
 #twap-trend-ratio-long-time !The long time period for the twap based trend detection as seconds.
 #twap-trend-ratio-short-time !The short time period for the twap based trend detection as seconds.
