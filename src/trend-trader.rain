@@ -1,6 +1,116 @@
+
+tokens:
+  polygon-dai:
+    network: polygon
+    address: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
+    decimals: 18
+    symbol: DAI
+  polygon-wmatic:
+    network: polygon
+    address: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+    decimals: 18
+    symbol: WMATIC
+
+orders:
+  buy-trend-order:
+    network: polygon
+    orderbook: polygon
+    deployer: polygon
+    inputs:
+        - token: polygon-wmatic
+          decimals: 18
+          vault-id: 0x11
+    outputs:
+        - token: polygon-dai
+          decimals: 18
+          vault-id: 0x11
+  sell-trend-order:
+    network: polygon
+    orderbook: polygon
+    deployer: polygon
+    inputs:
+        - token: polygon-dai
+          decimals: 18
+          vault-id: 0x11
+    outputs:
+        - token: polygon-wmatic
+          decimals: 18
+          vault-id: 0x11
+
+scenarios:
+    polygon-experimental-constant-buy-trend:
+        network: polygon
+        deployer: polygon
+        orderbook: polygon
+        runs: 1000
+        bindings:
+          reserve-token: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
+          reserve-decimals: 18
+          input-token: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+          input-token-decimals: 18
+          output-token: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
+          output-token-decimals: 18
+          times: '''constant-times'
+          constant-now: 4294967295
+          jittery-binomial-bits: 20
+          mean-cooldown : 1440
+          trend-ratio-exp: '''constant-trend-ratio'
+          constant-trend-ratio-value: 1001e15
+          mean-reserve-amount18: 150e18
+          trend-up-factor: 3e18
+          trend-down-factor: 33e16
+          bounty: 8e16
+          
+    polygon-experimental-twap-buy-trend:
+        network: polygon
+        deployer: polygon
+        orderbook: polygon
+        runs: 1000
+        bindings:
+          reserve-token: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
+          reserve-decimals: 18
+          input-token: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+          input-token-decimals: 18
+          output-token: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
+          output-token-decimals: 18
+          times: '''constant-times'
+          constant-now: 4294967295
+          jittery-binomial-bits: 20
+          mean-cooldown : 1440
+          trend-ratio-exp: '''uni-v3-twap-trend-ratio'
+          twap-trend-ratio-long-time: 300
+          twap-trend-ratio-short-time: 150
+          twap-trend-ratio-fee: 10000
+          mean-reserve-amount18: 150e18
+          trend-up-factor: 3e18
+          trend-down-factor: 33e16
+          bounty: 8e16
+charts:
+    constant-trend:
+        scenario: polygon-experimental-constant-buy-trend
+        plots:
+            constant-buy-trend:
+                data:
+                    x: 0.0
+                    y: 0.2
+                plot-type: line
+    twap-trend:
+        scenario: polygon-experimental-twap-buy-trend
+        plots:
+            twap-buy-trend:
+                data:
+                    x: 0.0
+                    y: 0.2
+                plot-type: line
+        
 ---
 #reserve-token !The token that is considered the reserve which defines trade sizings and that TKN trends against.
 #reserve-decimals !The decimals of the reserve token.
+
+#input-token !Address of input token.
+#input-token-decimals !Decimals of input token.
+#output-token !Address of output token.
+#output-token-decimals !Decimals of output token.
 
 #times !The expression to get the last time and now as unix timestamps in seconds.
 #real-times
@@ -13,7 +123,7 @@
 #constant-last-time !The last time a trade cleared as unix timestamp in seconds.
 #constant-now !The current time as unix timestamp in seconds.
 #constant-times
-  _ _: constant-last-time constant-now;
+  _ _: int-mod(constant-last-time 2147483647) constant-now;
 
 #jittery-binomial-bits !The number of bits to use for the binomial distribution.
 #jittery-binomial
@@ -51,14 +161,14 @@
 #twap-trend-ratio-fee !The pool fee to use for the twap based trend detection.
 #uni-v3-twap-trend-ratio
   numerator: uniswap-v3-twap-output-ratio(
-    input-token() input-token-decimals()
-    output-token() output-token-decimals()
+    input-token input-token-decimals 
+    output-token output-token-decimals 
     twap-trend-ratio-short-time 0
     twap-trend-ratio-fee
   ),
   denominator: uniswap-v3-twap-output-ratio(
-    input-token() input-token-decimals()
-    output-token() output-token-decimals()
+    input-token input-token-decimals 
+    output-token output-token-decimals 
     twap-trend-ratio-long-time 0
     twap-trend-ratio-fee
   ),
@@ -87,14 +197,14 @@
   reserve-amount18:,
   now: call<times>(),
   tkn-amount18-exact-input last-price-timestamp: uniswap-v2-quote-exact-input<1>(
-    output-token() input-token() decimal18-scale-n<reserve-decimals>(reserve-amount18)
+    output-token input-token decimal18-scale-n<reserve-decimals>(reserve-amount18)
   ),
   :ensure(less-than(last-price-timestamp now) "Price change in same block."),
   tkn-amount18-exact-output: uniswap-v2-quote-exact-output(
-    output-token() input-token() decimal18-scale-n<reserve-decimals>(reserve-amount18)
+    output-token input-token decimal18-scale-n<reserve-decimals>(reserve-amount18)
   ),
   _: if(
-    equal-to(output-token() reserve-token)
+    equal-to(output-token reserve-token)
     tkn-amount18-exact-input
     tkn-amount18-exact-output
   );
@@ -102,9 +212,10 @@
 #bounty !The bounty to offer for the trade as normalized 18 decimal reserve amount.
 
 #calculate-io
+  using-words-from 0x2E5a898BA7A6E81f0660A0E23CB5a9Bf1A12E8b2  
   trend-ratio _ reserve-amount18: call<'calculate-reserve-amount18>(),
   tkn-amount18: call<'calculate-tkn-amount18>(reserve-amount18),
-  is-buying-tkn: equal-to(output-token() reserve-token),
+  is-buying-tkn: equal-to(output-token reserve-token),
   amount: if(
     is-buying-tkn
     decimal18-add(reserve-amount18 bounty)
@@ -117,8 +228,8 @@
 #handle-io
   :ensure(
     greater-than-or-equal-to(
-      output-vault-balance-decrease()
-      decimal18-scale-n-dynamic(output-token-decimals() calculated-max-output())
+      context<4 4>()
+      decimal18-scale-n-dynamic(output-token-decimals context<2 0>())
     )
     "Partial trade."
   );
