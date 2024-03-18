@@ -1,4 +1,3 @@
-
 tokens:
   polygon-dai:
     network: polygon
@@ -44,6 +43,8 @@ scenarios:
         orderbook: polygon
         runs: 1000
         bindings:
+          uniswap-words: 0x2E5a898BA7A6E81f0660A0E23CB5a9Bf1A12E8b2
+          orderbook-subparser: 0x1fA67aEe8BB29B3144ebAAECe51Fce06BF903929 
           reserve-token: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
           reserve-decimals: 18
           input-token: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
@@ -60,6 +61,31 @@ scenarios:
           trend-up-factor: 3e18
           trend-down-factor: 33e16
           bounty: 8e16
+
+    polygon-experimental-constant-sell-trend:
+        network: polygon
+        deployer: polygon
+        orderbook: polygon
+        runs: 1000
+        bindings:
+          uniswap-words: 0x2E5a898BA7A6E81f0660A0E23CB5a9Bf1A12E8b2
+          orderbook-subparser: 0x1fA67aEe8BB29B3144ebAAECe51Fce06BF903929 
+          reserve-token: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
+          reserve-decimals: 18
+          input-token: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
+          input-token-decimals: 18
+          output-token: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+          output-token-decimals: 18
+          times: '''constant-times'
+          constant-now: 4294967295
+          jittery-binomial-bits: 20
+          mean-cooldown : 1440
+          trend-ratio-exp: '''constant-trend-ratio'
+          constant-trend-ratio-value: 1001e15
+          mean-reserve-amount18: 150e18
+          trend-up-factor: 33e16
+          trend-down-factor: 3e18
+          bounty: 8e16
           
     polygon-experimental-twap-buy-trend:
         network: polygon
@@ -67,6 +93,8 @@ scenarios:
         orderbook: polygon
         runs: 1000
         bindings:
+          uniswap-words: 0x2E5a898BA7A6E81f0660A0E23CB5a9Bf1A12E8b2
+          orderbook-subparser: 0x1fA67aEe8BB29B3144ebAAECe51Fce06BF903929 
           reserve-token: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
           reserve-decimals: 18
           input-token: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
@@ -85,23 +113,70 @@ scenarios:
           trend-up-factor: 3e18
           trend-down-factor: 33e16
           bounty: 8e16
+
+    polygon-experimental-twap-sell-trend:
+        network: polygon
+        deployer: polygon
+        orderbook: polygon
+        runs: 1000
+        bindings:
+          uniswap-words: 0x2E5a898BA7A6E81f0660A0E23CB5a9Bf1A12E8b2 
+          orderbook-subparser: 0x1fA67aEe8BB29B3144ebAAECe51Fce06BF903929 
+          reserve-token: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
+          reserve-decimals: 18
+          input-token: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
+          input-token-decimals: 18
+          output-token: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+          output-token-decimals: 18
+          times: '''constant-times'
+          constant-now: 4294967295
+          jittery-binomial-bits: 20
+          mean-cooldown : 1440
+          trend-ratio-exp: '''uni-v3-twap-trend-ratio'
+          twap-trend-ratio-long-time: 300
+          twap-trend-ratio-short-time: 150
+          twap-trend-ratio-fee: 10000
+          mean-reserve-amount18: 150e18
+          trend-up-factor: 33e16
+          trend-down-factor: 3e18
+          bounty: 8e16
+          
 charts:
-    constant-trend:
+    constant-trend-buy:
         scenario: polygon-experimental-constant-buy-trend
         plots:
             constant-buy-trend:
                 data:
                     x: 0.0
                     y: 0.2
-                plot-type: line
-    twap-trend:
+                plot-type: dot
+                
+    constant-trend-sell:
+        scenario: polygon-experimental-constant-sell-trend
+        plots:
+            constant-sell-trend:
+                data:
+                    x: 0.0
+                    y: 0.2
+                plot-type: dot
+                
+    twap-trend-buy:
         scenario: polygon-experimental-twap-buy-trend
         plots:
             twap-buy-trend:
                 data:
                     x: 0.0
                     y: 0.2
-                plot-type: line
+                plot-type: dot
+                
+    twap-trend-sell:
+        scenario: polygon-experimental-twap-sell-trend
+        plots:
+            twap-sell-trend:
+                data:
+                    x: 0.0
+                    y: 0.2
+                plot-type: dot
         
 ---
 #reserve-token !The token that is considered the reserve which defines trade sizings and that TKN trends against.
@@ -212,7 +287,7 @@ charts:
 #bounty !The bounty to offer for the trade as normalized 18 decimal reserve amount.
 
 #calculate-io
-  using-words-from 0x2E5a898BA7A6E81f0660A0E23CB5a9Bf1A12E8b2  
+  using-words-from uniswap-words orderbook-subparser 
   trend-ratio _ reserve-amount18: call<'calculate-reserve-amount18>(),
   tkn-amount18: call<'calculate-tkn-amount18>(reserve-amount18),
   is-buying-tkn: equal-to(output-token reserve-token),
