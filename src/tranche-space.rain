@@ -1,3 +1,85 @@
+tokens:
+  polygon-dai:
+    network: polygon
+    address: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
+    decimals: 18
+    symbol: DAI
+  polygon-wmatic:
+    network: polygon
+    address: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+    decimals: 18
+    symbol: WMATIC
+
+orders:
+  polygon-tranche-space-buy-order:
+    network: polygon
+    orderbook: polygon
+    deployer: polygon
+    inputs:
+        - token: polygon-wmatic
+          decimals: 18
+          vault-id: 0x11
+    outputs:
+        - token: polygon-dai
+          decimals: 18
+          vault-id: 0x11
+          
+  polygon-tranche-space-sell-order:
+    network: polygon
+    orderbook: polygon
+    deployer: polygon
+    inputs:
+        - token: polygon-dai
+          decimals: 18
+          vault-id: 0x11
+    outputs:
+        - token: polygon-wmatic
+          decimals: 18
+          vault-id: 0x11
+        
+scenarios:
+    polygon-experimental-tranche-space-linear-sell:
+        network: polygon
+        deployer: polygon
+        orderbook: polygon
+        runs: 1000
+        bindings:
+          tranche-space-per-second: 0
+          tranche-space-recharge-delay: 0
+          tranche-size-expr: '''constant-growth'
+          tranche-size-base: 5000e18
+          tranche-size-growth: 1e18
+          io-ratio-expr: '''linear-growth'
+          io-ratio-base: 6e18
+          io-ratio-growth: 1e17
+          reference-stable: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063
+          reference-stable-decimals: 18
+          reference-reserve: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+          reference-reserve-decimals: 18
+          min-tranche-space-diff: 1e17
+          tranche-space-snap-threshold: 1e16 
+          amount-is-output: 0
+          get-last-tranche: '''get-test-last-tranche'
+          set-last-tranche: '''set-test-last-tranche'
+          io-ratio-multiplier: '''io-ratio-multiplier-identity'
+          test-last-update-time: 1710764220
+          test-now: 1710764221
+          
+                  
+charts:
+    tranche-space-linear:
+        scenario: polygon-experimental-tranche-space-linear-sell
+        plots:
+            tranche-space vs ratio:
+                data:
+                    x: 0.0
+                    y: 0.7
+                plot-type: dot
+            tranche-space vs amount:
+                data:
+                    x: 0.0
+                    y: 0.6
+                plot-type: dot
 ---
 #tranche-space-per-second !The amount of tranche space that is recharged per second as a normalized 18 decimal fixed point value.
 #tranche-space-recharge-delay !The duration in seconds that no recharging occurs after a trade occurs.
@@ -46,7 +128,7 @@
 
 /* Forward the bindings through as is to the caller. */
 #get-test-last-tranche
-  _ _ _: test-tranche-space-before test-last-update-time test-now;
+  _ _ _: int-mul(1e18 int-mod(test-tranche-space-before 1000)) test-last-update-time test-now;
 
 /* There's nothing to set if we're just rebinding in tests. */
 #set-test-last-tranche
@@ -112,8 +194,8 @@
   tranche-total-size: call<'calculate-tranche>(),
   tranche-amount-diff: if(
     amount-is-output
-    decimal18-scale-18-dynamic(output-token-decimals() output-vault-balance-decrease())
-    decimal18-scale-18-dynamic(input-token-decimals() input-vault-balance-increase())),
+    decimal18-scale-18-dynamic(context<4 1>() context<4 4>())
+    decimal18-scale-18-dynamic(context<3 1>() context<3 4>())),
   tranche-space-diff: decimal18-div(tranche-amount-diff tranche-total-size),
   tranche-space-after: decimal18-add(tranche-space-before tranche-space-diff),
   /* Snap tranche space to the nearest tranche to avoid dust issues at the edges */
