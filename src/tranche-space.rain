@@ -1,3 +1,223 @@
+# Strat: Recharging tranches
+#
+# High level idea is that the strategy offers a firm price for batches of tokens.
+# Each batch is called a "tranche".
+#
+# Every time a batch of tokens fully clears a new price further from the previous
+# trades is offered for the next tranche.
+#
+# For example, if 1000 BLUE was available in a tranche to buy RED at
+# 1 BLUE per RED and this fully cleared, the next tranche might be to buy up to
+# 1000 BLUE at 0.9 BLUE per RED, then 0.8, etc. etc.
+#
+# Tranches slowly recharge over time passively when no trades are happening against
+# the current price offer. For example, the strategy might recharge 1 tranche per
+# day, so if the last trade left 500 BLUE remaining in a 1000 BLUE tranche at
+# 0.9 BLUE per RED then after 24 hours the strategy will be offering 500 BLUE
+# at 1 BLUE per RED. I.e. 0.5 tranches were recharged at 0.9 ratio and then
+# another 0.5 tranches were recharged at 1 ratio. After another 12 hours
+# there will be 1000 BLUE on offer at 1 ratio, etc.
+#
+# Almost everything about the strat is bindable and chartable, e.g.
+# - The algorithms that determine the price and amount of each tranche
+# - The recharge rate and delay before the passive recharge starts to kick in
+# - Whether the amounts per tranche are denominated in the input or output token
+# - Whether the strategy is buying or selling TKN
+# - An optional conversion between the input/output token and some external
+#   price, e.g. converting WETH in a vault to USD equivalent.
+
+tokens:
+  arbitrum-one-red:
+    network: arbitrum-one
+    address: 0x6d3abb80c3cbae0f60ba274f36137298d8571fbe
+  arbitrum-one-blue:
+    network: arbitrum-one
+    address: 0x667f41fF7D9c06D2dd18511b32041fC6570Dc468
+
+orders:
+  # vault-id generated with `openssl rand -hex 32`
+  arbitrum-one-buy:
+    inputs:
+      - token: arbitrum-one-red
+        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
+    outputs:
+      - token: arbitrum-one-blue
+        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
+
+  arbitrum-one-sell:
+    inputs:
+      - token: arbitrum-one-blue
+        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
+    outputs:
+      - token: arbitrum-one-red
+        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
+
+scenarios:
+    arb-red-blue-tranches:
+        network: arbitrum-one
+        deployer: arbitrum-one
+        orderbook: arbitrum-one
+        bindings:
+          # The uniswap words are only required if there is a conversion between
+          # the input/output token and some external price. Typically this is
+          # not the case as the io-ratio is defined in terms of the input/output
+          # token and the io-ratio-multiplier is set to the identity function.
+          uniswap-words: 0x5Cf7d0a8c61c8dcC6b0ECB281dF1C17264C2A517
+
+          orderbook-subparser: 0x23F77e7Bc935503e437166498D7D72f2Ea290E1f
+
+          # How far we move through tranche space in a second.
+          # 1e18 is a whole tranche, so we divide 1e18 by the number of seconds
+          # per recharge to calculate the per-second rate.
+          # Examples:
+          # 172800 seconds in 2 days, 48 hours = 1e18 / 172800  = 5787037037037
+          # 86400 seconds in 1 day, 24 hours = 1e18 / 86400 = 11574074074074
+          # 43200 seconds in 12 hours, 12 hours = 1e18 / 43200 = 23148148148148
+          # 3600 seconds in 1 hour, 1 hour = 1e18 / 3600 = 277777777777777
+          tranche-space-per-second: 11574074074074
+
+          # After any trade happens we pause before recharging.
+          # Delay is to observe market feedback to the previous trade, e.g. to
+          # potentially offer the next tranche at a different price for some time
+          # before recharging back to the previous price.
+          # Too long and people could grief to stop recharging.
+          # Too quick and it will be difficult to move between tranches.
+          # The default here is 5 minutes (units are seconds) and probably never
+          # needs to be changed.
+          tranche-space-recharge-delay: 300
+
+          # Minimum trade size, if you put in a trade for less than x% of a
+          # tranche it wont clear.
+          # Mitigates people pinging strat for dust orders to stop recharging.
+          min-tranche-space-diff: 1e17
+
+          # Snap to the nearest tranche to avoid dust issues at the edges, either
+          # due to rounding in the evm or potentially malicious trades.
+          # 1e16 is 1%
+          tranche-space-snap-threshold: 1e16
+
+          # This is only relevant if the tranche size/ratio is denominated in
+          # some token other than the input/output tokens. For example, if the
+          # TKN was being traded for WETH but the tranche size was denominated in
+          # USD then the reference-stable would be USD and the reference-reserve
+          # would be WETH, and the identity multiplier needs to be swapped out
+          # for e.g. a TWAP USDT based multiplier.
+          # Typically this is NOT needed as the tranche size and ratio ARE
+          # denominated in the input/output tokens.
+          io-ratio-multiplier: '''io-ratio-multiplier-identity'
+
+        scenarios:
+          buy:
+            bindings:
+                # If we want to denominate the amount in BLUE when we're
+                # buying RED with it, then the amount is the OUTPUT.
+                amount-is-output: 1
+                io-ratio-expr: '''linear-growth'
+                io-ratio-base: 1e18
+                io-ratio-growth: 5e16
+                tranche-size-expr: '''exponential-growth'
+                tranche-size-base: 1000e18
+                tranche-size-growth: 1e16
+            scenarios:
+              prod:
+                bindings:
+                  get-last-tranche: '''get-last-tranche-prod'
+                  set-last-tranche: '''set-last-tranche-prod'
+                  plottables: '''plottables-prod'
+                  # This needs to be set upon going live.
+                  # Generate a chart and compare to current market prices, if
+                  # the market is within the chart then set this to the closest
+                  # tranche that won't immediately dump into the market.
+                  # If the market is outside the chart then set this to 0.
+                  # initial-tranche-space: 0
+              test:
+                  runs: 10000
+                  bindings:
+                    get-last-tranche: '''get-last-tranche-test'
+                    set-last-tranche: '''set-last-tranche-test'
+                    plottables: '''plottables-test'
+                    max-test-tranche-space: 20e18
+                    test-last-update-time: 0
+                    test-now: 0
+          sell:
+            bindings:
+                # If we want to denominate the amount in BLUE when we're
+                # selling RED for it, then the amount is the INPUT.
+                amount-is-output: 0
+                io-ratio-expr: '''linear-growth'
+                io-ratio-base: 10e18
+                io-ratio-growth: 5e17
+                tranche-size-expr: '''exponential-growth'
+                tranche-size-base: 1000e18
+                tranche-size-growth: 1e16
+            scenarios:
+              prod:
+                bindings:
+                  get-last-tranche: '''get-last-tranche-prod'
+                  set-last-tranche: '''set-last-tranche-prod'
+                  plottables: '''plottables-prod'
+                  initial-tranche-space: 20
+              test:
+                runs: 10000
+                bindings:
+                  get-last-tranche: '''get-last-tranche-test'
+                  set-last-tranche: '''set-last-tranche-test'
+                  plottables: '''plottables-test'
+                  max-test-tranche-space: 20e18
+                  test-last-update-time: 0
+                  test-now: 0
+
+charts:
+    buy:
+        scenario: arb-red-blue-tranches.buy.test
+        plots:
+          BLUE amount available vs tranche:
+            data:
+              x: 0.0
+              y: 0.6
+            plot-type: line
+          Number of RED purchased per tranche:
+            data:
+              x: 0.0
+              y: 0.5.2
+            plot-type: line
+          'io-ratio (i.e. # of RED purchased per BLUE spent) vs tranche':
+            data:
+              x: 0.0
+              y: 0.7
+            plot-type: line
+          Effective price (e.g. visible on dextools) vs tranche:
+            data:
+              x: 0.0
+              y: 0.5.3
+            plot-type: line
+    sell:
+        scenario: arb-red-blue-tranches.sell.test
+        plots:
+          Number of RED sold per tranche:
+            data:
+              x: 0.0
+              y: 0.6
+            plot-type: line
+          BLUE per tranche:
+            data:
+              x: 0.0
+              y: 0.5.2
+            plot-type: line
+          'Effective price (e.g. visible on dextools) vs tranche':
+            data:
+              x: 0.0
+              y: 0.7
+            plot-type: line
+
+deployments:
+  arbitrum-one-buy:
+    scenario: arb-red-blue-tranches.buy.prod
+    order: arbitrum-one-buy
+  arbitrum-one-sell:
+    scenario: arb-red-blue-tranches.sell.prod
+    order: arbitrum-one-sell
+
 ---
 #tranche-space-per-second !The amount of tranche space that is recharged per second as a normalized 18 decimal fixed point value.
 #tranche-space-recharge-delay !The duration in seconds that no recharging occurs after a trade occurs.
