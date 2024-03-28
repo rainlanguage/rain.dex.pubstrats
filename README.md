@@ -1,66 +1,41 @@
-## Foundry
+## H20 Public Strats
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+## Deployed Contracts
 
-Foundry consists of:
+### Ethereum
+- RainterpreterExpressionDeployerNPE2 : [0x56Fa1748867fD547F3cc6C064B809ab84bc7e9B9](https://etherscan.io/address/0x56Fa1748867fD547F3cc6C064B809ab84bc7e9B9#code)
+- OrderBook: [0xf1224A483ad7F1E9aA46A8CE41229F32d7549A74](https://etherscan.io/address/0xf1224a483ad7f1e9aa46a8ce41229f32d7549a74#code)
+- OrderBookSubParser: [0xFCe5E9F48049f3D8850C2C5fd7AD792F10B36326](https://etherscan.io/address/0xFCe5E9F48049f3D8850C2C5fd7AD792F10B36326#code)
+- UniswapWords: [0xF1F6cC9376e4A79794BCB7AC451D79425cB381b0](https://etherscan.io/address/0xF1F6cC9376e4A79794BCB7AC451D79425cB381b0#code)
+- Subgraph : https://api.thegraph.com/subgraphs/name/h20liquidity/ethereum-0xf1224a48
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Polygon
+- RainterpreterExpressionDeployerNPE2 : [0xF77b3c3f61af5a3cE7f7CE3cfFc117491104432E](https://polygonscan.com/address/0xf77b3c3f61af5a3ce7f7ce3cffc117491104432e#code)
+- OrderBook: [0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6](https://polygonscan.com/address/0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6#code)
+- OrderBookSubParser: [0x1fA67aEe8BB29B3144ebAAECe51Fce06BF903929](https://polygonscan.com/address/0x1fA67aEe8BB29B3144ebAAECe51Fce06BF903929#code)
+- UniswapWords: [0xb1d6D10561D4e1792A7c6B336b0529e4bFb5Ea8F](https://polygonscan.com/address/0xb1d6d10561d4e1792a7c6b336b0529e4bfb5ea8f)
+- Subgraph : https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
 
-## Documentation
 
-https://book.getfoundry.sh/
+### Arbitrum
+- RainterpreterExpressionDeployerNPE2 : [0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76](https://arbiscan.io/address/0x2aee87d75cd000583daec7a28db103b1c0c18b76#code)
+- OrderBook: [0x90CAF23eA7E507BB722647B0674e50D8d6468234](https://arbiscan.io/address/0x90caf23ea7e507bb722647b0674e50d8d6468234#code)
+- OrderBookSubParser: [0x23F77e7Bc935503e437166498D7D72f2Ea290E1f](https://arbiscan.io/address/0x23f77e7bc935503e437166498d7d72f2ea290e1f)
+- UniswapWords: [0x5Cf7d0a8c61c8dcC6b0ECB281dF1C17264C2A517](https://arbiscan.io/address/0x5cf7d0a8c61c8dcc6b0ecb281df1c17264c2a517)
+- Subgraph : https://api.thegraph.com/subgraphs/name/h20liquidity/arbitrum-0x90caf23e
 
-## Usage
 
-### Build
+### Binance Smart Chain
+- RainterpreterExpressionDeployerNPE2 : [0x1eFd85E6C384fAD9B80C6D508E9098Eb91C4eD30](https://bscscan.com/address/0x1efd85e6c384fad9b80c6d508e9098eb91c4ed30#code)
+- OrderBook: [0xb1d6D10561D4e1792A7c6B336b0529e4bFb5Ea8F](https://bscscan.com/address/0xb1d6d10561d4e1792a7c6b336b0529e4bfb5ea8f)
+- OrderBookSubParser: [0x90CAF23eA7E507BB722647B0674e50D8d6468234](https://bscscan.com/address/0x90caf23ea7e507bb722647b0674e50d8d6468234)
+- UniswapWords: [0xee873E21F8a6A256cb9f53BE491E569eA6cdd63E](https://bscscan.com/address/0xee873e21f8a6a256cb9f53be491e569ea6cdd63e#code)
+- Subgraph : https://api.thegraph.com/subgraphs/name/h20liquidity/binance-0xb1d6d105
 
-```shell
-$ forge build
-```
 
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+### Base
+- RainterpreterExpressionDeployerNPE2 : [0xfca89cD12Ba1346b1ac570ed988AB43b812733fe](https://basescan.org/address/0xfca89cd12ba1346b1ac570ed988ab43b812733fe#code)
+- OrderBook: [0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76](https://basescan.org/address/0x2aee87d75cd000583daec7a28db103b1c0c18b76#code)
+- OrderBookSubParser: [0xee873E21F8a6A256cb9f53BE491E569eA6cdd63E](https://basescan.org/address/0xee873e21f8a6a256cb9f53be491e569ea6cdd63e#code)
+- UniswapWords: [0x22410e2a46261a1B1e3899a072f303022801C764](https://basescan.org/address/0x22410e2a46261a1b1e3899a072f303022801c764#code)
+- Subgraph : NA
