@@ -47,28 +47,35 @@ deployments:
 ---
 /* This strategy will buy or sell WFLR based on the price of the FTSO pair FLR/USD */
 
-#flare-sub-parser !The flare subparser address
+#flare-sub-parser !The flare subparser address.
 
-#per-trade-amount !The amount that we'll buy or sell per trade
-#cooldown-time !The minimum amount of time that must elapse between trades
-#bounty-amount !The amount below the oracle price that we are willing to buy/sell at
+#per-trade-amount !The amount that we'll buy or sell per trade.
+#cooldown-time !The minimum amount of seconds that must elapse between trades.
+#bounty-amount !The amount below the oracle price that we are willing to buy/sell at.
 
-#ftso-base !The base token of the FTSO pair
-#ftso-quote !The quote token of the FTSO pair
+#ftso-base !The base token of the FTSO pair.
+#ftso-quote !The quote token of the FTSO pair.
 
 #calculate-io
 using-words-from flare-sub-parser
 
 now: block-timestamp(),
-cooldown-elapsed: greater-than-or-equal-to(
-  now
-  int-add(get("last-traded") cooldown-time)
+
+/* ensure that the cooldown time has elapsed since the last trade */
+:ensure(
+  greater-than-or-equal-to(
+    now
+    int-add(get("last-traded") cooldown-time)
+  )
 ),
 
+/* getting a quote from the Flare FTSO */
 ftso-price: ftso-current-price-pair(ftso-base ftso-quote 3600),
 
-max-output: if(cooldown-elapsed per-trade-amount 0),
-ratio: decimal18-sub(ftso-price bounty-amount),
+_ _: bountyied-price(per-trade-amount ftso-price bounty-amount),
+
+max-output: per-trade-amount,
+price: ftso-price,
 
 :set("last-traded" now);
 
