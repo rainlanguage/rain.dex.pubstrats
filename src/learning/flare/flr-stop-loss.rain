@@ -1,3 +1,5 @@
+# This is a simple stop-loss order that will sell if the price drops below our threshold
+
 tokens:
   eusdt:
     address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
@@ -30,8 +32,6 @@ deployments:
     scenario: stop-loss
     order: stop-loss
 ---
-/* This is a simple stop-loss order that will sell if the price drops below our threshold */
-
 #flare-sub-parser !The flare subparser address.
 
 #trade-amount !The amount that we'll buy or sell.

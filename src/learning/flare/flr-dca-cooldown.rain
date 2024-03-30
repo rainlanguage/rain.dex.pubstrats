@@ -1,3 +1,5 @@
+# This strategy will buy or sell WFLR based on the price of the FTSO pair FLR/USD
+
 tokens:
   eusdt:
     address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
@@ -39,8 +41,6 @@ deployments:
     scenario: default.buy-wflr
     order: buy-wflr
 ---
-/* This strategy will buy or sell WFLR based on the price of the FTSO pair FLR/USD */
-
 #flare-sub-parser !The flare subparser address.
 
 #per-trade-amount !The amount that we'll buy or sell per trade.
