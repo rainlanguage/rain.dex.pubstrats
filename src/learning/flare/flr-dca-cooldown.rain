@@ -1,0 +1,74 @@
+# This strategy will buy or sell WFLR based on the price of the FTSO pair FLR/USD
+
+tokens:
+  eusdt:
+    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+    decimals: 6
+  wflr:
+    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+    decimals: 18
+
+orders:
+  dca-buy:
+    inputs:
+      - token: eusdt
+        vault-id: 0x01
+    outputs:
+      - token: wflr
+        vault-id: 0x02
+scenarios:
+  default:
+    bindings:
+      flare-subparser: 0x4F4267c2084607A5e23660733Cb3a0Cf5840F0C7
+      cooldown-time: 300
+    scenarios:
+      sell-wflr:
+        bindings:
+          per-trade-amount: 100e18
+          ftso-base: "FLR"
+          ftso-quote: "USD"
+      buy-wflr:
+        bindings:
+          per-trade-amount: 100e18
+          ftso-base: "USD"
+          ftso-quote: "FLR"
+
+deployments:
+  sell-wflr:
+    scenario: default.sell-wflr
+    order: sell-wflr
+  buy-wflr:
+    scenario: default.buy-wflr
+    order: buy-wflr
+---
+#flare-sub-parser !The flare subparser address.
+
+#per-trade-amount !The amount that we'll buy or sell per trade.
+#cooldown-time !The minimum amount of seconds that must elapse between trades.
+
+#ftso-base !The base token of the FTSO pair.
+#ftso-quote !The quote token of the FTSO pair.
+
+#calculate-io
+using-words-from flare-sub-parser
+
+now: block-timestamp(),
+
+/* ensure that the cooldown time has elapsed since the last trade */
+:ensure(
+  greater-than-or-equal-to(
+    now
+    int-add(get("last-traded") cooldown-time)
+  )
+),
+
+/* getting a quote from the Flare FTSO */
+ftso-price: ftso-current-price-pair(ftso-base ftso-quote 3600),
+
+max-output: per-trade-amount,
+price: ftso-price,
+
+:set("last-traded" now);
+
+#handle-io
+:;
