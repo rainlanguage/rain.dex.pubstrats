@@ -19,7 +19,7 @@ orders:
 scenarios:
   stop-loss:
     bindings:
-      flare-subparser: 0x4F4267c2084607A5e23660733Cb3a0Cf5840F0C7
+      flare-sub-parser: 0x4F4267c2084607A5e23660733Cb3a0Cf5840F0C7
       cooldown-time: 300
       bindings:
         trade-amount: 100e18

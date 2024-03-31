@@ -2,14 +2,16 @@ tokens:
   wflr:
     address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
     decimals: 18
+    network: flare
   weth:
     address: 0x62bD084cbcD6c85347C50292A141EA4D3e7e3511
     decimals: 18
+    network: flare
 
 scenarios:
   default:
     bindings:
-      flare-subparser: 0x4F4267c2084607A5e23660733Cb3a0Cf5840F0C7
+      flare-sub-parser: 0x4F4267c2084607A5e23660733Cb3a0Cf5840F0C7
       spread-multiplier: 101e16
     scenarios:
       sell-wflr:
@@ -30,6 +32,7 @@ orders:
     outputs:
       - token: wflr
         vault-id: 0xcec26d26ca191a871ae3153b1f3d67c6bb2b00fd0a063db10ea8e8b0d524f20c
+    network: flare
   buy-wflr:
     inputs:
       - token: wflr
@@ -37,6 +40,7 @@ orders:
     outputs:
       - token: weth
         vault-id: 0xcec26d26ca191a871ae3153b1f3d67c6bb2b00fd0a063db10ea8e8b0d524f20c
+    network: flare
 
 deployments:
   sell-wflr:
@@ -47,14 +51,14 @@ deployments:
     order: buy-wflr
 
 ---
-#flare-sub-parser !The flare subparser address
+#flare-sub-parser !The flare subparser address.
 #spread-multiplier !The spread multiplier. 1e18 is 1x i.e. "no spread". 101e16 is 1.01x i.e. 1% spread.
 
-#ftso-base !The base token of the FTSO pair
-#ftso-quote !The quote token of the FTSO pair
+#ftso-base !The base token of the FTSO pair.
+#ftso-quote !The quote token of the FTSO pair.
 
 #calculate-io
-using-words-from flare-subparser
+using-words-from flare-sub-parser
 amount: max-decimal18-value(),
 price: decimal18-mul(ftso-current-price-pair(ftso-base ftso-quote 3600) spread-multiplier);
 
