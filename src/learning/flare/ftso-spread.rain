@@ -10,12 +10,12 @@ tokens:
 
 scenarios:
   flare:
-    runs: 1
     bindings:
       flare-sub-parser: 0xc4b7A086FD25260461f7F50ac9D62Cb86006bbEB
       spread-multiplier: 101e16
     scenarios:
       sell-wflr:
+        runs: 1
         bindings:
           ftso-base: '"FLR"'
           ftso-quote: '"ETH"'
