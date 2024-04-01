@@ -9,7 +9,7 @@ tokens:
     network: flare
 
 scenarios:
-  default:
+  flare:
     bindings:
       flare-sub-parser: 0x4F4267c2084607A5e23660733Cb3a0Cf5840F0C7
       spread-multiplier: 101e16
@@ -44,10 +44,10 @@ orders:
 
 deployments:
   sell-wflr:
-    scenario: default.sell-wflr
+    scenario: flare.sell-wflr
     order: sell-wflr
   buy-wflr:
-    scenario: default.buy-wflr
+    scenario: flare.buy-wflr
     order: buy-wflr
 
 ---
