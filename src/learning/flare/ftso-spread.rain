@@ -11,17 +11,18 @@ tokens:
 scenarios:
   flare:
     bindings:
-      flare-sub-parser: 0x4F4267c2084607A5e23660733Cb3a0Cf5840F0C7
+      flare-sub-parser: 0xc4b7A086FD25260461f7F50ac9D62Cb86006bbEB
       spread-multiplier: 101e16
     scenarios:
       sell-wflr:
+        runs: 1
         bindings:
-          ftso-base: "FLR"
-          ftso-quote: "ETH"
+          ftso-base: '"FLR"'
+          ftso-quote: '"ETH"'
       buy-wflr:
         bindings:
-          ftso-base: "ETH"
-          ftso-quote: "FLR"
+          ftso-base: '"ETH"'
+          ftso-quote: '"FLR"'
 
 orders:
   sell-wflr:
@@ -50,6 +51,16 @@ deployments:
     scenario: flare.buy-wflr
     order: buy-wflr
 
+charts:
+  buy:
+    scenario: flare.sell-wflr
+    plots:
+      Sell WFLR - FTSO price vs. final price:
+        data:
+          x: 0.0
+          y: 0.2
+        plot-type: line
+
 ---
 #flare-sub-parser !The flare subparser address.
 #spread-multiplier !The spread multiplier. 1e18 is 1x i.e. "no spread". 101e16 is 1.01x i.e. 1% spread.
@@ -59,8 +70,9 @@ deployments:
 
 #calculate-io
 using-words-from flare-sub-parser
+ftso-price: ftso-current-price-pair(ftso-base ftso-quote 3600),
 amount: max-decimal18-value(),
-price: decimal18-mul(ftso-current-price-pair(ftso-base ftso-quote 3600) spread-multiplier);
+price: decimal18-mul(ftso-price spread-multiplier);
 
 #handle-io
 :;
