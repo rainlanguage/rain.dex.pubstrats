@@ -4,9 +4,11 @@ tokens:
   eusdt:
     address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
     decimals: 6
+    network: flare
   wflr:
     address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
     decimals: 18
+    network: flare
 
 orders:
   stop-loss:
@@ -18,14 +20,14 @@ orders:
         vault-id: 0x02
 scenarios:
   stop-loss:
+    deployer: flare
     bindings:
       flare-subparser: 0x4F4267c2084607A5e23660733Cb3a0Cf5840F0C7
       cooldown-time: 300
-      bindings:
-        trade-amount: 100e18
-        threshold-price: 5e17
-        ftso-base: "FLR"
-        ftso-quote: "ETH"
+      trade-amount: 100e18
+      threshold-price: 5e17
+      ftso-base: "FLR"
+      ftso-quote: "ETH"
 
 deployments:
   stop-loss:

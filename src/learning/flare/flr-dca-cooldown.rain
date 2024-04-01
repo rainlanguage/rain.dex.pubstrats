@@ -2,22 +2,33 @@
 
 tokens:
   eusdt:
+    network: flare
     address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
     decimals: 6
   wflr:
+    network: flare
     address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
     decimals: 18
 
 orders:
-  dca-buy:
+  sell-wflr:
     inputs:
       - token: eusdt
         vault-id: 0x01
     outputs:
       - token: wflr
         vault-id: 0x02
+  buy-wflr:
+    inputs:
+      - token: wflr
+        vault-id: 0x02
+    outputs:
+      - token: eusdt
+        vault-id: 0x01
+
 scenarios:
   default:
+    deployer: flare
     bindings:
       flare-subparser: 0x4F4267c2084607A5e23660733Cb3a0Cf5840F0C7
       cooldown-time: 300
