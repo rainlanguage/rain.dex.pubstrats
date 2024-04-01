@@ -32,7 +32,13 @@
 
 ### Flare
 
-- RainterpreterExpressionDeployerNPE2: [0xF77b3c3f61af5a3cE7f7CE3cfFc117491104432E](https://flarescan.com/address/0xF77b3c3f61af5a3cE7f7CE3cfFc117491104432E)
+**UNVERIFIED CONTRACTS**
+
+For some reason Flarescan is erroring on verification.
+
+- RainterpreterExpressionDeployerNPE2: [0xd19581a021f4704ad4eBfF68258e7A0a9DB1CD77](https://flarescan.com/address/0xd19581a021f4704ad4eBfF68258e7A0a9DB1CD77)
+- OrderBook: [0xF9bDedb1e8c32185E879E056eBA9F5aeC1839d60](https://flarescan.com/address/0xF9bDedb1e8c32185E879E056eBA9F5aeC1839d60)
+- OrderBookSubParser: [0xfca89cD12Ba1346b1ac570ed988AB43b812733fe](https://flarescan.com/address/0xfca89cD12Ba1346b1ac570ed988AB43b812733fe)
 
 ### Oasis Sapphire
 
@@ -50,4 +56,5 @@
 ### Songbird
 
 - RainterpreterExpressionDeployerNPE2: [0xF77b3c3f61af5a3cE7f7CE3cfFc117491104432E](https://songbird-explorer.flare.network/address/0xF77b3c3f61af5a3cE7f7CE3cfFc117491104432E)
-
+- OrderBook: [0x8853D126bC23A45B9f807739B6EA0B38eF569005](https://songbird-explorer.flare.network/address/0x8853D126bC23A45B9f807739B6EA0B38eF569005)
+- OrderBookSubParser: [0xd19581a021f4704ad4eBfF68258e7A0a9DB1CD77](https://songbird-explorer.flare.network/address/0xd19581a021f4704ad4eBfF68258e7A0a9DB1CD77)
