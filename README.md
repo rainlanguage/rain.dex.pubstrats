@@ -3,21 +3,21 @@
 ## Deployed Contracts
 
 ### Arbitrum
-- RainterpreterExpressionDeployerNPE2 : [0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76](https://arbiscan.io/address/0x2aee87d75cd000583daec7a28db103b1c0c18b76#code)
+- RainterpreterExpressionDeployerNPE2: [0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76](https://arbiscan.io/address/0x2aee87d75cd000583daec7a28db103b1c0c18b76#code)
 - OrderBook: [0x90CAF23eA7E507BB722647B0674e50D8d6468234](https://arbiscan.io/address/0x90caf23ea7e507bb722647b0674e50d8d6468234#code)
 - OrderBookSubParser: [0x23F77e7Bc935503e437166498D7D72f2Ea290E1f](https://arbiscan.io/address/0x23f77e7bc935503e437166498d7d72f2ea290e1f)
 - UniswapWords: [0x5Cf7d0a8c61c8dcC6b0ECB281dF1C17264C2A517](https://arbiscan.io/address/0x5cf7d0a8c61c8dcc6b0ecb281df1c17264c2a517)
-- Subgraph : https://api.thegraph.com/subgraphs/name/h20liquidity/arbitrum-0x90caf23e
+- Subgraph: https://api.thegraph.com/subgraphs/name/h20liquidity/arbitrum-0x90caf23e
 
 ### Base
-- RainterpreterExpressionDeployerNPE2 : [0xfca89cD12Ba1346b1ac570ed988AB43b812733fe](https://basescan.org/address/0xfca89cd12ba1346b1ac570ed988ab43b812733fe#code)
+- RainterpreterExpressionDeployerNPE2: [0xfca89cD12Ba1346b1ac570ed988AB43b812733fe](https://basescan.org/address/0xfca89cd12ba1346b1ac570ed988ab43b812733fe#code)
 - OrderBook: [0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76](https://basescan.org/address/0x2aee87d75cd000583daec7a28db103b1c0c18b76#code)
 - OrderBookSubParser: [0xee873E21F8a6A256cb9f53BE491E569eA6cdd63E](https://basescan.org/address/0xee873e21f8a6a256cb9f53be491e569ea6cdd63e#code)
 - UniswapWords: [0x22410e2a46261a1B1e3899a072f303022801C764](https://basescan.org/address/0x22410e2a46261a1b1e3899a072f303022801c764#code)
-- Subgraph : NA
+- Subgraph: NA
 
 ### Binance Smart Chain
-- RainterpreterExpressionDeployerNPE2 : [0x1eFd85E6C384fAD9B80C6D508E9098Eb91C4eD30](https://bscscan.com/address/0x1efd85e6c384fad9b80c6d508e9098eb91c4ed30#code)
+- RainterpreterExpressionDeployerNPE2: [0x1eFd85E6C384fAD9B80C6D508E9098Eb91C4eD30](https://bscscan.com/address/0x1efd85e6c384fad9b80c6d508e9098eb91c4ed30#code)
 - OrderBook: [0xb1d6D10561D4e1792A7c6B336b0529e4bFb5Ea8F](https://bscscan.com/address/0xb1d6d10561d4e1792a7c6b336b0529e4bfb5ea8f)
 - OrderBookSubParser: [0x90CAF23eA7E507BB722647B0674e50D8d6468234](https://bscscan.com/address/0x90caf23ea7e507bb722647b0674e50d8d6468234)
 - UniswapWords: [0xee873E21F8a6A256cb9f53BE491E569eA6cdd63E](https://bscscan.com/address/0xee873e21f8a6a256cb9f53be491e569ea6cdd63e#code)

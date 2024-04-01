@@ -55,11 +55,14 @@ charts:
   buy:
     scenario: flare.sell-wflr
     plots:
-      Sell WFLR - FTSO price vs. final price:
-        data:
-          x: 0.0
-          y: 0.2
-        plot-type: line
+      default:
+        title: Sell WFLR
+        subtitle: FTSO price vs. final price
+        marks:
+          - type: line
+            options:
+              x: 0.0
+              y: 0.2
 
 ---
 #flare-sub-parser !The flare subparser address.
