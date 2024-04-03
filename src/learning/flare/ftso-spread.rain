@@ -20,6 +20,7 @@ scenarios:
           ftso-base: '"FLR"'
           ftso-quote: '"ETH"'
       buy-wflr:
+        runs: 1
         bindings:
           ftso-base: '"ETH"'
           ftso-quote: '"FLR"'
@@ -52,11 +53,22 @@ deployments:
     order: buy-wflr
 
 charts:
-  buy:
+  sell:
     scenario: flare.sell-wflr
     plots:
       default:
         title: Sell WFLR
+        subtitle: FTSO price vs. final price
+        marks:
+          - type: line
+            options:
+              x: 0.0
+              y: 0.2
+  buy:
+    scenario: flare.buy-wflr
+    plots:
+      default:
+        title: Buy WFLR
         subtitle: FTSO price vs. final price
         marks:
           - type: line
