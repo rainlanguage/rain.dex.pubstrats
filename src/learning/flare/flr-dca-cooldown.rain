@@ -2,36 +2,48 @@
 
 tokens:
   eusdt:
+    network: flare
     address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
     decimals: 6
   wflr:
+    network: flare
     address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
     decimals: 18
 
 orders:
-  dca-buy:
+  sell-wflr:
     inputs:
       - token: eusdt
         vault-id: 0x01
     outputs:
       - token: wflr
         vault-id: 0x02
+  buy-wflr:
+    inputs:
+      - token: wflr
+        vault-id: 0x02
+    outputs:
+      - token: eusdt
+        vault-id: 0x01
+
 scenarios:
   default:
+    deployer: flare
     bindings:
-      flare-subparser: 0x4F4267c2084607A5e23660733Cb3a0Cf5840F0C7
+      flare-sub-parser: 0xc4b7A086FD25260461f7F50ac9D62Cb86006bbEB
       cooldown-time: 300
     scenarios:
       sell-wflr:
+        runs: 1
         bindings:
           per-trade-amount: 100e18
-          ftso-base: "FLR"
-          ftso-quote: "USD"
+          ftso-base: '"FLR"'
+          ftso-quote: '"USD"'
       buy-wflr:
         bindings:
           per-trade-amount: 100e18
-          ftso-base: "USD"
-          ftso-quote: "FLR"
+          ftso-base: '"USD"'
+          ftso-quote: '"FLR"'
 
 deployments:
   sell-wflr:
@@ -40,6 +52,13 @@ deployments:
   buy-wflr:
     scenario: default.buy-wflr
     order: buy-wflr
+
+charts:
+  sell-wflr:
+    scenario: default.sell-wflr
+    metrics:
+      - label: FTSO price
+        value: 0.3
 ---
 #flare-sub-parser !The flare subparser address.
 
@@ -60,6 +79,7 @@ now: block-timestamp(),
     now
     int-add(get("last-traded") cooldown-time)
   )
+  "cooldown"
 ),
 
 /* getting a quote from the Flare FTSO */
