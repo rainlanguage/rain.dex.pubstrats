@@ -1,16 +1,56 @@
+# Saves up to N most recent values from an FTSO oracle with a cooldown between each sample.
+#
+# The strat takes 0 input and offers an auction as a bounty, paying more the longer the
+# strat has been off cooldown for. This mitigates unpredictable gas costs without significantly
+# overpaying the counterparty for the service of sampling the FTSO.
+#
+# The strat intentionally does no trading itself, it merely samples data and stores it under
+# a predictable set of keys. Other strats can then be written that are read-only over these
+# keys, keeping the overall system decoupled and easy to manage. As long as the sampler
+# vault has enough WFLR in it to cover gas, there is an incentive for solvers to keep sampling
+# indefinitely every time the strat comes off cooldown.
+
+tokens:
+  eusdt:
+    network: flare
+    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+    decimals: 6
+  wflr:
+    network: flare
+    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+    decimals: 18
+
+orders:
+  flare:
+    # vault-id is generated on cli `openssl rand -hex 32`
+    inputs:
+      # Input is irrelevant because we always set the IO ratio to 0.
+      - token: eusdt
+        vault-id: 0xb39eed084711b7e383c97ae5a9e0aa76e01f7a641457726ebfd912fe33dd67f5
+    outputs:
+      - token: wflr
+        vault-id: 0xb39eed084711b7e383c97ae5a9e0aa76e01f7a641457726ebfd912fe33dd67f5
+
 scenarios:
   flare:
     runs: 1
     bindings:
-      flare-sub-parser: 0xfca89cD12Ba1346b1ac570ed988AB43b812733fe
+      flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
       samples-count: 5
       cooldown: 3600
       bounty-base: 2e17
       # 1e17 / 3600 = 0.1 FLR per hour
       bounty-rate: 27777777777777
 
+# There's not really anything to chart without overcomplicating the
+# strat itself in ways that would obfuscate the core lesson of the example.
 charts:
   flare:
+
+deployments:
+  flare:
+    order: flare
+    scenario: flare
 
 ---
 #flare-sub-parser !Sub parser contract that provides Flare words.
@@ -33,7 +73,7 @@ index: int-mod(get("index") samples-count),
 last-update-time: any(get("last-update-time") block-timestamp()),
 last-update-ago: int-sub(block-timestamp() last-update-time),
 :ensure(
-  greater-than(last-update-ago cooldown)
+  greater-than-or-equal-to(last-update-ago cooldown)
   "Cooling down."
 ),
 
@@ -41,7 +81,7 @@ last-update-ago: int-sub(block-timestamp() last-update-time),
 bounty: decimal18-linear-growth(
   bounty-base
   bounty-rate
-  int-to-decimal18(last-update-ago)
+  int-to-decimal18(int-sub(last-update-ago cooldown))
 ),
 /* 0 io ratio means no input required from the counterparty for them to receive the bounty */
 io-ratio: 0;
