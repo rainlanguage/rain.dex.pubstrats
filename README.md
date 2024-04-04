@@ -40,7 +40,7 @@ For some reason Flarescan is erroring on verification.
 - OrderBook: [0xF9bDedb1e8c32185E879E056eBA9F5aeC1839d60](https://flarescan.com/address/0xF9bDedb1e8c32185E879E056eBA9F5aeC1839d60)
 - OrderBookSubParser: [0xfca89cD12Ba1346b1ac570ed988AB43b812733fe](https://flarescan.com/address/0xfca89cD12Ba1346b1ac570ed988AB43b812733fe)
 - FlareFtsoWords [0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4](https://flarescan.com/address/0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4)
-- Subgraph: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-ob
+- Subgraph: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-0x7476D871
 
 ### Oasis Sapphire
 
