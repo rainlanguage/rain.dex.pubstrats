@@ -1,4 +1,8 @@
-# This strategy will buy or sell WFLR based on the price of the FTSO pair FLR/USD
+# This strategy will buy WFLR based on the price of the FTSO pair FLR/USD
+#
+# The strategy has a cooldown specified in seconds, e.g. 300 = 5 minutes.
+# The strategy will not buy while the cooldown is active, so overall the
+# strategy functions like a dollar cost averaging process.
 
 tokens:
   eusdt:
@@ -11,54 +15,44 @@ tokens:
     decimals: 18
 
 orders:
-  sell-wflr:
-    inputs:
-      - token: eusdt
-        vault-id: 0x01
-    outputs:
-      - token: wflr
-        vault-id: 0x02
+  # vault-id is `openssl rand -hex 32`
   buy-wflr:
     inputs:
       - token: wflr
-        vault-id: 0x02
+        vault-id: 0x7e9fc2d315a36295e809cbe8ec822c5a6e6258cc2e0f3e047d40204803f74bab
     outputs:
       - token: eusdt
-        vault-id: 0x01
+        vault-id: 0x7e9fc2d315a36295e809cbe8ec822c5a6e6258cc2e0f3e047d40204803f74bab
 
 scenarios:
   default:
     deployer: flare
+    runs: 1
     bindings:
       flare-sub-parser: 0xc4b7A086FD25260461f7F50ac9D62Cb86006bbEB
       cooldown-time: 300
-    scenarios:
-      sell-wflr:
-        runs: 1
-        bindings:
-          per-trade-amount: 100e18
-          ftso-base: '"FLR"'
-          ftso-quote: '"USD"'
-      buy-wflr:
-        bindings:
-          per-trade-amount: 100e18
-          ftso-base: '"USD"'
-          ftso-quote: '"FLR"'
+      per-trade-amount: 100e18
 
 deployments:
-  sell-wflr:
-    scenario: default.sell-wflr
-    order: sell-wflr
-  buy-wflr:
-    scenario: default.buy-wflr
+  default:
+    scenario: default
     order: buy-wflr
 
 charts:
-  sell-wflr:
-    scenario: default.sell-wflr
+  Per sale:
+    scenario: default
     metrics:
       - label: FTSO price
+        description: FLR per $
+        value: 0.1
+      - label: Cooldown time
+        value: 0.2
+      - label: FLR per trade amount
         value: 0.3
+      - label: $ per trade amount
+        value: 0.4
+      - label: IO ratio
+        value: 0.5
 ---
 #flare-sub-parser !The flare subparser address.
 
@@ -81,14 +75,17 @@ now: block-timestamp(),
   )
   "cooldown"
 ),
+:set("last-traded" now),
 
 /* getting a quote from the Flare FTSO */
-ftso-price: ftso-current-price-pair(ftso-base ftso-quote 3600),
+ftso-price: decimal18-inv(ftso-current-price-usd("FLR" 3600)),
+
+/* added for charting */
+_: cooldown-time,
+flr-amount: decimal18-mul(ftso-price per-trade-amount),
 
 max-output: per-trade-amount,
-price: ftso-price,
-
-:set("last-traded" now);
+io-ratio: ftso-price;
 
 #handle-io
 :;
