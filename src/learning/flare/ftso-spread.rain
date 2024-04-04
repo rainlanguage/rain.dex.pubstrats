@@ -1,3 +1,17 @@
+# FTSO Spread
+# This strategy is intended to be deployed as two separate orders.
+#
+# One order represents selling WFLR for WETH (i.e. the output is WFLR).
+# One order represents buying WFLR for WETH (i.e. the input is WFLR).
+#
+# Both orders read from the onchain FTSOs to get the pair price and then
+# offer a spread either side of the oracle price. The spread is calculated
+# by multiplying the io-ratio by a number larger than 1e18.
+# E.g. a 1% spread means the multiplier should be 101e16.
+#
+# The concept of "buying" and "selling" is represented by the input and
+# output tokens being reversed, and the FTSO base/quote being set accordingly.
+
 tokens:
   wflr:
     address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
@@ -55,26 +69,18 @@ deployments:
 charts:
   sell:
     scenario: flare.sell-wflr
-    plots:
-      default:
-        title: Sell WFLR
-        subtitle: FTSO price vs. final price
-        marks:
-          - type: line
-            options:
-              x: 0.0
-              y: 0.2
+    metrics:
+      - label: FTSO sell price
+        value: 0.0
+      - label: Final sell io-ratio
+        value: 0.2
   buy:
     scenario: flare.buy-wflr
-    plots:
-      default:
-        title: Buy WFLR
-        subtitle: FTSO price vs. final price
-        marks:
-          - type: line
-            options:
-              x: 0.0
-              y: 0.2
+    metrics:
+      - label: FTSO buy price
+        value: 0.0
+      - label: Final buy io-ratio
+        value: 0.2
 
 ---
 #flare-sub-parser !The flare subparser address.
