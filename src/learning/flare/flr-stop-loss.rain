@@ -1,55 +1,87 @@
-# This is a simple stop-loss order that will sell if the price drops below our threshold
+# This is a simple stop-limit order that will sell at the limit price
+# if the FTSO oracle price drops below a stop price.
+#
+# The order has a internal switch to check that it only runs once.
 
 tokens:
   eusdt:
     address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
     decimals: 6
+    network: flare
   wflr:
     address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
     decimals: 18
+    network: flare
 
 orders:
-  stop-loss:
+  flare:
+    # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: eusdt
-        vault-id: 0x01
+        vault-id: 0xc000bc8ae30330757787fa5b6435b2bd5ecf8b0c087a8034a09cd0fda43513f3
     outputs:
       - token: wflr
-        vault-id: 0x02
+        vault-id: 0xc000bc8ae30330757787fa5b6435b2bd5ecf8b0c087a8034a09cd0fda43513f3
+
 scenarios:
-  stop-loss:
+  flare:
+    runs: 1
     bindings:
-      flare-sub-parser: 0x4F4267c2084607A5e23660733Cb3a0Cf5840F0C7
+      flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
       cooldown-time: 300
-      bindings:
-        trade-amount: 100e18
-        threshold-price: 5e17
-        ftso-base: "FLR"
-        ftso-quote: "ETH"
+      trade-amount: 5e18
+      limit-price: 35e15
+      stop-price: 4e16
 
 deployments:
-  stop-loss:
-    scenario: stop-loss
-    order: stop-loss
+  flare:
+    scenario: flare
+    order: flare
+
+charts:
+  Stop limit order selling WFLR:
+    scenario: flare
+    metrics:
+      - label: FTSO price
+        value: 0.0
+      - label: Stop price
+        value: 0.1
+      - label: Limit price
+        value: 0.2
+      - label: Trade amount (in $)
+        value: 0.3
+      - label: Trade amount (in WFLR)
+        value: 0.4
+      - label: IO ratio
+        description: Amount of USD per WFLR sold.
+        value: 0.5
 ---
 #flare-sub-parser !The flare subparser address.
 
-#trade-amount !The amount that we'll buy or sell.
-#threshold-price !The price below which we'll sell.
-#bounty-amount !The amount of the bounty that we'll pay to the filler of this order.
+#trade-amount !The amount of WFLR that we will sell.
+#stop-price !The price below which we'll sell WFLR.
+#limit-price !The price which we'll sell at if the FTSO reports a price below the stop price.
 
 #ftso-base !The base token of the FTSO pair.
-#ftso-quote !The quote token of the FTSO pair.
 
 #calculate-io
 using-words-from flare-sub-parser
 
-ftso-price: ftso-current-price-pair(ftso-base ftso-quote 3600),
+ftso-price: ftso-current-price-usd("FLR" 3600),
 
-:ensure(lt(ftso-price threshold-price)),
+:ensure(less-than(ftso-price stop-price) "Threshold not hit."),
+
+/* ensure that this strat only runs once. */
+:ensure(is-zero(get("did-run")) "Already run."),
+:set("did-run" 1),
+
+/* added this here to help charting */
+_: stop-price,
+_: limit-price,
+input-amount: decimal18-mul(trade-amount limit-price),
 
 max-output: trade-amount,
-price: ftso-price;
+price: limit-price;
 
 #handle-io
 :;
