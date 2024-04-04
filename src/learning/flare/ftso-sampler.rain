@@ -1,0 +1,50 @@
+scenarios:
+  flare:
+    runs: 1
+    bindings:
+      flare-sub-parser: 0xfca89cD12Ba1346b1ac570ed988AB43b812733fe
+      samples-count: 5
+      cooldown: 3600
+      bounty-base: 2e17
+      # 1e17 / 3600 = 0.1 FLR per hour
+      bounty-rate: 27777777777777
+
+charts:
+  flare:
+
+---
+#flare-sub-parser !Sub parser contract that provides Flare words.
+
+#samples-count !Number of samples to collect from the FTSO.
+#cooldown !Minimum time in seconds that must elapse between samples.
+
+#bounty-base !Minimum bounty to offer for each sample in WFLR.
+#bounty-rate !Per second bounty increase.
+
+#calculate-io
+using-words-from flare-sub-parser
+
+ftso-price: ftso-current-price-usd("FLR" 3600),
+
+index: int-mod(get("index") samples-count),
+:set("index" int-add(index 1)),
+:set(hash("base" index) ftso-price),
+
+last-update-time: any(get("last-update-time") block-timestamp()),
+last-update-ago: int-sub(block-timestamp() last-update-time),
+:ensure(
+  greater-than(last-update-ago cooldown)
+  "Cooling down."
+),
+
+/* linear auction for the bounty to mitigate unpredictable gas spikes */
+bounty: decimal18-linear-growth(
+  bounty-base
+  bounty-rate
+  int-to-decimal18(last-update-ago)
+),
+/* 0 io ratio means no input required from the counterparty for them to receive the bounty */
+io-ratio: 0;
+
+#handle-io
+:;
