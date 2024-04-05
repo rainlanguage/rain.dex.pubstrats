@@ -168,47 +168,54 @@ scenarios:
                   test-now: 0
 
 charts:
-    buy:
-        scenario: arb-red-blue-tranches.buy.test
-        plots:
-          BLUE amount available vs tranche:
-            data:
+  buy:
+    scenario: arb-red-blue-tranches.buy.test
+    plots:
+      BLUE amount available vs tranche:
+        marks:
+          - type: line
+            options:
               x: 0.0
               y: 0.6
-            plot-type: line
-          Number of RED purchased per tranche:
-            data:
+      Number of RED purchased per tranche:
+        marks:
+          - type: line
+            options:
               x: 0.0
               y: 0.5.2
-            plot-type: line
-          'io-ratio (i.e. # of RED purchased per BLUE spent) vs tranche':
-            data:
+      'io-ratio (i.e. # of RED purchased per BLUE spent) vs tranche':
+        marks:
+          - type: line
+            options:
               x: 0.0
               y: 0.7
-            plot-type: line
-          Effective price (e.g. visible on dextools) vs tranche:
-            data:
+      Effective price (e.g. visible on dextools) vs tranche:
+        marks:
+          - type: line
+            options:
               x: 0.0
               y: 0.5.3
-            plot-type: line
     sell:
-        scenario: arb-red-blue-tranches.sell.test
-        plots:
-          Number of RED sold per tranche:
-            data:
-              x: 0.0
-              y: 0.6
-            plot-type: line
-          BLUE per tranche:
-            data:
-              x: 0.0
-              y: 0.5.2
-            plot-type: line
-          'Effective price (e.g. visible on dextools) vs tranche':
-            data:
-              x: 0.0
-              y: 0.7
-            plot-type: line
+      scenario: arb-red-blue-tranches.sell.test
+      plots:
+        Number of RED sold per tranche:
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.6
+        BLUE per tranche:
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.5.2
+        'Effective price (e.g. visible on dextools) vs tranche':
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.7
 
 deployments:
   arbitrum-one-buy:
