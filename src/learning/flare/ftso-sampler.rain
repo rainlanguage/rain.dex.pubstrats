@@ -70,7 +70,7 @@ index: int-mod(get("index") samples-count),
 :set("index" int-add(index 1)),
 :set(hash("base" index) ftso-price),
 
-last-update-time: any(get("last-update-time") block-timestamp()),
+last-update-time: get("last-update-time"),
 last-update-ago: int-sub(block-timestamp() last-update-time),
 :ensure(
   greater-than-or-equal-to(last-update-ago cooldown)
