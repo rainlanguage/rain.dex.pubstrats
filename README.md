@@ -37,10 +37,11 @@
 For some reason Flarescan is erroring on verification.
 
 - RainterpreterExpressionDeployerNPE2: [0x550878091b2B1506069F61ae59e3A5484Bca9166](https://flarescan.com/address/0x550878091b2B1506069F61ae59e3A5484Bca9166)
-- OrderBook: [0xF9bDedb1e8c32185E879E056eBA9F5aeC1839d60](https://flarescan.com/address/0xF9bDedb1e8c32185E879E056eBA9F5aeC1839d60)
-- OrderBookSubParser: [0xfca89cD12Ba1346b1ac570ed988AB43b812733fe](https://flarescan.com/address/0xfca89cD12Ba1346b1ac570ed988AB43b812733fe)
+- OrderBook: [0xb06202aA3Fe7d85171fB7aA5f17011d17E63f382](https://flarescan.com/address/0xb06202aA3Fe7d85171fB7aA5f17011d17E63f382)
+- OrderBookSubParser: [0xF836f2746B407136a5bCB515495949B1edB75184](https://flarescan.com/address/0xF836f2746B407136a5bCB515495949B1edB75184)
+- RouteProcessorOrderBookV3ArbOrderTaker: [0x56394785a22b3BE25470a0e03eD9E0a939C47b9b](https://flarescan.com/address/0x56394785a22b3BE25470a0e03eD9E0a939C47b9b)
 - FlareFtsoWords [0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4](https://flarescan.com/address/0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4)
-- Subgraph: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-0x7476D871
+- Subgraph: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-0xb06202aA
 
 ### Oasis Sapphire
 
