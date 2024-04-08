@@ -10,6 +10,7 @@ tokens:
 
 orders:
   flare:
+    orderbook: flare
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
@@ -24,8 +25,11 @@ orders:
 
 scenarios:
   flare:
+    orderbook: flare
     runs: 1
     bindings:
+      raindex-subparser: 0xF836f2746B407136a5bCB515495949B1edB75184
+      flare-subparser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
       fallback-ratio: '''fallback-ftso-usd'
       growth: 1e15
       fallback-ftso-multiplier: 999e15
@@ -66,6 +70,7 @@ _: fallback-constant-value;
 
 #fallback-ratio !Expression for the ratio to use when there is no history for the pair.
 #calculate-io
+using-words-from raindex-subparser flare-subparser
 amount: output-vault-balance-before(),
 io-ratio: any(
   call<'ratio>()
