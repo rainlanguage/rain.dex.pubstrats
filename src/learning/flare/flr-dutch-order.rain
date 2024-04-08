@@ -1,0 +1,91 @@
+# This strategy will sell WFLR based on the price of the FTSO pair FLR/USD
+#
+# It is designed as an auction and will only sell once. 
+
+tokens:
+  eusdt:
+    network: flare
+    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+    decimals: 6
+  wflr:
+    network: flare
+    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+    decimals: 18
+
+orders:
+  # vault-id is `openssl rand -hex 32`
+  sell-wflr:
+    orderbook: flare
+    inputs:
+      - token: eusdt
+        vault-id: 0xdce98e3a7ee4b8b7ec1def4542b220083f8c3f0d569f142752cdc5bad6e14092
+    outputs:
+      - token: wflr
+        vault-id: 0xdce98e3a7ee4b8b7ec1def4542b220083f8c3f0d569f142752cdc5bad6e14092
+
+scenarios:
+  default:
+    deployer: flare
+    runs: 1
+    bindings:
+      flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
+      trade-amount: 500e18
+      start-time: 1712585197
+      auction-rate-percentage: 1e15
+
+deployments:
+  default:
+    scenario: default
+    order: sell-wflr
+
+charts:
+  Dutch order:
+    scenario: default
+    metrics:
+      - label: FTSO price
+        description: $ per FLR
+        value: 0.0
+      - label: Time elapsed
+        value: 0.1
+      - label: Total percentage deducted
+        value: 0.2
+      - label: Percentage mulitplier
+        value: 0.3
+      - label: Trade price
+        value: 0.4
+---
+#flare-sub-parser !The flare subparser address.
+
+#trade-amount !The amount that we want to sell.
+#start-time !The timestamp in seconds when the auction starts - works best as a minute or two after the order will be deployed
+#auction-rate-percentage !The percentage of the price that we'll deduct every second from our offer
+
+#calculate-io
+using-words-from flare-sub-parser
+
+/* ensure that the cooldown time has elapsed since the last trade */
+:ensure(
+  any(
+    greater-than-or-equal-to(
+      block-timestamp()
+      start-time
+    )
+    is-zero(get("dutch auction traded"))
+  )
+  "Auction hasn't started"
+),
+
+/* getting a quote from the Flare FTSO */
+ftso-price: ftso-current-price-usd("FLR" 3600),
+
+time-elapsed: int-sub(block-timestamp() start-time),
+total-percentage-deducted: int-mul(time-elapsed auction-rate-percentage),
+percentage-multiplier: int-sub(1e18 total-percentage-deducted),
+trade-price: decimal18-mul(ftso-price percentage-multiplier),
+:set("dutch auction traded" 1),
+
+max-output: trade-amount,
+io-ratio: trade-price;
+
+#handle-io
+:;
