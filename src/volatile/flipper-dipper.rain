@@ -71,7 +71,7 @@ _: fallback-constant-value;
 #fallback-ratio !Expression for the ratio to use when there is no history for the pair.
 #calculate-io
 using-words-from raindex-subparser flare-subparser
-amount: output-vault-balance-before(),
+amount: decimal18-scale-18-dynamic(output-token-decimals() output-vault-balance-before()),
 io-ratio: any(
   call<'ratio>()
   call<fallback-ratio>()
