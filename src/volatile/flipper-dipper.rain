@@ -78,5 +78,9 @@ io-ratio: any(
 );
 
 #handle-io
+/* avoid noops corrupting state */
+:ensure(output-vault-balance-before()),
+/* avoid partial vault clears as it would break our ratio logic */
 :ensure(equal-to(output-vault-balance-before() output-vault-balance-decrease())),
+/* record the output so that it can be the input on the return trip */
 :set(hash(order-hash() output-token()) output-vault-balance-before());
