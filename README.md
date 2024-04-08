@@ -1,4 +1,4 @@
-## H20 Public Strats
+## Raindex Public Strats
 
 ## Deployed Contracts
 
