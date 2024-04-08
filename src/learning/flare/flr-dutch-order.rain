@@ -1,6 +1,11 @@
 # This strategy will sell WFLR based on the price of the FTSO pair FLR/USD
 #
-# It is designed as an auction and will only sell once. 
+# It is designed as an auction and will only trade once.
+#
+# From the start time, the strategy will offer to sell WFLR at a percentage of the FTSO price.
+# Each second "auction-rate-percentage" will be deducted from the price. For example, if
+# the rate is 0.1% and 10 seconds have elapsed, the strategy will make an offer at 99% of
+# the FTSO price. If the FTSO price is $1 per WFLR, the strategy would accept 99c per WFLR.
 
 tokens:
   eusdt:
@@ -30,7 +35,7 @@ scenarios:
     bindings:
       flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
       trade-amount: 500e18
-      start-time: 1712585197
+      start-time: 1712582040
       auction-rate-percentage: 1e15
 
 deployments:
@@ -66,11 +71,8 @@ using-words-from flare-sub-parser
 /* ensure that the cooldown time has elapsed since the last trade */
 :ensure(
   any(
-    greater-than-or-equal-to(
-      block-timestamp()
-      start-time
-    )
-    is-zero(get("dutch auction traded"))
+    greater-than-or-equal-to(block-timestamp() start-time)
+    is-zero(get("already traded"))
   )
   "Auction hasn't started"
 ),
@@ -78,11 +80,16 @@ using-words-from flare-sub-parser
 /* getting a quote from the Flare FTSO */
 ftso-price: ftso-current-price-usd("FLR" 3600),
 
-time-elapsed: int-sub(block-timestamp() start-time),
+time-elapsed: int-saturating-sub(block-timestamp() start-time),
+
+/* determining the percentage below the FTSO price we'll offer this block */
 total-percentage-deducted: int-mul(time-elapsed auction-rate-percentage),
-percentage-multiplier: int-sub(1e18 total-percentage-deducted),
+percentage-multiplier: int-saturating-sub(1e18 total-percentage-deducted),
+
+/* applying that percentage to the FTSO price */
 trade-price: decimal18-mul(ftso-price percentage-multiplier),
-:set("dutch auction traded" 1),
+
+:set("already traded" 1),
 
 max-output: trade-amount,
 io-ratio: trade-price;
