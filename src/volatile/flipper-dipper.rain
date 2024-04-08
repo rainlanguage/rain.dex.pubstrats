@@ -1,0 +1,77 @@
+tokens:
+  eusdt:
+    network: flare
+    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+    decimals: 6
+  wflr:
+    network: flare
+    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+    decimals: 18
+
+orders:
+  flare:
+    # vault-id is generated on cli `openssl rand -hex 32`
+    inputs:
+      - token: wflr
+        vault-id: 0x13b79ea8f48a331b068c2f1ae7e5cb85b380019ba729fe0f8cb9350f5489e992
+      - token: eusdt
+        vault-id: 0x13b79ea8f48a331b068c2f1ae7e5cb85b380019ba729fe0f8cb9350f5489e992
+    outputs:
+      - token: wflr
+        vault-id: 0x13b79ea8f48a331b068c2f1ae7e5cb85b380019ba729fe0f8cb9350f5489e992
+      - token: eusdt
+        vault-id: 0x13b79ea8f48a331b068c2f1ae7e5cb85b380019ba729fe0f8cb9350f5489e992
+
+scenarios:
+  flare:
+    runs: 1
+    bindings:
+      fallback-ratio: '''fallback-ftso-usd'
+      growth: 1e15
+      fallback-ftso-multiplier: 999e15
+
+charts:
+  flare:
+
+deployments:
+  flare:
+    order: flare
+    scenario: flare
+
+---
+#growth !The amount to grow per rotation.
+#ratio
+prev-input-vault-balance: get(hash(order-hash() input-token())),
+prev-input-vault-balance18: decimal18-scale-18-dynamic(input-token-decimals() prev-input-vault-balance),
+output-vault-balance18: decimal18-scale-18-dynamic(output-token-decimals() output-vault-balance-before()),
+prev-io-ratio: decimal18-div(
+  prev-input-vault-balance18
+  output-vault-balance18
+),
+next-io-ratio: decimal18-mul(
+  prev-io-ratio
+  decimal18-add(1e18 growth)
+);
+
+#fallback-ftso-multiplier !The multiplier to apply to the FTSO to incentivise the initial clear.
+#fallback-ftso-usd
+_: decimal18-mul(
+  ftso-current-price-usd("FLR" 3600)
+  fallback-ftso-multiplier
+);
+
+#fallback-constant-value !A constant fallback value.
+#fallback-constant
+_: fallback-constant-value;
+
+#fallback-ratio !Expression for the ratio to use when there is no history for the pair.
+#calculate-io
+amount: output-vault-balance-before(),
+io-ratio: any(
+  call<'ratio>()
+  call<fallback-ratio>()
+);
+
+#handle-io
+:ensure(equal-to(output-vault-balance-before() output-vault-balance-decrease())),
+:set(hash(order-hash() output-token()) output-vault-balance-before());
