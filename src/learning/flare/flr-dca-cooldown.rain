@@ -17,21 +17,22 @@ tokens:
 orders:
   # vault-id is `openssl rand -hex 32`
   buy-wflr:
+    orderbook: flare
     inputs:
       - token: wflr
-        vault-id: 0x7e9fc2d315a36295e809cbe8ec822c5a6e6258cc2e0f3e047d40204803f74bab
+        vault-id: 0xc7d3ce731e01a8f2a9419f8747aa184eedbcb86fc44b29baf2dfbadce4dab4d7
     outputs:
       - token: eusdt
-        vault-id: 0x7e9fc2d315a36295e809cbe8ec822c5a6e6258cc2e0f3e047d40204803f74bab
+        vault-id: 0xc7d3ce731e01a8f2a9419f8747aa184eedbcb86fc44b29baf2dfbadce4dab4d7
 
 scenarios:
   default:
     deployer: flare
     runs: 1
     bindings:
-      flare-sub-parser: 0xc4b7A086FD25260461f7F50ac9D62Cb86006bbEB
-      cooldown-time: 300
-      per-trade-amount: 100e18
+      flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
+      cooldown-time: 30
+      per-trade-amount: 1e18
 
 deployments:
   default:
@@ -46,21 +47,18 @@ charts:
         description: FLR per $
         value: 0.1
       - label: Cooldown time
-        value: 0.2
-      - label: FLR per trade amount
         value: 0.3
+      - label: FLR per trade amount
+        value: 0.2
       - label: $ per trade amount
-        value: 0.4
-      - label: IO ratio
         value: 0.5
+      - label: IO ratio
+        value: 0.6
 ---
 #flare-sub-parser !The flare subparser address.
 
 #per-trade-amount !The amount that we'll buy or sell per trade.
 #cooldown-time !The minimum amount of seconds that must elapse between trades.
-
-#ftso-base !The base token of the FTSO pair.
-#ftso-quote !The quote token of the FTSO pair.
 
 #calculate-io
 using-words-from flare-sub-parser
@@ -71,21 +69,22 @@ now: block-timestamp(),
 :ensure(
   greater-than-or-equal-to(
     now
-    int-add(get("last-traded") cooldown-time)
+    int-add(get("last-traded-235") cooldown-time)
   )
   "cooldown"
 ),
-:set("last-traded" now),
+:set("last-traded-235" now),
 
 /* getting a quote from the Flare FTSO */
 ftso-price: decimal18-inv(ftso-current-price-usd("FLR" 3600)),
+adjusted-price: decimal18-mul(ftso-price 99e16),
 
 /* added for charting */
 _: cooldown-time,
 flr-amount: decimal18-mul(ftso-price per-trade-amount),
 
 max-output: per-trade-amount,
-io-ratio: ftso-price;
+io-ratio: adjusted-price;
 
 #handle-io
 :;
