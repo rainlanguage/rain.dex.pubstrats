@@ -1,0 +1,64 @@
+# This strategy will sell WFLR based on the price of the FTSO pair FLR/USD
+#
+# This is intended to be the simplest possible order.
+
+tokens:
+  eusdt:
+    network: flare
+    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+    decimals: 6
+  wflr:
+    network: flare
+    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+    decimals: 18
+
+orders:
+  # vault-id is `openssl rand -hex 32`
+  sell-wflr:
+    orderbook: flare
+    inputs:
+      - token: eusdt
+        vault-id: 0xce7cff94ca97c481063dae48cfb378eb4dd3c6b935aef16c2397624c300045fb
+    outputs:
+      - token: wflr
+        vault-id: 0xce7cff94ca97c481063dae48cfb378eb4dd3c6b935aef16c2397624c300045fb
+
+scenarios:
+  default:
+    deployer: flare
+    runs: 1
+    bindings:
+      flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
+
+deployments:
+  default:
+    scenario: default
+    order: sell-wflr
+
+charts:
+  Market sell order:
+    scenario: default
+    metrics:
+      - label: FTSO price
+        description: $ per FLR
+        value: 0.0
+      - label: Adjusted price
+        value: 0.1
+      - label: Max output
+        value: 0.2
+---
+#flare-sub-parser !The flare subparser address.
+
+#calculate-io
+using-words-from flare-sub-parser
+
+/* getting a quote from the Flare FTSO */
+ftso-price: ftso-current-price-usd("FLR" 3600),
+
+adjusted-price: decimal18-mul(ftso-price 99e16), /* ftsoprice * 0.99 */
+
+max-output-amount: 10e18,
+io-ratio: adjusted-price;
+
+#handle-io
+:;
