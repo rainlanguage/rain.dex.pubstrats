@@ -50,9 +50,19 @@ For some reason Flarescan is erroring on verification.
 - OrderBookSubParser: [0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76](https://explorer.oasis.io/mainnet/sapphire/address/0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76)
 
 ### Polygon
+
 - RainterpreterExpressionDeployerNPE2: [0xF77b3c3f61af5a3cE7f7CE3cfFc117491104432E](https://polygonscan.com/address/0xf77b3c3f61af5a3ce7f7ce3cffc117491104432e#code)
 - OrderBook: [0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6](https://polygonscan.com/address/0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6#code)
 - OrderBookSubParser: [0x1fA67aEe8BB29B3144ebAAECe51Fce06BF903929](https://polygonscan.com/address/0x1fA67aEe8BB29B3144ebAAECe51Fce06BF903929#code)
+- UniswapWords: [0xb1d6D10561D4e1792A7c6B336b0529e4bFb5Ea8F](https://polygonscan.com/address/0xb1d6d10561d4e1792a7c6b336b0529e4bfb5ea8f)
+- Subgraph: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+
+### Sepolia
+
+- RainterpreterExpressionDeployerNPE2: [0xd19581a021f4704ad4eBfF68258e7A0a9DB1CD77](https://polygonscan.com/address/0xd19581a021f4704ad4eBfF68258e7A0a9DB1CD77#code)
+
+- OrderBook: [0xfca89cD12Ba1346b1ac570ed988AB43b812733fe](https://polygonscan.com/address/0xfca89cD12Ba1346b1ac570ed988AB43b812733fe#code)
+- OrderBookSubParser: [0xe6A589716d5a72276C08E0e08bc941a28005e55A](https://polygonscan.com/address/0xe6A589716d5a72276C08E0e08bc941a28005e55A#code)
 - UniswapWords: [0xb1d6D10561D4e1792A7c6B336b0529e4bFb5Ea8F](https://polygonscan.com/address/0xb1d6d10561d4e1792a7c6b336b0529e4bfb5ea8f)
 - Subgraph: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
 
