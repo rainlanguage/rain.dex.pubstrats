@@ -269,12 +269,17 @@ deployments:
   io-ratio:;
 
 #get-last-tranche-prod
+  is-initialized: get(hash(order-hash() init-key)),
   tranche-space-before: if(
-    get(hash(order-hash() init-key))
+    is-initialized
     get(hash(order-hash() tranche-space-key))
     initial-tranche-space
   ),
-  last-update-time: get(hash(order-hash() update-time-key)),
+  last-update-time: if(
+    is-initialized
+    get(hash(order-hash() update-time-key))
+    block-timestamp()
+  ),
   now: block-timestamp();
 
 #set-last-tranche-prod
@@ -287,6 +292,10 @@ deployments:
 #max-test-tranche-space !The maximum tranche space that will appear on the test chart.
 #get-last-tranche-test
   tranche-space-before: int-mod(test-tranche-space-before max-test-tranche-space),
+  last-update-time: test-last-update-time,
+  now: test-now;
+#get-last-tranche-test-init
+  tranche-space-before: initial-tranche-space,
   last-update-time: test-last-update-time,
   now: test-now;
 /* There's nothing to set if we're just rebinding in tests. */
