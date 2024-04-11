@@ -172,43 +172,51 @@ charts:
         scenario: arb-red-blue-tranches.buy.test
         plots:
           BLUE amount available vs tranche:
-            data:
-              x: 0.0
-              y: 0.6
-            plot-type: line
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.6
           Number of RED purchased per tranche:
-            data:
-              x: 0.0
-              y: 0.5.2
-            plot-type: line
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.5.2
           'io-ratio (i.e. # of RED purchased per BLUE spent) vs tranche':
-            data:
-              x: 0.0
-              y: 0.7
-            plot-type: line
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
           Effective price (e.g. visible on dextools) vs tranche:
-            data:
-              x: 0.0
-              y: 0.5.3
-            plot-type: line
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.5.3
+                  
     sell:
         scenario: arb-red-blue-tranches.sell.test
         plots:
           Number of RED sold per tranche:
-            data:
-              x: 0.0
-              y: 0.6
-            plot-type: line
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.6
           BLUE per tranche:
-            data:
-              x: 0.0
-              y: 0.5.2
-            plot-type: line
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.5.2
           'Effective price (e.g. visible on dextools) vs tranche':
-            data:
-              x: 0.0
-              y: 0.7
-            plot-type: line
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
 
 deployments:
   arbitrum-one-buy:
