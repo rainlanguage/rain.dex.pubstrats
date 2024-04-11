@@ -119,17 +119,28 @@ scenarios:
                 tranche-size-base: 1000e18
                 tranche-size-growth: 1e16
             scenarios:
-              prod:
+              initialized:
                 bindings:
-                  get-last-tranche: '''get-last-tranche-prod'
-                  set-last-tranche: '''set-last-tranche-prod'
-                  plottables: '''plottables-prod'
                   # This needs to be set upon going live.
                   # Generate a chart and compare to current market prices, if
                   # the market is within the chart then set this to the closest
                   # tranche that won't immediately dump into the market.
                   # If the market is outside the chart then set this to 0.
-                  # initial-tranche-space: 0
+                  initial-tranche-space: 0
+                scenarios:
+                  prod:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                  test:
+                    runs: 100
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test-init'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      test-last-update-time: 0
+                      test-now: 0
               test:
                   runs: 10000
                   bindings:
@@ -151,12 +162,28 @@ scenarios:
                 tranche-size-base: 1000e18
                 tranche-size-growth: 1e16
             scenarios:
-              prod:
+              initialized:
                 bindings:
-                  get-last-tranche: '''get-last-tranche-prod'
-                  set-last-tranche: '''set-last-tranche-prod'
-                  plottables: '''plottables-prod'
-                  initial-tranche-space: 20
+                  # This needs to be set upon going live.
+                  # Generate a chart and compare to current market prices, if
+                  # the market is within the chart then set this to the closest
+                  # tranche that won't immediately dump into the market.
+                  # If the market is outside the chart then set this to 0.
+                  initial-tranche-space: 0
+                scenarios:
+                  prod:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                  test:
+                    runs: 100
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test-init'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      test-last-update-time: 0
+                      test-now: 0         
               test:
                 runs: 10000
                 bindings:
@@ -220,10 +247,10 @@ charts:
 
 deployments:
   arbitrum-one-buy:
-    scenario: arb-red-blue-tranches.buy.prod
+    scenario: arb-red-blue-tranches.buy.initialized.prod
     order: arbitrum-one-buy
   arbitrum-one-sell:
-    scenario: arb-red-blue-tranches.sell.prod
+    scenario: arb-red-blue-tranches.sell.initialized.prod
     order: arbitrum-one-sell
 
 ---
