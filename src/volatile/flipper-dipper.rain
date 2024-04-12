@@ -41,7 +41,8 @@ scenarios:
         bindings:
           ratio-multiplier: '''linear-decay-multiplier'
           linear-decay-start18: 11e17
-          linear-decay-rate18: 115740740740
+          # 1 day for 10%
+          linear-decay-rate18: 1157407407407
           linear-decay-floor18: 1e18
 
 charts:
@@ -64,7 +65,7 @@ deployments:
 #linear-decay-multiplier
 time-key: hash(order-hash() input-token() "linear-decay-last-time"),
 last-time: any(get(time-key) block-timestamp()),
-decay-duration18: int-to-decimal18(integer-sub(block-timestamp() last-time)),
+decay-duration18: int-to-decimal18(int-sub(block-timestamp() last-time)),
 decay-amount18: decimal18-saturating-sub(linear-decay-start18 decimal18-mul(linear-decay-rate18 decay-duration18)),
 _: decimal18-max(decay-amount18 linear-decay-floor18),
 :set(time-key block-timestamp());
