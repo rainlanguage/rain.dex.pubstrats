@@ -1,0 +1,118 @@
+tokens:
+  eusdt:
+    network: flare
+    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+    decimals: 6
+  wflr:
+    network: flare
+    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+    decimals: 18
+
+orders:
+  flare:
+    orderbook: flare
+    # vault-id is generated on cli `openssl rand -hex 32`
+    inputs:
+      - token: wflr
+        vault-id: 0xb79b0cc057bf6facba1d1b3382d3411de7d30ea30d95c54c93871878aa32e6d5
+      - token: eusdt
+        vault-id: 0xb79b0cc057bf6facba1d1b3382d3411de7d30ea30d95c54c93871878aa32e6d5
+    outputs:
+      - token: wflr
+        vault-id: 0xb79b0cc057bf6facba1d1b3382d3411de7d30ea30d95c54c93871878aa32e6d5
+      - token: eusdt
+        vault-id: 0xb79b0cc057bf6facba1d1b3382d3411de7d30ea30d95c54c93871878aa32e6d5
+
+scenarios:
+  flare:
+    orderbook: flare
+    runs: 1
+    bindings:
+      raindex-subparser: 0xF836f2746B407136a5bCB515495949B1edB75184
+      flare-subparser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
+      fallback-ratio: '''fallback-ftso-usd'
+      growth: 1e15
+      fallback-ftso-multiplier: 9999e14
+
+charts:
+  flare:
+
+deployments:
+  flare:
+    order: flare
+    scenario: flare
+
+---
+#growth !The amount to grow per rotation.
+#ratio
+prev-input-vault-balance: get(
+  hash(
+    order-hash()
+    input-token()
+  )
+),
+prev-input-vault-balance18: decimal18-scale-18-dynamic(
+  input-token-decimals()
+  prev-input-vault-balance
+),
+output-vault-balance18: decimal18-scale-18-dynamic(
+  output-token-decimals()
+  output-vault-balance-before()
+),
+prev-io-ratio: decimal18-div(
+  prev-input-vault-balance18
+  output-vault-balance18
+),
+next-io-ratio: decimal18-mul(
+  prev-io-ratio
+  decimal18-add(
+    1e18
+    growth
+  )
+);
+
+#fallback-ftso-multiplier !The multiplier to apply to the FTSO to incentivise the initial clear.
+#fallback-ftso-usd
+_: decimal18-mul(
+  ftso-current-price-usd("FLR" 3600)
+  fallback-ftso-multiplier
+);
+
+#fallback-constant-value !A constant fallback value.
+#fallback-constant
+_: fallback-constant-value;
+
+#fallback-ratio !Expression for the ratio to use when there is no history for the pair.
+#calculate-io
+using-words-from raindex-subparser flare-subparser
+amount: decimal18-scale-18-dynamic(
+  output-token-decimals()
+  output-vault-balance-before()
+),
+io-ratio: any(
+  call<'ratio>()
+  call<fallback-ratio>()
+);
+
+#handle-io
+/* avoid noops corrupting state */
+:ensure(
+  output-vault-balance-before()
+  "Output noop."
+),
+/* avoid partial vault clears as it would break our ratio logic */
+:ensure(
+  equal-to(
+    output-vault-balance-before()
+    output-vault-balance-decrease()
+  )
+  "Partial clear."
+),
+/* record the output so that it can be the input on the return trip */
+:set(
+  hash(
+    order-hash()
+    output-token()
+  )
+  output-vault-balance-before()
+);
