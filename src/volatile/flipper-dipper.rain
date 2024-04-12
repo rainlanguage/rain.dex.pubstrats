@@ -14,14 +14,14 @@ orders:
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
-        vault-id: 0xb79b0cc057bf6facba1d1b3382d3411de7d30ea30d95c54c93871878aa32e6d5
+        vault-id: 0x73ee4ab5191464f4b86ccba7c86e9965248717a0224d202f973327d7db1d9acb
       - token: eusdt
-        vault-id: 0xb79b0cc057bf6facba1d1b3382d3411de7d30ea30d95c54c93871878aa32e6d5
+        vault-id: 0x73ee4ab5191464f4b86ccba7c86e9965248717a0224d202f973327d7db1d9acb
     outputs:
       - token: wflr
-        vault-id: 0xb79b0cc057bf6facba1d1b3382d3411de7d30ea30d95c54c93871878aa32e6d5
+        vault-id: 0x73ee4ab5191464f4b86ccba7c86e9965248717a0224d202f973327d7db1d9acb
       - token: eusdt
-        vault-id: 0xb79b0cc057bf6facba1d1b3382d3411de7d30ea30d95c54c93871878aa32e6d5
+        vault-id: 0x73ee4ab5191464f4b86ccba7c86e9965248717a0224d202f973327d7db1d9acb
 
 scenarios:
   flare:
@@ -31,20 +31,49 @@ scenarios:
       raindex-subparser: 0xF836f2746B407136a5bCB515495949B1edB75184
       flare-subparser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
       fallback-ratio: '''fallback-ftso-usd'
-      growth: 1e15
-      fallback-ftso-multiplier: 9999e14
+      fallback-ftso-multiplier: 1e18
+    scenarios:
+      constant:
+        bindings:
+          ratio-multiplier: '''constant-ratio-multiplier'
+          constant-ratio-multiplier-val18: 1e15
+      linear-decay:
+        bindings:
+          ratio-multiplier: '''linear-decay-multiplier'
+          linear-decay-start18: 11e17
+          linear-decay-rate18: 115740740740
+          linear-decay-floor18: 1e18
 
 charts:
   flare:
 
 deployments:
-  flare:
+  flare-constant:
     order: flare
-    scenario: flare
+    scenario: flare.constant
+
+  flare-linear-decay:
+    order: flare
+    scenario: flare.linear-decay
 
 ---
-#growth !The amount to grow per rotation.
-#ratio
+
+#linear-decay-start18 !Starting position for the linear decay.
+#linear-decay-rate18 !Linear decay decrease per unit time (seconds).
+#linear-decay-floor18 !Minimum value the multiplier will decay to.
+#linear-decay-multiplier
+time-key: hash(order-hash() input-token() "linear-decay-last-time"),
+last-time: any(get(time-key) block-timestamp()),
+decay-duration18: int-to-decimal18(integer-sub(block-timestamp() last-time)),
+decay-amount18: decimal18-saturating-sub(linear-decay-start18 decimal18-mul(linear-decay-rate18 decay-duration18)),
+_: decimal18-max(decay-amount18 linear-decay-floor18),
+:set(time-key block-timestamp());
+
+#constant-ratio-multiplier-val18 !Constant value to multiply the breakeven ratio by.
+#constant-ratio-multiplier
+_: constant-ratio-multiplier-val18;
+
+#breakeven-io-ratio
 prev-input-vault-balance: get(
   hash(
     order-hash()
@@ -59,16 +88,16 @@ output-vault-balance18: decimal18-scale-18-dynamic(
   output-token-decimals()
   output-vault-balance-before()
 ),
-prev-io-ratio: decimal18-div(
+_: decimal18-div(
   prev-input-vault-balance18
   output-vault-balance18
-),
-next-io-ratio: decimal18-mul(
-  prev-io-ratio
-  decimal18-add(
-    1e18
-    growth
-  )
+);
+
+#ratio-multiplier !Expression for the multiplier to the breakeven ratio.
+#desired-ratio
+_: decimal18-mul(
+  call<'breakeven-io-ratio>()
+  call<ratio-multiplier>()
 );
 
 #fallback-ftso-multiplier !The multiplier to apply to the FTSO to incentivise the initial clear.
@@ -90,7 +119,7 @@ amount: decimal18-scale-18-dynamic(
   output-vault-balance-before()
 ),
 io-ratio: any(
-  call<'ratio>()
+  call<'desired-ratio>()
   call<fallback-ratio>()
 );
 
