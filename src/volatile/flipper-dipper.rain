@@ -14,14 +14,14 @@ orders:
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
-        vault-id: 0x13b79ea8f48a331b068c2f1ae7e5cb85b380019ba729fe0f8cb9350f5489e992
+        vault-id: 0xb79b0cc057bf6facba1d1b3382d3411de7d30ea30d95c54c93871878aa32e6d5
       - token: eusdt
-        vault-id: 0x13b79ea8f48a331b068c2f1ae7e5cb85b380019ba729fe0f8cb9350f5489e992
+        vault-id: 0xb79b0cc057bf6facba1d1b3382d3411de7d30ea30d95c54c93871878aa32e6d5
     outputs:
       - token: wflr
-        vault-id: 0x13b79ea8f48a331b068c2f1ae7e5cb85b380019ba729fe0f8cb9350f5489e992
+        vault-id: 0xb79b0cc057bf6facba1d1b3382d3411de7d30ea30d95c54c93871878aa32e6d5
       - token: eusdt
-        vault-id: 0x13b79ea8f48a331b068c2f1ae7e5cb85b380019ba729fe0f8cb9350f5489e992
+        vault-id: 0xb79b0cc057bf6facba1d1b3382d3411de7d30ea30d95c54c93871878aa32e6d5
 
 scenarios:
   flare:
@@ -32,7 +32,7 @@ scenarios:
       flare-subparser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
       fallback-ratio: '''fallback-ftso-usd'
       growth: 1e15
-      fallback-ftso-multiplier: 999e15
+      fallback-ftso-multiplier: 9999e14
 
 charts:
   flare:
