@@ -62,13 +62,16 @@ deployments:
 #linear-decay-start18 !Starting position for the linear decay.
 #linear-decay-rate18 !Linear decay decrease per unit time (seconds).
 #linear-decay-floor18 !Minimum value the multiplier will decay to.
+#linear-decay-time-key "linear-decay-last-time"
 #linear-decay-multiplier
-time-key: hash(order-hash() input-token() "linear-decay-last-time"),
-last-time: any(get(time-key) block-timestamp()),
-decay-duration18: int-to-decimal18(int-sub(block-timestamp() last-time)),
+input-time-key: hash(order-hash() input-token() linear-decay-time-key),
+/* the input time key in this trade will be the output time key for the next trade */
+:set(input-time-key block-timestamp()),
+output-time-key: hash(order-hash() output-token() linear-decay-time-key),
+output-last-time: any(get(output-time-key) block-timestamp()),
+decay-duration18: int-to-decimal18(int-sub(block-timestamp() output-last-time)),
 decay-amount18: decimal18-saturating-sub(linear-decay-start18 decimal18-mul(linear-decay-rate18 decay-duration18)),
-_: decimal18-max(decay-amount18 linear-decay-floor18),
-:set(time-key block-timestamp());
+_: decimal18-max(decay-amount18 linear-decay-floor18);
 
 #constant-ratio-multiplier-val18 !Constant value to multiply the breakeven ratio by.
 #constant-ratio-multiplier
