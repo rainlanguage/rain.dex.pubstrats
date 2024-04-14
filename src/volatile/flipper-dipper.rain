@@ -14,14 +14,14 @@ orders:
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
-        vault-id: 0x73ee4ab5191464f4b86ccba7c86e9965248717a0224d202f973327d7db1d9acb
+        vault-id: 0xf40ff88e04745671630b7a2d1a24a54d7a70f3b798726dbd7be42e61227bcacb
       - token: eusdt
-        vault-id: 0x73ee4ab5191464f4b86ccba7c86e9965248717a0224d202f973327d7db1d9acb
+        vault-id: 0xf40ff88e04745671630b7a2d1a24a54d7a70f3b798726dbd7be42e61227bcacb
     outputs:
       - token: wflr
-        vault-id: 0x73ee4ab5191464f4b86ccba7c86e9965248717a0224d202f973327d7db1d9acb
+        vault-id: 0xf40ff88e04745671630b7a2d1a24a54d7a70f3b798726dbd7be42e61227bcacb
       - token: eusdt
-        vault-id: 0x73ee4ab5191464f4b86ccba7c86e9965248717a0224d202f973327d7db1d9acb
+        vault-id: 0xf40ff88e04745671630b7a2d1a24a54d7a70f3b798726dbd7be42e61227bcacb
 
 scenarios:
   flare:
@@ -40,10 +40,13 @@ scenarios:
       linear-decay:
         bindings:
           ratio-multiplier: '''linear-decay-multiplier'
-          linear-decay-start18: 11e17
+          linear-decay-start18: 101e16
           # 1 day for 10%
-          linear-decay-rate18: 1157407407407
-          linear-decay-floor18: 1e18
+          # 1157407407407
+          # 1 hour for 1%
+          # 2777777777777
+          linear-decay-rate18: 2777777777777
+          linear-decay-floor18: 0
 
 charts:
   flare:
