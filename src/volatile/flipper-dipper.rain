@@ -14,14 +14,14 @@ orders:
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
-        vault-id: 0xf40ff88e04745671630b7a2d1a24a54d7a70f3b798726dbd7be42e61227bcacb
+        vault-id: 0x3128360892b5b5a89ad57a80e0653eb563c334c5a475217813f7782a53bd3823
       - token: eusdt
-        vault-id: 0xf40ff88e04745671630b7a2d1a24a54d7a70f3b798726dbd7be42e61227bcacb
+        vault-id: 0x3128360892b5b5a89ad57a80e0653eb563c334c5a475217813f7782a53bd3823
     outputs:
       - token: wflr
-        vault-id: 0xf40ff88e04745671630b7a2d1a24a54d7a70f3b798726dbd7be42e61227bcacb
+        vault-id: 0x3128360892b5b5a89ad57a80e0653eb563c334c5a475217813f7782a53bd3823
       - token: eusdt
-        vault-id: 0xf40ff88e04745671630b7a2d1a24a54d7a70f3b798726dbd7be42e61227bcacb
+        vault-id: 0x3128360892b5b5a89ad57a80e0653eb563c334c5a475217813f7782a53bd3823
 
 scenarios:
   flare:
@@ -48,7 +48,7 @@ scenarios:
           # https://www.desmos.com/calculator/u40dpvk0jf
           ratio-multiplier: '''ramp-down'
           ramp-down-c18: 101e16
-          ramp-down-c18: 6e18
+          ramp-down-d18: 6e18
           seconds-per-epoch18: 86400e18
 
 charts:
@@ -62,6 +62,10 @@ deployments:
   flare-linear-decay:
     order: flare
     scenario: flare.linear-decay
+
+  flare-ramp-down:
+    order: flare
+    scenario: flare.ramp-down
 
 ---
 
