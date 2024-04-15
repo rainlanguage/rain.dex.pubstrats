@@ -86,9 +86,15 @@ epochs18: decimal18-div(duration-seconds18 seconds-per-epoch18);
 #ramp-down
 /* y = C - e^(x - D) */
 x18: call<'epochs-since-last-trade>(),
-exponent18: decimal18-sub(x18 ramp-down-d18),
+/* want the absolute diff here so we don't go negative */
+exponent18: decimal18-sub(
+  decimal18-max(x18 ramp-down-d18)
+  decimal18-min(x18 ramp-down-d18)
+),
 e: 2718281828459045235,
-ramp18: decimal18-power(e exponent18),
+uramp18: decimal18-power(e exponent18),
+/* invert uramp18 if (x - D) is negative */
+ramp18: if(greater-than(ramp-down-d18 x18) decimal18-inv(uramp18) uramp18),
 y18: decimal18-saturating-sub(ramp-down-c18 ramp18);
 
 #linear-decay-start18 !Starting position for the linear decay.
