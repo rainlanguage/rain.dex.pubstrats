@@ -41,12 +41,15 @@ scenarios:
         bindings:
           ratio-multiplier: '''linear-decay-multiplier'
           linear-decay-start18: 101e16
-          # 1 day for 10%
-          # 1157407407407
-          # 1 hour for 1%
-          # 2777777777777
-          linear-decay-rate18: 2777777777777
+          seconds-per-epoch18: 3600e18
           linear-decay-floor18: 0
+      ramp-down:
+        bindings:
+          # https://www.desmos.com/calculator/u40dpvk0jf
+          ratio-multiplier: '''ramp-down'
+          ramp-down-c18: 101e16
+          ramp-down-c18: 6e18
+          seconds-per-epoch18: 86400e18
 
 charts:
   flare:
@@ -62,18 +65,35 @@ deployments:
 
 ---
 
+#seconds-per-epoch18 !Number of seconds to treat as 1 epoch. E.g. 86400e18 is 1 day per epoch.
+#linear-decay-time-key "linear-decay-last-time"
+#epochs-since-last-trade
+input-time-key: hash(order-hash() input-token() linear-decay-time-key),
+output-time-key: hash(order-hash() output-token() linear-decay-time-key),
+/* the input time key in this trade will be the output time key for the next trade */
+:set(input-time-key block-timestamp()),
+output-last-time: any(get(output-time-key) block-timestamp()),
+duration-seconds: int-sub(block-timestamp() output-last-time),
+duration-seconds18: int-to-decimal18(duration-seconds),
+epochs18: decimal18-div(duration-seconds18 seconds-per-epoch18);
+
+
+/* y = C - e^(x - D) */
+#ramp-down-c18 !C in ramp down equation.
+#ramp-down-d18 !D in ramp down equation.
+#ramp-down
+x18: call<'epochs-since-last-trade>(),
+exponent18: decimal18-sub(x18 ramp-down-d18),
+e: 2718281828459045235,
+ramp18: decimal18-power(e exponent18),
+y18: decimal18-sub(ramp-down-c18 ramp18);
+
 #linear-decay-start18 !Starting position for the linear decay.
 #linear-decay-rate18 !Linear decay decrease per unit time (seconds).
 #linear-decay-floor18 !Minimum value the multiplier will decay to.
-#linear-decay-time-key "linear-decay-last-time"
 #linear-decay-multiplier
-input-time-key: hash(order-hash() input-token() linear-decay-time-key),
-/* the input time key in this trade will be the output time key for the next trade */
-:set(input-time-key block-timestamp()),
-output-time-key: hash(order-hash() output-token() linear-decay-time-key),
-output-last-time: any(get(output-time-key) block-timestamp()),
-decay-duration18: int-to-decimal18(int-sub(block-timestamp() output-last-time)),
-decay-amount18: decimal18-saturating-sub(linear-decay-start18 decimal18-mul(linear-decay-rate18 decay-duration18)),
+epochs18: call<'epochs-since-last-trade>(),
+decay-amount18: decimal18-saturating-sub(linear-decay-start18 decimal18-mul(linear-decay-rate18 epochs18)),
 _: decimal18-max(decay-amount18 linear-decay-floor18);
 
 #constant-ratio-multiplier-val18 !Constant value to multiply the breakeven ratio by.
