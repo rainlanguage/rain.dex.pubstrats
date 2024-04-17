@@ -67,7 +67,7 @@ contract TrancheSpaceTest is StrategyTests {
         return IO(address(BLUE_TOKEN), 18, VAULT_ID);
     }
 
-    function testTrancheSpace0() public {
+    function testTrancheSpaceOrderExternal() public {
         // Input vaults
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = arbRedIo();
@@ -99,7 +99,41 @@ contract TrancheSpaceTest is StrategyTests {
         // OrderBook 'takeOrder'
         checkStrategyCalculations(strategy);
 
-    } 
+    }
+
+    function testTrancheSpaceOrderArb() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = arbRedIo();
+
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = arbBlueIo();
+
+        uint256 expectedRatio = 1e18;
+        uint256 expectedAmountOutputMax = 1e18; 
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedRedToBlueRoute(address(ARB_INSTANCE)),
+            getEncodedBlueToRedRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            1e18,
+            1e18,
+            expectedRatio,
+            expectedAmountOutputMax,
+            "src/tranche-space.rain",
+            "arb-red-blue-tranches.buy.initialized.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        // OrderBook 'takeOrder'
+        checkStrategyCalculationsArbOrder(strategy);
+
+    }  
 
     // Inheriting contract defines the route for the strategy.
     function getEncodedRedToBlueRoute(address toAddress) internal pure returns (bytes memory) {
