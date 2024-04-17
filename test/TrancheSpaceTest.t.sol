@@ -40,14 +40,14 @@ contract TrancheSpaceTest is StrategyTests {
     IERC20 constant RED_TOKEN = IERC20(0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe); 
     IERC20 constant BLUE_TOKEN = IERC20(0x667f41fF7D9c06D2dd18511b32041fC6570Dc468);
 
-    function selectFork() internal {
+    function selectPolygonFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_ARBITRUM"));
         vm.selectFork(fork);
         vm.rollFork(FORK_BLOCK_NUMBER);
     }
 
     function setUp() public {
-        selectFork();
+        selectPolygonFork();
 
         PARSER = IParserV1(0x22410e2a46261a1B1e3899a072f303022801C764);
         ORDERBOOK = IOrderBookV3(0x90CAF23eA7E507BB722647B0674e50D8d6468234);
