@@ -96,7 +96,7 @@ scenarios:
           # skip tranches.
           # Shyness MAY be set to 0, in which case every tranche will be fully
           # available as it is entered.
-          tranche-space-shyness: 9e17
+          tranche-space-shyness: 0
 
           # Minimum trade size, if you put in a trade for less than x% of a
           # tranche it wont clear.
