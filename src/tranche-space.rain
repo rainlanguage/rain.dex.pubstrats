@@ -195,7 +195,24 @@ scenarios:
                   test-now: 0
 
 charts:
-    buy:
+    buy-initial-deployment:
+      scenario: arb-red-blue-tranches.buy.initialized.test
+      metrics:
+        - label: Initial $ amount available
+          value: 0.6
+          unit-prefix: $
+        - label: Initial number of tokens purchased
+          value: 0.5.2
+        - label: 'Initial io-ratio (i.e. # of TKN purchased per $ spent)'
+          value: 0.7
+        - label: Initial effective buy price (e.g. visible on dextools)
+          value: 0.5.3
+          unit-prefix: $
+        - label: Tranche space before
+          value: 0.2.0
+      plots:
+
+    buy-simulation:
         scenario: arb-red-blue-tranches.buy.test
         plots:
           BLUE amount available vs tranche:
@@ -222,8 +239,31 @@ charts:
                 options:
                   x: 0.0
                   y: 0.5.3
+          Tranche space before:
+            marks:
+              - type: dot
+                options:
+                  x: 0.2.0
+                  y: 0.0
+
+    sell-initial-deployment:
+      scenario: arb-red-blue-tranches.sell.initialized.test
+      metrics:
+        - label: Initial $ amount available
+          value: 0.6
+          unit-prefix: $
+        - label: Initial number of tokens purchased
+          value: 0.5.2
+        - label: 'Initial io-ratio (i.e. # of TKN purchased per $ spent)'
+          value: 0.7
+        - label: Initial effective sell price (e.g. visible on dextools)
+          value: 0.7
+          unit-prefix: $
+        - label: Tranche space before
+          value: 0.2.0
+      plots:
                   
-    sell:
+    sell-simulation:
         scenario: arb-red-blue-tranches.sell.test
         plots:
           Number of RED sold per tranche:
@@ -238,12 +278,24 @@ charts:
                 options:
                   x: 0.0
                   y: 0.5.2
+          'io-ratio (i.e. # of TKN purchased per $ spent) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
           'Effective price (e.g. visible on dextools) vs tranche':
             marks:
               - type: line
                 options:
                   x: 0.0
                   y: 0.7
+          Tranche space before:
+            marks:
+              - type: dot
+                options:
+                  x: 0.2.0
+                  y: 0.0
 
 deployments:
   arbitrum-one-buy:
