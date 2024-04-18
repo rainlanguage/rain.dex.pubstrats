@@ -86,6 +86,18 @@ scenarios:
           # needs to be changed.
           tranche-space-recharge-delay: 300
 
+          # When a tranche is completely cleared, the next tranche MAY be jumped
+          # into partially. For example, if tranches are 90% shy (i.e. 9e17) then
+          # if a tranche is cleared completely then the next tranche will be
+          # started at 10% of its maximum size. This means that the capital
+          # requirements for the strategy to reprice itself as the market moves
+          # are reduced.
+          # This MUST be set to a value less than 1e18, else it will entirely
+          # skip tranches.
+          # Shyness MAY be set to 0, in which case every tranche will be fully
+          # available as it is entered.
+          tranche-space-shyness: 0
+
           # Minimum trade size, if you put in a trade for less than x% of a
           # tranche it wont clear.
           # Mitigates people pinging strat for dust orders to stop recharging.
@@ -369,10 +381,15 @@ deployments:
   ),
   now: block-timestamp();
 
+#tranche-space-shyness !The shyness of the liquidity in tranches, as a decimal 18 fixed point number. E.g. 9e17 is 90% shy.
 #set-last-tranche-prod
   tranche-space now:,
+  shy-tranche-space: if(
+    is-zero(decimal18-frac(tranche-space))
+    decimal18-add(tranche-space tranche-space-shyness)
+    tranche-space),
   :set(hash(order-hash() init-key) 1),
-  :set(hash(order-hash() tranche-space-key) tranche-space),
+  :set(hash(order-hash() tranche-space-key) shy-tranche-space),
   :set(hash(order-hash() update-time-key) now);
 
 /* Forward the bindings through as is to the caller. */
