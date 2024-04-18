@@ -14,14 +14,14 @@ orders:
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
-        vault-id: 0xb1f30ece55090e66a81b58c47516d3b0935e7804dfdc9876e8794f3124f7241f
+        vault-id: 0x42a5789e679fb0623c0a29f14291da0945a6b89dc3e42500cfd50cbf915257c4
       - token: eusdt
-        vault-id: 0xb1f30ece55090e66a81b58c47516d3b0935e7804dfdc9876e8794f3124f7241f
+        vault-id: 0x42a5789e679fb0623c0a29f14291da0945a6b89dc3e42500cfd50cbf915257c4
     outputs:
       - token: wflr
-        vault-id: 0xb1f30ece55090e66a81b58c47516d3b0935e7804dfdc9876e8794f3124f7241f
+        vault-id: 0x42a5789e679fb0623c0a29f14291da0945a6b89dc3e42500cfd50cbf915257c4
       - token: eusdt
-        vault-id: 0xb1f30ece55090e66a81b58c47516d3b0935e7804dfdc9876e8794f3124f7241f
+        vault-id: 0x42a5789e679fb0623c0a29f14291da0945a6b89dc3e42500cfd50cbf915257c4
 
 scenarios:
   flare:
@@ -55,13 +55,14 @@ scenarios:
           ramp-down-d18: 7e18
           seconds-per-epoch: 86400
   any-flare:
+    deployer: flare
     orderbook: flare
     runs: 1
     bindings:
       raindex-subparser: 0xF836f2746B407136a5bCB515495949B1edB75184
       fallback-ratio: '''fb-halflife'
       # date +%s
-      fb-halflife-start-time: 1713470100
+      fb-halflife-start-time: 1713471567
       # anything way bigger than the expected ratio is fine
       fb-halflife-start-io18: 1e36
       # half an hour per halving covers a lot of space while
@@ -92,6 +93,10 @@ deployments:
   flare-ramp-down:
     order: flare
     scenario: flare.ramp-down
+
+  any-ramp-down:
+    order: flare
+    scenario: any-flare
 
 ---
 
