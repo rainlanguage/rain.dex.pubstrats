@@ -14,14 +14,14 @@ orders:
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
-        vault-id: 0x6bcce93fa8421410342bf811055bcb4b87db84053336d3da0e86c3f7eb5e5443
+        vault-id: 0xb1f30ece55090e66a81b58c47516d3b0935e7804dfdc9876e8794f3124f7241f
       - token: eusdt
-        vault-id: 0x6bcce93fa8421410342bf811055bcb4b87db84053336d3da0e86c3f7eb5e5443
+        vault-id: 0xb1f30ece55090e66a81b58c47516d3b0935e7804dfdc9876e8794f3124f7241f
     outputs:
       - token: wflr
-        vault-id: 0x6bcce93fa8421410342bf811055bcb4b87db84053336d3da0e86c3f7eb5e5443
+        vault-id: 0xb1f30ece55090e66a81b58c47516d3b0935e7804dfdc9876e8794f3124f7241f
       - token: eusdt
-        vault-id: 0x6bcce93fa8421410342bf811055bcb4b87db84053336d3da0e86c3f7eb5e5443
+        vault-id: 0xb1f30ece55090e66a81b58c47516d3b0935e7804dfdc9876e8794f3124f7241f
 
 scenarios:
   flare:
@@ -45,11 +45,37 @@ scenarios:
           linear-decay-floor18: 0
       ramp-down:
         bindings:
-          # https://www.desmos.com/calculator/u40dpvk0jf
+          # C = 1.011
+          # D = 7
+          # => start at 101% and hit 0 after 7 epochs.
+          # => cuts below 100% after 2.5 epochs.
+          # https://www.desmos.com/calculator/38ien12798
           ratio-multiplier: '''ramp-down'
-          ramp-down-c18: 101e16
-          ramp-down-d18: 6e18
-          seconds-per-epoch18: 86400e18
+          ramp-down-c18: 1011e15
+          ramp-down-d18: 7e18
+          seconds-per-epoch: 86400
+  any-flare:
+    orderbook: flare
+    runs: 1
+    bindings:
+      raindex-subparser: 0xF836f2746B407136a5bCB515495949B1edB75184
+      fallback-ratio: '''fb-halflife'
+      # date +%s
+      fb-halflife-start-time: 1713470100
+      # anything way bigger than the expected ratio is fine
+      fb-halflife-start-io18: 1e36
+      # half an hour per halving covers a lot of space while
+      # giving time for bots to respond in the correct range
+      fb-halflife-seconds: 1800
+      # C = 1.011
+      # D = 7
+      # => start at 101% and hit 0 after 7 epochs.
+      # => cuts below 100% after 2.5 epochs.
+      # https://www.desmos.com/calculator/38ien12798
+      ratio-multiplier: '''ramp-down'
+      ramp-down-c18: 1011e15
+      ramp-down-d18: 7e18
+      seconds-per-epoch: 86400
 
 charts:
   flare:
@@ -69,7 +95,7 @@ deployments:
 
 ---
 
-#seconds-per-epoch18 !Number of seconds to treat as 1 epoch. E.g. 86400e18 is 1 day per epoch.
+#seconds-per-epoch !Number of seconds to treat as 1 epoch. E.g. 86400 is 1 day per epoch.
 #linear-decay-time-key "linear-decay-last-time"
 #epochs-since-last-trade
 input-time-key: hash(order-hash() input-token() linear-decay-time-key),
@@ -79,7 +105,7 @@ output-time-key: hash(order-hash() output-token() linear-decay-time-key),
 output-last-time: any(get(output-time-key) block-timestamp()),
 duration-seconds: int-sub(block-timestamp() output-last-time),
 duration-seconds18: int-to-decimal18(duration-seconds),
-epochs18: decimal18-div(duration-seconds18 seconds-per-epoch18);
+epochs18: decimal18-div(duration-seconds18 int-to-decimal18(seconds-per-epoch));
 
 #ramp-down-c18 !C in ramp down equation.
 #ramp-down-d18 !D in ramp down equation.
@@ -108,6 +134,31 @@ _: decimal18-max(decay-amount18 linear-decay-floor18);
 #constant-ratio-multiplier-val18 !Constant value to multiply the breakeven ratio by.
 #constant-ratio-multiplier
 _: constant-ratio-multiplier-val18;
+
+#fb-halflife-start-time !Starting time for the fallback dutch auction.
+#fb-halflife-start-io18 !Starting value for the fallback dutch auction.
+#fb-halflife-seconds !Number of seconds per halflife.
+#fb-halflife
+time-key: hash(order-hash() "fb-halflife-last-time"),
+last-time: any(
+  get(time-key)
+  fb-halflife-start-time
+),
+:set(time-key block-timestamp()),
+duration: int-sub(
+  block-timestamp()
+  last-time
+),
+_: decimal18-mul(
+  fb-halflife-start-io18
+  decimal18-power(
+    5e17
+    decimal18-div(
+      int-to-decimal18(duration)
+      fb-halflife-seconds
+    )
+  )
+);
 
 #breakeven-io-ratio
 prev-input-vault-balance: get(
