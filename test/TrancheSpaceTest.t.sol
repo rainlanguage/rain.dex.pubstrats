@@ -65,6 +65,69 @@ contract TrancheSpaceTest is StrategyTests {
 
     function arbBlueIo() internal pure returns (IO memory) {
         return IO(address(BLUE_TOKEN), 18, VAULT_ID);
+    } 
+
+    function testTrancheSpaceOrderMinimumRevert() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = arbRedIo();
+
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = arbBlueIo();
+
+        uint256 expectedRatio = 1e18;
+        uint256 expectedAmountOutputMax = 1e18;  
+
+        // Minimum Revert Amount = expectedAmountOutputMax * 10% = 1e17
+        uint256 minimumRevertAmount = 1e17;
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedRedToBlueRoute(address(ARB_INSTANCE)),
+            getEncodedBlueToRedRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            1e18,
+            minimumRevertAmount,
+            expectedRatio,
+            expectedAmountOutputMax,
+            "src/tranche-space.rain",
+            "arb-red-blue-tranches.buy.initialized.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        // Order succeeds with minumum trade size
+        {
+            OrderV2 memory orderMinimumTrade = addOrderDepositOutputTokens(strategy);
+
+            moveExternalPrice(
+                strategy.inputVaults[strategy.inputTokenIndex].token,
+                strategy.outputVaults[strategy.outputTokenIndex].token,
+                strategy.makerAmount,
+                strategy.makerRoute
+            );
+
+            takeArbOrder(orderMinimumTrade,strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+        }
+
+        // Order fails with less than minimum trade size
+        {   
+            strategy.takerAmount = minimumRevertAmount - 1;
+            OrderV2 memory orderMinimumTradeRevert = addOrderDepositOutputTokens(strategy);
+
+            moveExternalPrice(
+                strategy.inputVaults[strategy.inputTokenIndex].token,
+                strategy.outputVaults[strategy.outputTokenIndex].token,
+                strategy.makerAmount,
+                strategy.makerRoute
+            );
+
+            vm.expectRevert(bytes("Minimum trade size not met."));
+            takeArbOrder(orderMinimumTradeRevert,strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+        }
     }
 
     function testTrancheSpaceOrderExternal() public {
