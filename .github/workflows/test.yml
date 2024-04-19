@@ -7,7 +7,7 @@ jobs:
       fail-fast: true
     runs-on: ubuntu-latest
     env:
-      RPC_URL_POLYGON: ${{ secrets. RPC_URL_POLYGON}}
+      RPC_URL_ARBITRUM: ${{ secrets. CI_DEPLOY_ARBITRUM_RPC_URL}}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -17,6 +17,10 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v4
       - uses: DeterminateSystems/magic-nix-cache-action@v2
-      - run: mkdir -p test/csvs
+
       - run: nix run .#rainix-sol-prelude
+
+      - run: ./prep-tauri.sh
+        working-directory: lib/h20.test-std/lib/rain.orderbook
+        
       - run: nix run .#rainix-sol-test

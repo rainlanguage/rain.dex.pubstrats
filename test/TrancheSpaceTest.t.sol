@@ -3,12 +3,23 @@ pragma solidity =0.8.19;
 
 import {Vm} from "forge-std/Vm.sol";
 import {Test, console2} from "forge-std/Test.sol";
+import {
+    IOrderBookV3,
+    IO,
+    OrderV2,
+    OrderConfigV2,
+    TakeOrderConfigV2,
+    TakeOrdersConfigV2
+} from "rain.orderbook.interface/interface/IOrderBookV3.sol";
 import {IParserV1} from "rain.interpreter.interface/interface/IParserV1.sol";
+import {IOrderBookV3ArbOrderTaker} from "rain.orderbook.interface/interface/IOrderBookV3ArbOrderTaker.sol";
 import {IInterpreterV2, SourceIndexV2} from "rain.interpreter.interface/interface/IInterpreterV2.sol";
 import {IInterpreterStoreV2} from "rain.interpreter.interface/interface/IInterpreterStoreV2.sol";
 import {ISubParserV2} from "rain.interpreter.interface/interface/ISubParserV2.sol";
 import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/IExpressionDeployerV3.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {StrategyTests, IRouteProcessor, LibStrategyDeployment} from "h20.test-std/StrategyTests.sol";
 import "rain.math.saturating/SaturatingMath.sol";
 import "src/lib/LibTrancheSpaceOrders.sol";
 import "rain.math.fixedpoint/lib/LibFixedPointDecimalArithmeticOpenZeppelin.sol";
@@ -16,30 +27,21 @@ import "rain.math.fixedpoint/lib/LibFixedPointDecimalScale.sol";
 import "rain.interpreter.interface/lib/caller/LibEncodedDispatch.sol";
 import "rain.interpreter.interface/lib/ns/LibNamespace.sol";
 
-contract TrancheSpaceTest is Test {
+contract TrancheSpaceTest is StrategyTests {
     using Strings for address;
     using Strings for uint256;
 
     using LibFixedPointDecimalArithmeticOpenZeppelin for uint256;
     using LibFixedPointDecimalScale for uint256;
 
-    IParserV1 public PARSER;
-    IInterpreterV2 public INTERPRETER;
-    IInterpreterStoreV2 public STORE;
-    IExpressionDeployerV3 public EXPRESSION_DEPLOYER;
-    ISubParserV2 public ORDERBOOK_SUPARSER;
-
-    uint256 constant FORK_BLOCK_NUMBER = 54342303;
-    uint256 constant CONTEXT_VAULT_IO_ROWS = 5;
-
-    uint256 constant REFERENCE_RESERVE_DECIMALS = 18;
-    uint256 constant REFERENCE_STABLE_DECIMALS = 6;
-    address constant REFERENCE_RESERVE = 0xd0e9c8f5Fae381459cf07Ec506C1d2896E8b5df6;
-    address constant REFERENCE_STABLE = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
-    address constant ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
+    uint256 constant FORK_BLOCK_NUMBER = 201303042;
+    uint256 constant VAULT_ID = uint256(keccak256("vault"));
+    
+    IERC20 constant RED_TOKEN = IERC20(0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe); 
+    IERC20 constant BLUE_TOKEN = IERC20(0x667f41fF7D9c06D2dd18511b32041fC6570Dc468);
 
     function selectPolygonFork() internal {
-        uint256 fork = vm.createFork(vm.envString("RPC_URL_POLYGON"));
+        uint256 fork = vm.createFork(vm.envString("RPC_URL_ARBITRUM"));
         vm.selectFork(fork);
         vm.rollFork(FORK_BLOCK_NUMBER);
     }
@@ -47,196 +49,120 @@ contract TrancheSpaceTest is Test {
     function setUp() public {
         selectPolygonFork();
 
-        PARSER = IParserV1(0x42354C16c8FcFf044c5ee73798F250138ef0A813);
-        STORE = IInterpreterStoreV2(0x9Ba76481F8cF7F52e440B13981e0003De474A9f7);
-        INTERPRETER = IInterpreterV2(0xbbe5a04A9a20c47b1A93e755aE712cb84538cd5a);
-        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0xc64B01aB4b5549dE91e5A4425883Dff87Ceaaf29);
-        ORDERBOOK_SUPARSER = ISubParserV2(0x14c5D39dE54D498aFD3C803D3B5c88bbEcadcc48);
+        PARSER = IParserV1(0x22410e2a46261a1B1e3899a072f303022801C764);
+        ORDERBOOK = IOrderBookV3(0x90CAF23eA7E507BB722647B0674e50D8d6468234);
+        ARB_INSTANCE = IOrderBookV3ArbOrderTaker(0xf382cbF44901cD26D14B247F4EA7260ee8041157);
+        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76);
+        ROUTE_PROCESSOR = IRouteProcessor(address(0x09bD2A33c47746fF03b86BCe4E885D03C74a8E8C));
+        EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
+        APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
+        ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
     }
 
-    function testSpaceModelling() public {
-        string memory file = "./test/csvs/tranche-space.csv";
-        if (vm.exists(file)) vm.removeFile(file);
-
-        FullyQualifiedNamespace namespace =
-            LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
-
-        uint256[][] memory sellOrderContext = getSellOrderContext(11223344);
-        sellOrderContext[3][4] = 5000e6;
-
-        for (uint256 i = 0; i < 10; i++) {
-            uint256 trancheSpace = uint256(1e18 * i);
-            address expression;
-            {
-                LibTrancheSpaceOrders.TestTrancheSpaceOrder memory testTrancheSpaceOrderConfig = LibTrancheSpaceOrders
-                    .TestTrancheSpaceOrder(
-                    TRANCHE_SPACE_PER_SECOND,
-                    TRANCHE_SPACE_RECHARGE_DELAY,
-                    TRANCHE_SIZE_BASE,
-                    TRANCHE_SIZE_GROWTH,
-                    IO_RATIO_BASE,
-                    IO_RATIO_GROWTH,
-                    MIN_TRANCHE_SPACE_DIFF,
-                    TRANCHE_SNAP_THRESHOLD,
-                    AMOUNT_IS_OUTPUT,
-                    REFERENCE_STABLE_DECIMALS,
-                    REFERENCE_RESERVE_DECIMALS,
-                    trancheSpace,
-                    block.timestamp,
-                    block.timestamp + 1,
-                    REFERENCE_STABLE,
-                    REFERENCE_RESERVE
-                );
-                (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                    LibTrancheSpaceOrders.getTestTrancheSpaceOrder(
-                        vm, address(ORDERBOOK_SUPARSER), testTrancheSpaceOrderConfig
-                    )
-                );
-                (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
-            }
-            (uint256[] memory sellCalculateStack,) = IInterpreterV2(INTERPRETER).eval2(
-                IInterpreterStoreV2(address(STORE)),
-                namespace,
-                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
-                sellOrderContext,
-                new uint256[](0)
-            );
-
-            (uint256[] memory sellHandleStack,) = IInterpreterV2(INTERPRETER).eval2(
-                IInterpreterStoreV2(address(STORE)),
-                namespace,
-                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(1), type(uint32).max),
-                sellOrderContext,
-                new uint256[](0)
-            );
-
-            string memory line = string.concat(
-                trancheSpace.toString(),
-                ",",
-                sellCalculateStack[1].toString(),
-                ",",
-                sellCalculateStack[0].toString(),
-                ",",
-                sellHandleStack[2].toString()
-            );
-
-            vm.writeLine(file, line);
-        }
+    function arbRedIo() internal pure returns (IO memory) {
+        return IO(address(RED_TOKEN), 18, VAULT_ID);
     }
 
-    function testCalculateTranche(uint256 trancheSpaceBefore, uint256 delay) public {
-        trancheSpaceBefore = bound(trancheSpaceBefore, 0, 100e18);
-        delay = bound(delay, 1, 86400);
-        uint256 lastTimeUpdate = block.timestamp;
+    function arbBlueIo() internal pure returns (IO memory) {
+        return IO(address(BLUE_TOKEN), 18, VAULT_ID);
+    }
 
-        FullyQualifiedNamespace namespace =
-            LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
+    function testTrancheSpaceOrderExternal() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = arbRedIo();
 
-        uint256[][] memory sellOrderContext = getSellOrderContext(11223344);
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = arbBlueIo();
 
-        address expression;
-        {
-            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                LibTrancheSpaceOrders.getCalculateTranche(
-                    vm, address(ORDERBOOK_SUPARSER), trancheSpaceBefore, lastTimeUpdate, lastTimeUpdate + delay
-                )
-            );
-            (,, expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
-        }
-        (uint256[] memory stack,) = IInterpreterV2(INTERPRETER).eval2(
-            IInterpreterStoreV2(address(STORE)),
-            namespace,
-            LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint32).max),
-            sellOrderContext,
-            new uint256[](0)
+        uint256 expectedRatio = 1e18;
+        uint256 expectedAmountOutputMax = 1e18; 
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            "",
+            "",
+            0,
+            0,
+            5e17,
+            2e18,
+            expectedRatio,
+            expectedAmountOutputMax,
+            "src/tranche-space.rain",
+            "arb-red-blue-tranches.buy.initialized.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
         );
-        assertEq(stack[2], SaturatingMath.saturatingSub(trancheSpaceBefore, stack[4]));
-        assertEq(stack[3], lastTimeUpdate + delay);
+
+        // OrderBook 'takeOrder'
+        checkStrategyCalculations(strategy);
+
     }
 
-    function testHandleIo(uint256 trancheSpaceBefore, uint256 inputAmountTraded) public {
-        inputAmountTraded = bound(inputAmountTraded, 1e6, 100000e6);
-        trancheSpaceBefore = bound(trancheSpaceBefore, 0, 10e18);
-        FullyQualifiedNamespace namespace =
-            LibNamespace.qualifyNamespace(StateNamespace.wrap(uint256(uint160(ORDER_OWNER))), address(this));
+    function testTrancheSpaceOrderArb() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = arbRedIo();
 
-        uint256[][] memory sellOrderContext = getSellOrderContext(12345);
-        sellOrderContext[3][4] = inputAmountTraded;
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = arbBlueIo();
 
-        address orderExpression;
-        {
-            LibTrancheSpaceOrders.TestTrancheSpaceOrder memory testTrancheSpaceOrderConfig = LibTrancheSpaceOrders
-                .TestTrancheSpaceOrder(
-                TRANCHE_SPACE_PER_SECOND,
-                TRANCHE_SPACE_RECHARGE_DELAY,
-                TRANCHE_SIZE_BASE,
-                TRANCHE_SIZE_GROWTH,
-                IO_RATIO_BASE,
-                IO_RATIO_GROWTH,
-                MIN_TRANCHE_SPACE_DIFF,
-                TRANCHE_SNAP_THRESHOLD,
-                AMOUNT_IS_OUTPUT,
-                REFERENCE_STABLE_DECIMALS,
-                REFERENCE_RESERVE_DECIMALS,
-                trancheSpaceBefore,
-                block.timestamp,
-                block.timestamp + 1,
-                REFERENCE_STABLE,
-                REFERENCE_RESERVE
-            );
-            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                LibTrancheSpaceOrders.getTestTrancheSpaceOrder(
-                    vm, address(ORDERBOOK_SUPARSER), testTrancheSpaceOrderConfig
-                )
-            );
-            (,, orderExpression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants);
-        }
-        uint256 trancheSpaceAmountDiff =
-            inputAmountTraded.scale18(6, 0).fixedPointDiv(TRANCHE_SIZE_BASE, Math.Rounding.Down);
-        uint256 trancheSpaceAfter = trancheSpaceBefore + trancheSpaceAmountDiff;
+        uint256 expectedRatio = 1e18;
+        uint256 expectedAmountOutputMax = 1e18; 
 
-        if (trancheSpaceAfter < (trancheSpaceBefore + MIN_TRANCHE_SPACE_DIFF)) {
-            vm.expectRevert(bytes("Minimum trade size not met."));
-        }
-        IInterpreterV2(INTERPRETER).eval2(
-            IInterpreterStoreV2(address(STORE)),
-            namespace,
-            LibEncodedDispatch.encode2(orderExpression, SourceIndexV2.wrap(1), type(uint32).max),
-            sellOrderContext,
-            new uint256[](0)
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedRedToBlueRoute(address(ARB_INSTANCE)),
+            getEncodedBlueToRedRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            1e18,
+            1e18,
+            expectedRatio,
+            expectedAmountOutputMax,
+            "src/tranche-space.rain",
+            "arb-red-blue-tranches.buy.initialized.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
         );
+
+        // OrderBook 'takeOrder'
+        checkStrategyCalculationsArbOrder(strategy);
+
+    }  
+
+    // Inheriting contract defines the route for the strategy.
+    function getEncodedRedToBlueRoute(address toAddress) internal pure returns (bytes memory) {
+        bytes memory RED_TO_BLUE_ROUTE_PRELUDE =
+            hex"02"
+            hex"6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe"
+            hex"01"
+            hex"ffff"
+            hex"00"
+            hex"96ef2820731E4bd25c0E1809a2C62B18dAa90794"
+            hex"00";
+
+        return abi.encode(bytes.concat(RED_TO_BLUE_ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
     }
 
-    function getSellOrderContext(uint256 orderHash) internal pure returns (uint256[][] memory context) {
-        // Sell Order Context
-        context = new uint256[][](5);
-        {
-            {
-                uint256[] memory baseContext = new uint256[](2);
-                context[0] = baseContext;
-            }
-            {
-                uint256[] memory callingContext = new uint256[](3);
-                // order hash
-                callingContext[0] = orderHash;
-                context[1] = callingContext;
-            }
-            {
-                uint256[] memory calculationsContext = new uint256[](0);
-                context[2] = calculationsContext;
-            }
-            {
-                uint256[] memory inputsContext = new uint256[](CONTEXT_VAULT_IO_ROWS);
-                inputsContext[0] = uint256(uint160(REFERENCE_STABLE));
-                inputsContext[1] = REFERENCE_STABLE_DECIMALS;
-                context[3] = inputsContext;
-            }
-            {
-                uint256[] memory outputsContext = new uint256[](CONTEXT_VAULT_IO_ROWS);
-                outputsContext[0] = uint256(uint160(REFERENCE_RESERVE));
-                outputsContext[1] = REFERENCE_RESERVE_DECIMALS;
-                context[4] = outputsContext;
-            }
-        }
+    // Inheriting contract defines the route for the strategy.
+    function getEncodedBlueToRedRoute(address toAddress) internal pure returns (bytes memory) {
+        bytes memory BLUE_TO_RED_ROUTE_PRELUDE =
+            hex"02"
+            hex"667f41fF7D9c06D2dd18511b32041fC6570Dc468"
+            hex"01"
+            hex"ffff"
+            hex"00"
+            hex"96ef2820731E4bd25c0E1809a2C62B18dAa90794"
+            hex"01";
+
+        return abi.encode(bytes.concat(BLUE_TO_RED_ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
     }
+
+
+    
 }
