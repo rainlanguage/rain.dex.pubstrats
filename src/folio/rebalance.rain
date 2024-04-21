@@ -1,0 +1,23 @@
+scenarios:
+  default:
+    bindings:
+      rebalance-amount18: 5e16
+      rebalance-threshold18: 106e16
+
+---
+#orderbook-subparser !Subparser for orderbook.
+
+#rebalance-amount18 !Fraction of the output vault balance to offer when rebalancing.
+#rebalance-threshold18 !Threshold for rebalancing. The price offered is the ratio of current balances multiplied by the threshold.
+
+#calculate-io
+using-words-from orderbook-subparser
+current-ratio: decimal18-div(
+  decimal18-scale-18-dynamic(input-token-decimals() input-vault-balance())
+  decimal18-scale-18-dynamic(output-token-decimals() output-vault-balance())
+),
+amount: decimal18-mul(output-vault-balance() rebalance-amount18),
+io-ratio: decimal18-mul(current-ratio rebalance-threshold18);
+
+#handle-io
+:;
