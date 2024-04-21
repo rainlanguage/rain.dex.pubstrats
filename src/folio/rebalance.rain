@@ -12,11 +12,10 @@ scenarios:
 
 #calculate-io
 using-words-from orderbook-subparser
-current-ratio: decimal18-div(
-  decimal18-scale-18-dynamic(input-token-decimals() input-vault-balance())
-  decimal18-scale-18-dynamic(output-token-decimals() output-vault-balance())
-),
-amount: decimal18-mul(output-vault-balance() rebalance-amount18),
+input-vault-balance18: decimal18-scale-18-dynamic(input-token-decimals() input-vault-balance()),
+output-vault-balance18: decimal18-scale-18-dynamic(output-token-decimals() output-vault-balance()),
+current-ratio: decimal18-div(input-vault-balance18 output-vault-balance18),
+amount: decimal18-mul(output-vault-balance18 rebalance-amount18),
 io-ratio: decimal18-mul(current-ratio rebalance-threshold18);
 
 #handle-io
