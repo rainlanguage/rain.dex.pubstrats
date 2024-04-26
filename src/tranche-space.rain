@@ -231,24 +231,24 @@ charts:
     buy-initial-deployment:
       scenario: arb-red-blue-tranches.buy.initialized.test
       metrics:
-        - label: Initial $ amount available
+        - label: Amount of BLUE required to buy RED in the first tranche
           value: 0.6
           unit-prefix: $
-        - label: Initial number of tokens purchased
+        - label: Amount of RED purchased in the first tranche
           value: 0.5.2
-        - label: 'Initial io-ratio (i.e. # of TKN purchased per $ spent)'
+        - label: 'Initial io-ratio (i.e. # RED purchased per BLUE spent)'
           value: 0.7
-        - label: Initial effective buy price (e.g. visible on dextools)
+        - label: Initial effective buy price (e.g. how much you pay for 1 RED in BLUE, visible on dextools)
           value: 0.5.3
           unit-prefix: $
-        - label: Tranche space before
+        - label: Starting tranche
           value: 0.2.0
       plots:
 
     buy-simulation:
         scenario: arb-red-blue-tranches.buy.test
         plots:
-          BLUE amount available vs tranche:
+          BLUE spent and recharge rate per tranche:
             marks:
               - type: line
                 options:
@@ -266,13 +266,13 @@ charts:
                 options:
                   x: 0.0
                   y: 0.7
-          Effective price (e.g. visible on dextools) vs tranche:
+          Effective buy price by tranche (e.g. how much you pay for 1 RED token in BLUE e.g. visible on dextools):
             marks:
               - type: line
                 options:
                   x: 0.0
                   y: 0.5.3
-          Tranche space before:
+          Starting tranche:
             marks:
               - type: dot
                 options:
@@ -282,17 +282,17 @@ charts:
     sell-initial-deployment:
       scenario: arb-red-blue-tranches.sell.initialized.test
       metrics:
-        - label: Initial $ amount available
+        - label: Amount of RED sold to meet the first tranche of BLUE
           value: 0.6
           unit-prefix: $
-        - label: Initial number of tokens purchased
+        - label: Amount of BLUE received selling the first tranche of RED tokens
           value: 0.5.2
-        - label: 'Initial io-ratio (i.e. # of TKN purchased per $ spent)'
+        - label: 'Initial io-ratio (i.e. # of BLUE purchased per RED spent)'
           value: 0.7
-        - label: Initial effective sell price (e.g. visible on dextools)
+        - label: Initial effective sell price (Amount of RED to sell 1 BLUE e.g. visible on dextools)
           value: 0.7
           unit-prefix: $
-        - label: Tranche space before
+        - label: Starting tranche
           value: 0.2.0
       plots:
                   
@@ -323,7 +323,7 @@ charts:
                 options:
                   x: 0.0
                   y: 0.7
-          Tranche space before:
+          Starting tranche:
             marks:
               - type: dot
                 options:
