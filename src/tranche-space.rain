@@ -378,6 +378,9 @@ deployments:
 
 #plottables !The binding for additional things we want to plot during testing.
 
+#uniswap-words !The subparser for the Uniswap words
+#orderbook-subparser !The subparser for the Orderbook
+
 #plottables-test
   amount
   io-ratio:,
