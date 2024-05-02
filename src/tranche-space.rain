@@ -117,7 +117,7 @@ scenarios:
           # skip tranches.
           # Shyness MAY be set to 0, in which case every tranche will be fully
           # available as it is entered.
-          tranche-space-shyness: 0
+          # tranche-space-shyness: 0
 
           # Minimum trade size, if you put in a trade for less than x% of a
           # tranche it wont clear.
@@ -166,6 +166,7 @@ scenarios:
                       get-last-tranche: '''get-last-tranche-prod'
                       set-last-tranche: '''set-last-tranche-prod'
                       plottables: '''plottables-prod'
+                      tranche-space-shyness: 0
                   test:
                     runs: 100
                     bindings:
@@ -174,6 +175,12 @@ scenarios:
                       plottables: '''plottables-test'
                       test-last-update-time: 0
                       test-now: 0
+                  test-shy-tranche:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                      tranche-space-shyness: 9e17
               test:
                   runs: 10000
                   bindings:
@@ -209,6 +216,7 @@ scenarios:
                       get-last-tranche: '''get-last-tranche-prod'
                       set-last-tranche: '''set-last-tranche-prod'
                       plottables: '''plottables-prod'
+                      tranche-space-shyness: 0
                   test:
                     runs: 100
                     bindings:
