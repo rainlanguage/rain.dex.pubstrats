@@ -14,22 +14,22 @@ orders:
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
-        vault-id: 0x42a5789e679fb0623c0a29f14291da0945a6b89dc3e42500cfd50cbf915257c4
+        vault-id: 0xbc80517257d579581d77ee12203e2b8ec54004f30e9d54abe3169e2fbb7e4887
       - token: eusdt
-        vault-id: 0x42a5789e679fb0623c0a29f14291da0945a6b89dc3e42500cfd50cbf915257c4
+        vault-id: 0xbc80517257d579581d77ee12203e2b8ec54004f30e9d54abe3169e2fbb7e4887
     outputs:
       - token: wflr
-        vault-id: 0x42a5789e679fb0623c0a29f14291da0945a6b89dc3e42500cfd50cbf915257c4
+        vault-id: 0xbc80517257d579581d77ee12203e2b8ec54004f30e9d54abe3169e2fbb7e4887
       - token: eusdt
-        vault-id: 0x42a5789e679fb0623c0a29f14291da0945a6b89dc3e42500cfd50cbf915257c4
+        vault-id: 0xbc80517257d579581d77ee12203e2b8ec54004f30e9d54abe3169e2fbb7e4887
 
 scenarios:
   flare:
     orderbook: flare
     runs: 1
     bindings:
-      raindex-subparser: 0xF836f2746B407136a5bCB515495949B1edB75184
-      flare-subparser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
+      raindex-subparser: 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E
+      flare-subparser: 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
       fallback-ratio: '''fallback-ftso-usd'
       fallback-ftso-multiplier: 1e18
     scenarios:
@@ -41,7 +41,7 @@ scenarios:
         bindings:
           ratio-multiplier: '''linear-decay-multiplier'
           linear-decay-start18: 101e16
-          seconds-per-epoch18: 3600e18
+          seconds-per-epoch: 3600
           linear-decay-floor18: 0
       ramp-down:
         bindings:
@@ -57,12 +57,12 @@ scenarios:
   any-flare:
     deployer: flare
     orderbook: flare
-    runs: 1
     bindings:
-      raindex-subparser: 0xF836f2746B407136a5bCB515495949B1edB75184
+      raindex-subparser: 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E
+      flare-subparser: 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
       fallback-ratio: '''fb-halflife'
       # date +%s
-      fb-halflife-start-time: 1713471567
+      fb-halflife-start-time: 1713814625
       # anything way bigger than the expected ratio is fine
       fb-halflife-start-io18: 1e36
       # half an hour per halving covers a lot of space while
@@ -97,6 +97,10 @@ deployments:
   any-ramp-down:
     order: flare
     scenario: any-flare
+
+metaboards:
+  flare: http://subgraphs.h20liquidity.tech/subgraphs/name/flare-mb-0x59401C93
+
 
 ---
 
@@ -204,6 +208,8 @@ _: decimal18-mul(
 _: fallback-constant-value;
 
 #fallback-ratio !Expression for the ratio to use when there is no history for the pair.
+#raindex-subparser !The subparser for raindex words.
+#flare-subparser !The subparser for flare words.
 #calculate-io
 using-words-from raindex-subparser flare-subparser
 amount: decimal18-scale-18-dynamic(
