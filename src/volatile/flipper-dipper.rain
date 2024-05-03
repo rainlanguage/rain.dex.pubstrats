@@ -29,7 +29,7 @@ scenarios:
     runs: 1
     bindings:
       raindex-subparser: 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E
-      flare-subparser: 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
+      flare-subparser: 0x87D1f842347b7802A29FD9010c464E760745a4d2
       fallback-ratio: '''fallback-ftso-usd'
       fallback-ftso-multiplier: 1e18
     scenarios:
@@ -59,7 +59,7 @@ scenarios:
     orderbook: flare
     bindings:
       raindex-subparser: 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E
-      flare-subparser: 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
+      flare-subparser: 0x87D1f842347b7802A29FD9010c464E760745a4d2
       fallback-ratio: '''fb-halflife'
       # date +%s
       fb-halflife-start-time: 1713814625
