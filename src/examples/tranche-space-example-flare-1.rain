@@ -26,66 +26,67 @@
 # - An optional conversion between the input/output token and some external
 #   price, e.g. converting WETH in a vault to USD equivalent.
 
-networks:
-  arbitrum-one: 
-    rpc: https://arbitrum.llamarpc.com 
-    chain-id: 42161 
-    network-id: 42161 
-    currency: ETH
-
+networks: 
+  flare-tranche: 
+    rpc: https://rpc.ankr.com/flare 
+    chain-id: 14
+    network-id: 14
+    currency: FLR
+    
 subgraphs:
-  arbitrum-one: https://api.thegraph.com/subgraphs/name/h20liquidity/arbitrum-0x90caf23e
+  flare-tranche: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-0xb06202aA
   
 orderbooks:
-  arbitrum-one:
-    address: 0x90CAF23eA7E507BB722647B0674e50D8d6468234
-    network: arbitrum-one
-    subgraph: arbitrum-one
+  flare-tranche:
+    address: 0xb06202aA3Fe7d85171fB7aA5f17011d17E63f382
+    network: flare-tranche
+    subgraph: flare-tranche
 
 deployers:
-  arbitrum-one:
-    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
-    network: arbitrum-one
+  flare-tranche:
+    address: 0x550878091b2B1506069F61ae59e3A5484Bca9166
+    network: flare-tranche
 
 tokens:
-  arbitrum-one-red:
-    network: arbitrum-one
-    address: 0x6d3abb80c3cbae0f60ba274f36137298d8571fbe
-  arbitrum-one-blue:
-    network: arbitrum-one
-    address: 0x667f41fF7D9c06D2dd18511b32041fC6570Dc468
+  flare-wflr:
+    network: flare-tranche
+    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+  flare-eusdt:
+    network: flare-tranche
+    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
 
 orders:
   # vault-id generated with `openssl rand -hex 32`
-  arbitrum-one-buy:
+  flare-tranche-buy:
+    orderbook: flare-tranche
     inputs:
-      - token: arbitrum-one-red
-        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
+      - token: flare-wflr
+        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6043
     outputs:
-      - token: arbitrum-one-blue
-        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
-
-  arbitrum-one-sell:
+      - token: flare-eusdt
+        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6043
+  flare-tranche-sell:
+    orderbook: flare-tranche   
     inputs:
-      - token: arbitrum-one-blue
-        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
+      - token: flare-eusdt
+        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6043
     outputs:
-      - token: arbitrum-one-red
-        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
+      - token: flare-wflr
+        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6043
 
 scenarios:
-    arb-red-blue-tranches:
-        network: arbitrum-one
-        deployer: arbitrum-one
-        orderbook: arbitrum-one
+    flare-tranche-tranches:
+        network: flare-tranche
+        deployer: flare-tranche
+        orderbook: flare-tranche
         bindings:
           # The uniswap words are only required if there is a conversion between
           # the input/output token and some external price. Typically this is
           # not the case as the io-ratio is defined in terms of the input/output
           # token and the io-ratio-multiplier is set to the identity function.
-          uniswap-words: 0x5Cf7d0a8c61c8dcC6b0ECB281dF1C17264C2A517
+          uniswap-words: 0xb1d6D10561D4e1792A7c6B336b0529e4bFb5Ea8F
 
-          orderbook-subparser: 0x23F77e7Bc935503e437166498D7D72f2Ea290E1f
+          orderbook-subparser: 0xF836f2746B407136a5bCB515495949B1edB75184
 
           # How far we move through tranche space in a second.
           # 1e18 is a whole tranche, so we divide 1e18 by the number of seconds
@@ -117,7 +118,7 @@ scenarios:
           # skip tranches.
           # Shyness MAY be set to 0, in which case every tranche will be fully
           # available as it is entered.
-          # tranche-space-shyness: 0
+          tranche-space-shyness: 9e17
 
           # Minimum trade size, if you put in a trade for less than x% of a
           # tranche it wont clear.
@@ -144,13 +145,14 @@ scenarios:
             bindings:
                 # If we want to denominate the amount in BLUE when we're
                 # buying RED with it, then the amount is the OUTPUT.
+                # Note if amount is output is 1, then base price is 1/Price                           
                 amount-is-output: 1
                 io-ratio-expr: '''linear-growth'
-                io-ratio-base: 1e18
-                io-ratio-growth: 5e16
-                tranche-size-expr: '''exponential-growth'
-                tranche-size-base: 1e18
-                tranche-size-growth: 1e16
+                io-ratio-base: 33e18
+                io-ratio-growth: 3e18
+                tranche-size-expr: '''linear-growth'
+                tranche-size-base: 10e18
+                tranche-size-growth: 1e18
             scenarios:
               initialized:
                 bindings:
@@ -166,7 +168,6 @@ scenarios:
                       get-last-tranche: '''get-last-tranche-prod'
                       set-last-tranche: '''set-last-tranche-prod'
                       plottables: '''plottables-prod'
-                      tranche-space-shyness: 0
                   test:
                     runs: 100
                     bindings:
@@ -175,12 +176,6 @@ scenarios:
                       plottables: '''plottables-test'
                       test-last-update-time: 0
                       test-now: 0
-                  test-shy-tranche:
-                    bindings:
-                      get-last-tranche: '''get-last-tranche-prod'
-                      set-last-tranche: '''set-last-tranche-prod'
-                      plottables: '''plottables-prod'
-                      tranche-space-shyness: 9e17
               test:
                   runs: 10000
                   bindings:
@@ -196,11 +191,11 @@ scenarios:
                 # selling RED for it, then the amount is the INPUT.
                 amount-is-output: 0
                 io-ratio-expr: '''linear-growth'
-                io-ratio-base: 10e18
-                io-ratio-growth: 5e17
-                tranche-size-expr: '''exponential-growth'
-                tranche-size-base: 1e18
-                tranche-size-growth: 1e16
+                io-ratio-base: 3e16
+                io-ratio-growth: 1e16
+                tranche-size-expr: '''linear-growth'
+                tranche-size-base: 10e18
+                tranche-size-growth: 1e14
             scenarios:
               initialized:
                 bindings:
@@ -216,7 +211,6 @@ scenarios:
                       get-last-tranche: '''get-last-tranche-prod'
                       set-last-tranche: '''set-last-tranche-prod'
                       plottables: '''plottables-prod'
-                      tranche-space-shyness: 0
                   test:
                     runs: 100
                     bindings:
@@ -237,16 +231,16 @@ scenarios:
 
 charts:
     buy-initial-deployment:
-      scenario: arb-red-blue-tranches.buy.initialized.test
+      scenario: flare-tranche-tranches.buy.initialized.test
       metrics:
-        - label: Amount of BLUE required to buy RED in the first tranche
+        - label: Amount of USD required to buy FLR in the first tranche
           value: 0.6
           unit-prefix: $
-        - label: Amount of RED purchased in the first tranche
+        - label: Amount of FLR purchased in the first tranche
           value: 0.5.2
-        - label: 'Initial io-ratio (i.e. # RED purchased per BLUE spent)'
+        - label: 'Initial io-ratio (i.e. # FLR purchased per USD spent)'
           value: 0.7
-        - label: Initial effective buy price (e.g. how much you pay for 1 RED in BLUE, visible on dextools)
+        - label: Initial effective buy price (e.g. how much you pay for 1 FLR in USD, visible on dextools)
           value: 0.5.3
           unit-prefix: $
         - label: Starting tranche
@@ -254,27 +248,27 @@ charts:
       plots:
 
     buy-simulation:
-        scenario: arb-red-blue-tranches.buy.test
+        scenario: flare-tranche-tranches.buy.test
         plots:
-          BLUE spent and recharge rate per tranche:
+          USD spent and recharge rate per tranche:
             marks:
               - type: line
                 options:
                   x: 0.0
                   y: 0.6
-          Number of RED purchased per tranche:
+          Number of FLR purchased per tranche:
             marks:
               - type: line
                 options:
                   x: 0.0
                   y: 0.5.2
-          'io-ratio (i.e. # of RED purchased per BLUE spent) vs tranche':
+          'io-ratio (i.e. # of FLR purchased per USD spent) vs tranche':
             marks:
               - type: line
                 options:
                   x: 0.0
                   y: 0.7
-          Effective buy price by tranche (e.g. how much you pay for 1 RED token in BLUE e.g. visible on dextools):
+          Effective buy price by tranche (e.g. how much you pay for 1 FLR token in USD e.g. visible on dextools):
             marks:
               - type: line
                 options:
@@ -288,16 +282,16 @@ charts:
                   y: 0.0
 
     sell-initial-deployment:
-      scenario: arb-red-blue-tranches.sell.initialized.test
+      scenario: flare-tranche-tranches.sell.initialized.test
       metrics:
-        - label: Amount of RED sold to meet the first tranche of BLUE
+        - label: Amount of FLR sold to meet the first tranche of USD
           value: 0.6
           unit-prefix: $
-        - label: Amount of BLUE received selling the first tranche of RED tokens
+        - label: Amount of USD received selling the first tranche of FLR tokens
           value: 0.5.2
-        - label: 'Initial io-ratio (i.e. # of BLUE purchased per RED spent)'
+        - label: 'Initial io-ratio (i.e. # of USD purchased per FLR spent)'
           value: 0.7
-        - label: Initial effective sell price (Amount of RED to sell 1 BLUE e.g. visible on dextools)
+        - label: Initial effective sell price (Amount of FLR to sell 1 USD e.g. visible on dextools)
           value: 0.7
           unit-prefix: $
         - label: Starting tranche
@@ -305,15 +299,15 @@ charts:
       plots:
                   
     sell-simulation:
-        scenario: arb-red-blue-tranches.sell.test
+        scenario: flare-tranche-tranches.sell.test
         plots:
-          Number of RED sold per tranche:
+          Number of FLR sold per tranche:
             marks:
               - type: line
                 options:
                   x: 0.0
                   y: 0.6
-          BLUE per tranche:
+          USD per tranche:
             marks:
               - type: line
                 options:
@@ -339,13 +333,13 @@ charts:
                   y: 0.0
 
 deployments:
-  arbitrum-one-buy:
-    scenario: arb-red-blue-tranches.buy.initialized.prod
-    order: arbitrum-one-buy
-  arbitrum-one-sell:
-    scenario: arb-red-blue-tranches.sell.initialized.prod
-    order: arbitrum-one-sell
-
+  flare-tranche-buy:
+    scenario: flare-tranche-tranches.buy.initialized.prod
+    order: flare-tranche-buy  
+  flare-tranche-sell:
+    scenario: flare-tranche-tranches.sell.initialized.prod
+    order: flare-tranche-sell
+    
 ---
 #tranche-space-per-second !The amount of tranche space that is recharged per second as a normalized 18 decimal fixed point value.
 #tranche-space-recharge-delay !The duration in seconds that no recharging occurs after a trade occurs.
