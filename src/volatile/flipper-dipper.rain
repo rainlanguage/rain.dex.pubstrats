@@ -14,14 +14,14 @@ orders:
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
-        vault-id: 0xbc80517257d579581d77ee12203e2b8ec54004f30e9d54abe3169e2fbb7e4887
+        vault-id: 0xc51cfcd0235d20034004ac41bf4675ad4aa65b2c35d3b0b8295a1a831dea5969
       - token: eusdt
-        vault-id: 0xbc80517257d579581d77ee12203e2b8ec54004f30e9d54abe3169e2fbb7e4887
+        vault-id: 0xc51cfcd0235d20034004ac41bf4675ad4aa65b2c35d3b0b8295a1a831dea5969
     outputs:
       - token: wflr
-        vault-id: 0xbc80517257d579581d77ee12203e2b8ec54004f30e9d54abe3169e2fbb7e4887
+        vault-id: 0xc51cfcd0235d20034004ac41bf4675ad4aa65b2c35d3b0b8295a1a831dea5969
       - token: eusdt
-        vault-id: 0xbc80517257d579581d77ee12203e2b8ec54004f30e9d54abe3169e2fbb7e4887
+        vault-id: 0xc51cfcd0235d20034004ac41bf4675ad4aa65b2c35d3b0b8295a1a831dea5969
 
 scenarios:
   flare:
@@ -45,14 +45,14 @@ scenarios:
           linear-decay-floor18: 0
       ramp-down:
         bindings:
-          # C = 1.011
-          # D = 7
-          # => start at 101% and hit 0 after 7 epochs.
-          # => cuts below 100% after 2.5 epochs.
-          # https://www.desmos.com/calculator/38ien12798
+          # C = 1.02
+          # D = 14
+          # => start at 102% and hit 0 after 14 epochs.
+          # => cuts below 100% after about 10 epochs.
+          # https://www.desmos.com/calculator/rac340ngwk
           ratio-multiplier: '''ramp-down'
-          ramp-down-c18: 1011e15
-          ramp-down-d18: 7e18
+          ramp-down-c18: 102e16
+          ramp-down-d18: 14e18
           seconds-per-epoch: 86400
   any-flare:
     deployer: flare
@@ -62,7 +62,7 @@ scenarios:
       flare-subparser: 0x87D1f842347b7802A29FD9010c464E760745a4d2
       fallback-ratio: '''fb-halflife'
       # date +%s
-      fb-halflife-start-time: 1713814625
+      fb-halflife-start-time: 1714979808
       # anything way bigger than the expected ratio is fine
       fb-halflife-start-io18: 1e36
       # half an hour per halving covers a lot of space while
@@ -164,7 +164,7 @@ _: decimal18-mul(
     5e17
     decimal18-div(
       int-to-decimal18(duration)
-      fb-halflife-seconds
+      int-to-decimal18(fb-halflife-seconds)
     )
   )
 );
