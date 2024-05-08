@@ -33,7 +33,6 @@ scenarios:
     deployer: flare
     runs: 1
     bindings:
-      flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
       trade-amount: 500e18
       start-time: 1712582040
       auction-rate-percentage: 1e15
@@ -59,14 +58,12 @@ charts:
       - label: Trade price
         value: 0.4
 ---
-#flare-sub-parser !The flare subparser address.
-
 #trade-amount !The amount that we want to sell.
 #start-time !The timestamp in seconds when the auction starts - works best as a minute or two after the order will be deployed
 #auction-rate-percentage !The percentage of the price that we'll deduct every second from our offer
 
 #calculate-io
-using-words-from flare-sub-parser
+using-words-from 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
 
 /* ensure that the cooldown time has elapsed since the last trade */
 :ensure(

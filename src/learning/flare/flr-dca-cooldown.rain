@@ -30,7 +30,6 @@ scenarios:
     deployer: flare
     runs: 1
     bindings:
-      flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
       cooldown-time: 30
       per-trade-amount: 1e18
 
@@ -55,13 +54,11 @@ charts:
       - label: IO ratio
         value: 0.6
 ---
-#flare-sub-parser !The flare subparser address.
-
 #per-trade-amount !The amount that we'll buy or sell per trade.
 #cooldown-time !The minimum amount of seconds that must elapse between trades.
 
 #calculate-io
-using-words-from flare-sub-parser
+using-words-from 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
 
 now: block-timestamp(),
 
