@@ -79,6 +79,27 @@ orders:
     outputs:
       - token: polygon-moon
         vault-id: 0x06a6e9ba5540e57f30de1b70fcedbe5971cd345743fb74044d966798b509c97d
+  
+  # ROND-USDT orders
+  polygon-rond-buy:
+    orderbook: polygon-quickswap
+    inputs:
+      - token: polygon-rond
+        vault-id: 0x5ddef3abb26d0bc4c0e309ec8d22d4e2cf0b22350e74ba084514f646ff07b01f
+    outputs:
+      - token: polygon-usdt
+        vault-id: 0x5ddef3abb26d0bc4c0e309ec8d22d4e2cf0b22350e74ba084514f646ff07b01f
+
+  polygon-rond-sell:
+    orderbook: polygon-quickswap
+    inputs:
+      - token: polygon-usdt
+        vault-id: 0x5ddef3abb26d0bc4c0e309ec8d22d4e2cf0b22350e74ba084514f646ff07b01f
+    outputs:
+      - token: polygon-rond
+        vault-id: 0x5ddef3abb26d0bc4c0e309ec8d22d4e2cf0b22350e74ba084514f646ff07b01f
+
+  
 
 scenarios:
     polygon-quickswap-tranches:
@@ -251,7 +272,86 @@ scenarios:
                     max-test-tranche-space: 20e18
                     test-last-update-time: 0
                     test-now: 0
-    
+
+          # ROND-USDT buy tranche order
+          rond-buy:
+            bindings:
+              amount-is-output: 1
+              io-ratio-expr: '''linear-growth'
+              io-ratio-base: 320e18
+              io-ratio-growth: 2e18
+              tranche-size-expr: '''exponential-growth'
+              tranche-size-base: 5e18
+              tranche-size-growth: 1e16
+            scenarios:
+              initialized:
+                bindings:
+                  initial-tranche-space: 5e18
+                scenarios:
+                  prod:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                      tranche-space-shyness: 0
+                  test:
+                    runs: 100
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test-init'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      test-last-update-time: 0
+                      test-now: 0
+              test:
+                  runs: 10000
+                  bindings:
+                    get-last-tranche: '''get-last-tranche-test'
+                    set-last-tranche: '''set-last-tranche-test'
+                    plottables: '''plottables-test'
+                    max-test-tranche-space: 20e18
+                    test-last-update-time: 0
+                    test-now: 0
+
+          # ROND-USDT sell tranche order
+          rond-sell:
+            bindings:
+              amount-is-output: 0
+              io-ratio-expr: '''linear-growth'
+              io-ratio-base: 31e14
+              io-ratio-growth: 1e14
+              tranche-size-expr: '''exponential-growth'
+              tranche-size-base: 5e18
+              tranche-size-growth: 1e16
+            scenarios:
+              initialized:
+                bindings:
+                  initial-tranche-space: 0
+                scenarios:
+                  prod:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                      tranche-space-shyness: 0
+                  test:
+                    runs: 100
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test-init'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      test-last-update-time: 0
+                      test-now: 0
+              test:
+                  runs: 10000
+                  bindings:
+                    get-last-tranche: '''get-last-tranche-test'
+                    set-last-tranche: '''set-last-tranche-test'
+                    plottables: '''plottables-test'
+                    max-test-tranche-space: 20e18
+                    test-last-update-time: 0
+                    test-now: 0
+
+
 charts:
     # SFL metrics chart
     sfl-buy-initial-deployment:
@@ -387,6 +487,73 @@ charts:
                   x: 0.0
                   y: 0.7
 
+    # ROND metrics chart
+    rond-buy-initial-deployment:
+      scenario: polygon-quickswap-tranches.rond-buy.initialized.test
+      metrics:
+        - label: Amount of USDT required to buy ROND in the first tranche
+          value: 0.6
+          unit-prefix: $
+        - label: Amount of ROND purchased in the first tranche
+          value: 0.5.2
+        - label: 'Initial io-ratio (i.e. # ROND purchased per USDT spent)'
+          value: 0.7
+        - label: Initial effective buy price (e.g. how much you pay for 1 ROND in USDT, visible on dextools)
+          value: 0.5.3
+          unit-prefix: $
+        - label: Starting tranche
+          value: 0.2.0
+      plots:
+
+    rond-buy-simulation:
+        scenario: polygon-quickswap-tranches.rond-buy.test
+        plots:
+          'io-ratio (i.e. # of ROND purchased per USDT spent) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
+          Effective buy price by tranche (e.g. how much you pay for 1 ROND token in USDT e.g. visible on dextools):
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.5.3
+
+    rond-sell-initial-deployment:
+      scenario: polygon-quickswap-tranches.rond-sell.initialized.test
+      metrics:
+        - label: Amount of ROND sold to meet the first tranche of USDT
+          value: 0.6
+          unit-prefix: $
+        - label: Amount of USDT received selling the first tranche of ROND tokens
+          value: 0.5.2
+        - label: 'Initial io-ratio (i.e. # of USDT purchased per ROND spent)'
+          value: 0.7
+        - label: Initial effective sell price (Amount of ROND to sell 1 USDT e.g. visible on dextools)
+          value: 0.7
+          unit-prefix: $
+        - label: Starting tranche
+          value: 0.2.0
+      plots:
+                  
+    rond-sell-simulation:
+        scenario: polygon-quickswap-tranches.rond-sell.test
+        plots:
+          'io-ratio (i.e. # of TKN purchased per $ spent) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
+          'Effective price (e.g. visible on dextools) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
+
 deployments:
 
   # SFL-USDT tranche deployments
@@ -404,6 +571,14 @@ deployments:
   polygon-moon-sell:
     scenario: polygon-quickswap-tranches.moon-sell.initialized.prod
     order: polygon-moon-sell
+
+  # ROND-USDT tranche deployments
+  polygon-rond-buy:
+    scenario: polygon-quickswap-tranches.rond-buy.initialized.prod
+    order: polygon-rond-buy
+  polygon-rond-sell:
+    scenario: polygon-quickswap-tranches.rond-sell.initialized.prod
+    order: polygon-rond-sell
   
 
 ---
