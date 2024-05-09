@@ -41,6 +41,8 @@ tokens:
 
 orders:
   # vault-id generated with `openssl rand -hex 32`
+
+  # SFL-USDT orders
   polygon-sfl-buy:
     orderbook: polygon-quickswap
     inputs:
@@ -59,12 +61,32 @@ orders:
       - token: polygon-sfl
         vault-id: 0xccbd519d0dfae5cec431b82b0986636764d775be4b61bab8c4a527af36f499ff
 
+  # MOON-USDT orders
+  polygon-moon-buy:
+    orderbook: polygon-quickswap
+    inputs:
+      - token: polygon-moon
+        vault-id: 0x06a6e9ba5540e57f30de1b70fcedbe5971cd345743fb74044d966798b509c97d
+    outputs:
+      - token: polygon-usdt
+        vault-id: 0x06a6e9ba5540e57f30de1b70fcedbe5971cd345743fb74044d966798b509c97d
+
+  polygon-moon-sell:
+    orderbook: polygon-quickswap
+    inputs:
+      - token: polygon-usdt
+        vault-id: 0x06a6e9ba5540e57f30de1b70fcedbe5971cd345743fb74044d966798b509c97d
+    outputs:
+      - token: polygon-moon
+        vault-id: 0x06a6e9ba5540e57f30de1b70fcedbe5971cd345743fb74044d966798b509c97d
+
 scenarios:
     polygon-quickswap-tranches:
         network: polygon-quickswap
         deployer: polygon-quickswap
         orderbook: polygon-quickswap
         bindings:
+          # Common bindings for all token pairs
           uniswap-words: 0xb1d6D10561D4e1792A7c6B336b0529e4bFb5Ea8F
           orderbook-subparser: 0x1fA67aEe8BB29B3144ebAAECe51Fce06BF903929
           tranche-space-per-second: 11574074074074
@@ -74,6 +96,7 @@ scenarios:
           io-ratio-multiplier: '''io-ratio-multiplier-identity'
 
         scenarios:
+          # SFL-USDT buy tranche order 
           sfl-buy:
             bindings:
               amount-is-output: 1
@@ -110,7 +133,9 @@ scenarios:
                     plottables: '''plottables-test'
                     max-test-tranche-space: 20e18
                     test-last-update-time: 0
-                    test-now: 0              
+                    test-now: 0
+
+          # SFL-USDT sell tranche order 
           sfl-sell:
             bindings:
               amount-is-output: 0
@@ -148,8 +173,87 @@ scenarios:
                     max-test-tranche-space: 20e18
                     test-last-update-time: 0
                     test-now: 0
+          
+          # MOON-USDT buy tranche order
+          moon-buy:
+            bindings:
+              amount-is-output: 1
+              io-ratio-expr: '''linear-growth'
+              io-ratio-base: 1400e18
+              io-ratio-growth: 15e18
+              tranche-size-expr: '''exponential-growth'
+              tranche-size-base: 5e18
+              tranche-size-growth: 1e16
+            scenarios:
+              initialized:
+                bindings:
+                  initial-tranche-space: 5e18
+                scenarios:
+                  prod:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                      tranche-space-shyness: 0
+                  test:
+                    runs: 100
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test-init'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      test-last-update-time: 0
+                      test-now: 0
+              test:
+                  runs: 10000
+                  bindings:
+                    get-last-tranche: '''get-last-tranche-test'
+                    set-last-tranche: '''set-last-tranche-test'
+                    plottables: '''plottables-test'
+                    max-test-tranche-space: 20e18
+                    test-last-update-time: 0
+                    test-now: 0
+
+          # MOON-USDT sell tranche order
+          moon-sell:
+            bindings:
+              amount-is-output: 0
+              io-ratio-expr: '''linear-growth'
+              io-ratio-base: 7e14
+              io-ratio-growth: 1e13
+              tranche-size-expr: '''exponential-growth'
+              tranche-size-base: 5e18
+              tranche-size-growth: 1e16
+            scenarios:
+              initialized:
+                bindings:
+                  initial-tranche-space: 0
+                scenarios:
+                  prod:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                      tranche-space-shyness: 0
+                  test:
+                    runs: 100
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test-init'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      test-last-update-time: 0
+                      test-now: 0
+              test:
+                  runs: 10000
+                  bindings:
+                    get-last-tranche: '''get-last-tranche-test'
+                    set-last-tranche: '''set-last-tranche-test'
+                    plottables: '''plottables-test'
+                    max-test-tranche-space: 20e18
+                    test-last-update-time: 0
+                    test-now: 0
     
 charts:
+    # SFL metrics chart
     sfl-buy-initial-deployment:
       scenario: polygon-quickswap-tranches.sfl-buy.initialized.test
       metrics:
@@ -216,13 +320,91 @@ charts:
                   x: 0.0
                   y: 0.7
 
+    # MOON metrics chart
+    moon-buy-initial-deployment:
+      scenario: polygon-quickswap-tranches.moon-buy.initialized.test
+      metrics:
+        - label: Amount of USDT required to buy MOON in the first tranche
+          value: 0.6
+          unit-prefix: $
+        - label: Amount of MOON purchased in the first tranche
+          value: 0.5.2
+        - label: 'Initial io-ratio (i.e. # MOON purchased per USDT spent)'
+          value: 0.7
+        - label: Initial effective buy price (e.g. how much you pay for 1 MOON in USDT, visible on dextools)
+          value: 0.5.3
+          unit-prefix: $
+        - label: Starting tranche
+          value: 0.2.0
+      plots:
+
+    moon-buy-simulation:
+        scenario: polygon-quickswap-tranches.moon-buy.test
+        plots:
+          'io-ratio (i.e. # of MOON purchased per USDT spent) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
+          Effective buy price by tranche (e.g. how much you pay for 1 MOON token in USDT e.g. visible on dextools):
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.5.3
+
+    moon-sell-initial-deployment:
+      scenario: polygon-quickswap-tranches.moon-sell.initialized.test
+      metrics:
+        - label: Amount of MOON sold to meet the first tranche of USDT
+          value: 0.6
+          unit-prefix: $
+        - label: Amount of USDT received selling the first tranche of MOON tokens
+          value: 0.5.2
+        - label: 'Initial io-ratio (i.e. # of USDT purchased per MOON spent)'
+          value: 0.7
+        - label: Initial effective sell price (Amount of MOON to sell 1 USDT e.g. visible on dextools)
+          value: 0.7
+          unit-prefix: $
+        - label: Starting tranche
+          value: 0.2.0
+      plots:
+                  
+    moon-sell-simulation:
+        scenario: polygon-quickswap-tranches.moon-sell.test
+        plots:
+          'io-ratio (i.e. # of TKN purchased per $ spent) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
+          'Effective price (e.g. visible on dextools) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
+
 deployments:
+
+  # SFL-USDT tranche deployments
   polygon-sfl-buy:
     scenario: polygon-quickswap-tranches.sfl-buy.initialized.prod
     order: polygon-sfl-buy
   polygon-sfl-sell:
     scenario: polygon-quickswap-tranches.sfl-sell.initialized.prod
     order: polygon-sfl-sell
+
+  # MOON-USDT tranche deployments
+  polygon-moon-buy:
+    scenario: polygon-quickswap-tranches.moon-buy.initialized.prod
+    order: polygon-moon-buy
+  polygon-moon-sell:
+    scenario: polygon-quickswap-tranches.moon-sell.initialized.prod
+    order: polygon-moon-sell
+  
 
 ---
 #tranche-space-per-second !The amount of tranche space that is recharged per second as a normalized 18 decimal fixed point value.
