@@ -99,6 +99,26 @@ orders:
       - token: polygon-rond
         vault-id: 0x5ddef3abb26d0bc4c0e309ec8d22d4e2cf0b22350e74ba084514f646ff07b01f
 
+  # SAND-USDT orders
+  polygon-sand-buy:
+    orderbook: polygon-quickswap
+    inputs:
+      - token: polygon-sand
+        vault-id: 0xfe3fa54d325540a7ef29a0a6499b8f3f48a5c22caaf9fe84c0817a07006112d2
+    outputs:
+      - token: polygon-usdt
+        vault-id: 0xfe3fa54d325540a7ef29a0a6499b8f3f48a5c22caaf9fe84c0817a07006112d2
+
+  polygon-sand-sell:
+    orderbook: polygon-quickswap
+    inputs:
+      - token: polygon-usdt
+        vault-id: 0xfe3fa54d325540a7ef29a0a6499b8f3f48a5c22caaf9fe84c0817a07006112d2
+    outputs:
+      - token: polygon-sand
+        vault-id: 0xfe3fa54d325540a7ef29a0a6499b8f3f48a5c22caaf9fe84c0817a07006112d2
+
+
   
 
 scenarios:
@@ -351,6 +371,85 @@ scenarios:
                     test-last-update-time: 0
                     test-now: 0
 
+          # SAND-USDT buy tranche order
+          sand-buy:
+            bindings:
+              amount-is-output: 1
+              io-ratio-expr: '''linear-growth'
+              io-ratio-base: 23e17
+              io-ratio-growth: 5e16
+              tranche-size-expr: '''exponential-growth'
+              tranche-size-base: 5e18
+              tranche-size-growth: 1e16
+            scenarios:
+              initialized:
+                bindings:
+                  initial-tranche-space: 2e18
+                scenarios:
+                  prod:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                      tranche-space-shyness: 0
+                  test:
+                    runs: 100
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test-init'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      test-last-update-time: 0
+                      test-now: 0
+              test:
+                  runs: 10000
+                  bindings:
+                    get-last-tranche: '''get-last-tranche-test'
+                    set-last-tranche: '''set-last-tranche-test'
+                    plottables: '''plottables-test'
+                    max-test-tranche-space: 20e18
+                    test-last-update-time: 0
+                    test-now: 0
+
+          # SAND-USDT sell tranche order
+          sand-sell:
+            bindings:
+              amount-is-output: 0
+              io-ratio-expr: '''linear-growth'
+              io-ratio-base: 43e16
+              io-ratio-growth: 1e16
+              tranche-size-expr: '''exponential-growth'
+              tranche-size-base: 5e18
+              tranche-size-growth: 1e16
+            scenarios:
+              initialized:
+                bindings:
+                  initial-tranche-space: 0
+                scenarios:
+                  prod:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                      tranche-space-shyness: 0
+                  test:
+                    runs: 100
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test-init'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      test-last-update-time: 0
+                      test-now: 0
+              test:
+                  runs: 10000
+                  bindings:
+                    get-last-tranche: '''get-last-tranche-test'
+                    set-last-tranche: '''set-last-tranche-test'
+                    plottables: '''plottables-test'
+                    max-test-tranche-space: 20e18
+                    test-last-update-time: 0
+                    test-now: 0
+
+
 
 charts:
     # SFL metrics chart
@@ -554,6 +653,75 @@ charts:
                   x: 0.0
                   y: 0.7
 
+    # SAND metrics chart
+    sand-buy-initial-deployment:
+      scenario: polygon-quickswap-tranches.sand-buy.initialized.test
+      metrics:
+        - label: Amount of USDT required to buy SAND in the first tranche
+          value: 0.6
+          unit-prefix: $
+        - label: Amount of SAND purchased in the first tranche
+          value: 0.5.2
+        - label: 'Initial io-ratio (i.e. # SAND purchased per USDT spent)'
+          value: 0.7
+        - label: Initial effective buy price (e.g. how much you pay for 1 SAND in USDT, visible on dextools)
+          value: 0.5.3
+          unit-prefix: $
+        - label: Starting tranche
+          value: 0.2.0
+      plots:
+
+    sand-buy-simulation:
+        scenario: polygon-quickswap-tranches.sand-buy.test
+        plots:
+          'io-ratio (i.e. # of SAND purchased per USDT spent) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
+          Effective buy price by tranche (e.g. how much you pay for 1 SAND token in USDT e.g. visible on dextools):
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.5.3
+
+    sand-sell-initial-deployment:
+      scenario: polygon-quickswap-tranches.sand-sell.initialized.test
+      metrics:
+        - label: Amount of SAND sold to meet the first tranche of USDT
+          value: 0.6
+          unit-prefix: $
+        - label: Amount of USDT received selling the first tranche of SAND tokens
+          value: 0.5.2
+        - label: 'Initial io-ratio (i.e. # of USDT purchased per SAND spent)'
+          value: 0.7
+        - label: Initial effective sell price (Amount of SAND to sell 1 USDT e.g. visible on dextools)
+          value: 0.7
+          unit-prefix: $
+        - label: Starting tranche
+          value: 0.2.0
+      plots:
+                  
+    sand-sell-simulation:
+        scenario: polygon-quickswap-tranches.sand-sell.test
+        plots:
+          'io-ratio (i.e. # of TKN purchased per $ spent) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
+          'Effective price (e.g. visible on dextools) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
+
+
+
 deployments:
 
   # SFL-USDT tranche deployments
@@ -579,6 +747,14 @@ deployments:
   polygon-rond-sell:
     scenario: polygon-quickswap-tranches.rond-sell.initialized.prod
     order: polygon-rond-sell
+
+  # SAND-USDT tranche deployments
+  polygon-sand-buy:
+    scenario: polygon-quickswap-tranches.sand-buy.initialized.prod
+    order: polygon-sand-buy
+  polygon-sand-sell:
+    scenario: polygon-quickswap-tranches.sand-sell.initialized.prod
+    order: polygon-sand-sell
   
 
 ---
