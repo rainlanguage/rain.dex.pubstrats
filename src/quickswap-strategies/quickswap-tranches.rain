@@ -168,7 +168,7 @@ scenarios:
               io-ratio-base: 10e18
               io-ratio-growth: 1e17
               tranche-size-expr: '''exponential-growth'
-              tranche-size-base: 5e18
+              tranche-size-base: 2e18
               tranche-size-growth: 1e16
             scenarios:
               initialized:
@@ -207,7 +207,7 @@ scenarios:
               io-ratio-base: 99e15
               io-ratio-growth: 1e16
               tranche-size-expr: '''exponential-growth'
-              tranche-size-base: 5e18
+              tranche-size-base: 2e18
               tranche-size-growth: 1e16
             scenarios:
               initialized:
@@ -246,7 +246,7 @@ scenarios:
               io-ratio-base: 1400e18
               io-ratio-growth: 15e18
               tranche-size-expr: '''exponential-growth'
-              tranche-size-base: 5e18
+              tranche-size-base: 2e18
               tranche-size-growth: 1e16
             scenarios:
               initialized:
@@ -285,7 +285,7 @@ scenarios:
               io-ratio-base: 7e14
               io-ratio-growth: 1e13
               tranche-size-expr: '''exponential-growth'
-              tranche-size-base: 5e18
+              tranche-size-base: 2e18
               tranche-size-growth: 1e16
             scenarios:
               initialized:
@@ -324,7 +324,7 @@ scenarios:
               io-ratio-base: 320e18
               io-ratio-growth: 2e18
               tranche-size-expr: '''exponential-growth'
-              tranche-size-base: 5e18
+              tranche-size-base: 2e18
               tranche-size-growth: 1e16
             scenarios:
               initialized:
@@ -363,7 +363,7 @@ scenarios:
               io-ratio-base: 31e14
               io-ratio-growth: 1e14
               tranche-size-expr: '''exponential-growth'
-              tranche-size-base: 5e18
+              tranche-size-base: 2e18
               tranche-size-growth: 1e16
             scenarios:
               initialized:
@@ -402,7 +402,7 @@ scenarios:
               io-ratio-base: 23e17
               io-ratio-growth: 5e16
               tranche-size-expr: '''exponential-growth'
-              tranche-size-base: 5e18
+              tranche-size-base: 2e18
               tranche-size-growth: 1e16
             scenarios:
               initialized:
@@ -441,7 +441,7 @@ scenarios:
               io-ratio-base: 43e16
               io-ratio-growth: 1e16
               tranche-size-expr: '''exponential-growth'
-              tranche-size-base: 5e18
+              tranche-size-base: 2e18
               tranche-size-growth: 1e16
             scenarios:
               initialized:
@@ -480,7 +480,7 @@ scenarios:
               io-ratio-base: 10e18
               io-ratio-growth: 2e17
               tranche-size-expr: '''exponential-growth'
-              tranche-size-base: 5e18
+              tranche-size-base: 2e18
               tranche-size-growth: 1e16
             scenarios:
               initialized:
@@ -519,7 +519,7 @@ scenarios:
               io-ratio-base: 92e15
               io-ratio-growth: 5e14
               tranche-size-expr: '''exponential-growth'
-              tranche-size-base: 5e18
+              tranche-size-base: 2e18
               tranche-size-growth: 1e16
             scenarios:
               initialized:
