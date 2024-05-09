@@ -35,6 +35,9 @@ tokens:
   polygon-quick:
     network: polygon-quickswap
     address: 0x831753DD7087CaC61aB5644b308642cc1c33Dc13
+  polygon-ixt:
+    network: polygon-quickswap
+    address: 0xE06Bd4F5aAc8D0aA337D13eC88dB6defC6eAEefE
   polygon-usdt:
     network: polygon-quickswap
     address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
@@ -117,6 +120,26 @@ orders:
     outputs:
       - token: polygon-sand
         vault-id: 0xfe3fa54d325540a7ef29a0a6499b8f3f48a5c22caaf9fe84c0817a07006112d2
+
+  # IXT-USDT orders
+  polygon-ixt-buy:
+    orderbook: polygon-quickswap
+    inputs:
+      - token: polygon-ixt
+        vault-id: 0x1703d50775df07536baf9fd1332ade9449a7de8ffc2edec70bb34a34ca89616e
+    outputs:
+      - token: polygon-usdt
+        vault-id: 0x1703d50775df07536baf9fd1332ade9449a7de8ffc2edec70bb34a34ca89616e
+
+  polygon-ixt-sell:
+    orderbook: polygon-quickswap
+    inputs:
+      - token: polygon-usdt
+        vault-id: 0x1703d50775df07536baf9fd1332ade9449a7de8ffc2edec70bb34a34ca89616e
+    outputs:
+      - token: polygon-ixt
+        vault-id: 0x1703d50775df07536baf9fd1332ade9449a7de8ffc2edec70bb34a34ca89616e
+
 
 
   
@@ -449,6 +472,85 @@ scenarios:
                     test-last-update-time: 0
                     test-now: 0
 
+          # IXT-USDT buy tranche order
+          ixt-buy:
+            bindings:
+              amount-is-output: 1
+              io-ratio-expr: '''linear-growth'
+              io-ratio-base: 10e18
+              io-ratio-growth: 2e17
+              tranche-size-expr: '''exponential-growth'
+              tranche-size-base: 5e18
+              tranche-size-growth: 1e16
+            scenarios:
+              initialized:
+                bindings:
+                  initial-tranche-space: 5e18
+                scenarios:
+                  prod:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                      tranche-space-shyness: 0
+                  test:
+                    runs: 100
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test-init'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      test-last-update-time: 0
+                      test-now: 0
+              test:
+                  runs: 10000
+                  bindings:
+                    get-last-tranche: '''get-last-tranche-test'
+                    set-last-tranche: '''set-last-tranche-test'
+                    plottables: '''plottables-test'
+                    max-test-tranche-space: 20e18
+                    test-last-update-time: 0
+                    test-now: 0
+
+          # IXT-USDT sell tranche order
+          ixt-sell:
+            bindings:
+              amount-is-output: 0
+              io-ratio-expr: '''linear-growth'
+              io-ratio-base: 92e15
+              io-ratio-growth: 5e14
+              tranche-size-expr: '''exponential-growth'
+              tranche-size-base: 5e18
+              tranche-size-growth: 1e16
+            scenarios:
+              initialized:
+                bindings:
+                  initial-tranche-space: 0
+                scenarios:
+                  prod:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                      tranche-space-shyness: 0
+                  test:
+                    runs: 100
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test-init'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      test-last-update-time: 0
+                      test-now: 0
+              test:
+                  runs: 10000
+                  bindings:
+                    get-last-tranche: '''get-last-tranche-test'
+                    set-last-tranche: '''set-last-tranche-test'
+                    plottables: '''plottables-test'
+                    max-test-tranche-space: 20e18
+                    test-last-update-time: 0
+                    test-now: 0
+
+
 
 
 charts:
@@ -720,6 +822,73 @@ charts:
                   x: 0.0
                   y: 0.7
 
+    # IXT metrics chart
+    ixt-buy-initial-deployment:
+      scenario: polygon-quickswap-tranches.ixt-buy.initialized.test
+      metrics:
+        - label: Amount of USDT required to buy IXT in the first tranche
+          value: 0.6
+          unit-prefix: $
+        - label: Amount of IXT purchased in the first tranche
+          value: 0.5.2
+        - label: 'Initial io-ratio (i.e. # IXT purchased per USDT spent)'
+          value: 0.7
+        - label: Initial effective buy price (e.g. how much you pay for 1 IXT in USDT, visible on dextools)
+          value: 0.5.3
+          unit-prefix: $
+        - label: Starting tranche
+          value: 0.2.0
+      plots:
+
+    ixt-buy-simulation:
+        scenario: polygon-quickswap-tranches.ixt-buy.test
+        plots:
+          'io-ratio (i.e. # of IXT purchased per USDT spent) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
+          Effective buy price by tranche (e.g. how much you pay for 1 IXT token in USDT e.g. visible on dextools):
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.5.3
+
+    ixt-sell-initial-deployment:
+      scenario: polygon-quickswap-tranches.ixt-sell.initialized.test
+      metrics:
+        - label: Amount of IXT sold to meet the first tranche of USDT
+          value: 0.6
+          unit-prefix: $
+        - label: Amount of USDT received selling the first tranche of IXT tokens
+          value: 0.5.2
+        - label: 'Initial io-ratio (i.e. # of USDT purchased per IXT spent)'
+          value: 0.7
+        - label: Initial effective sell price (Amount of IXT to sell 1 USDT e.g. visible on dextools)
+          value: 0.7
+          unit-prefix: $
+        - label: Starting tranche
+          value: 0.2.0
+      plots:
+                  
+    ixt-sell-simulation:
+        scenario: polygon-quickswap-tranches.ixt-sell.test
+        plots:
+          'io-ratio (i.e. # of TKN purchased per $ spent) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
+          'Effective price (e.g. visible on dextools) vs tranche':
+            marks:
+              - type: line
+                options:
+                  x: 0.0
+                  y: 0.7
+
 
 
 deployments:
@@ -755,6 +924,14 @@ deployments:
   polygon-sand-sell:
     scenario: polygon-quickswap-tranches.sand-sell.initialized.prod
     order: polygon-sand-sell
+  
+  # IXT-USDT tranche deployments
+  polygon-ixt-buy:
+    scenario: polygon-quickswap-tranches.ixt-buy.initialized.prod
+    order: polygon-ixt-buy
+  polygon-ixt-sell:
+    scenario: polygon-quickswap-tranches.ixt-sell.initialized.prod
+    order: polygon-ixt-sell
   
 
 ---
