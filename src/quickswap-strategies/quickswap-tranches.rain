@@ -251,7 +251,7 @@ scenarios:
             scenarios:
               initialized:
                 bindings:
-                  initial-tranche-space: 5e18
+                  initial-tranche-space: 11e18
                 scenarios:
                   prod:
                     bindings:
@@ -282,7 +282,7 @@ scenarios:
             bindings:
               amount-is-output: 0
               io-ratio-expr: '''linear-growth'
-              io-ratio-base: 7e14
+              io-ratio-base: 68e13
               io-ratio-growth: 1e13
               tranche-size-expr: '''exponential-growth'
               tranche-size-base: 2e18
