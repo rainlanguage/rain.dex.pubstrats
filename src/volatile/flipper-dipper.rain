@@ -14,22 +14,22 @@ orders:
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
-        vault-id: 0x6bcce93fa8421410342bf811055bcb4b87db84053336d3da0e86c3f7eb5e5443
+        vault-id: 0xd0aa6ad975ec5d7f64f64814c6cd98fe088c95c5db3c63352f876bca1f97d2bc
       - token: eusdt
-        vault-id: 0x6bcce93fa8421410342bf811055bcb4b87db84053336d3da0e86c3f7eb5e5443
+        vault-id: 0xd0aa6ad975ec5d7f64f64814c6cd98fe088c95c5db3c63352f876bca1f97d2bc
     outputs:
       - token: wflr
-        vault-id: 0x6bcce93fa8421410342bf811055bcb4b87db84053336d3da0e86c3f7eb5e5443
+        vault-id: 0xd0aa6ad975ec5d7f64f64814c6cd98fe088c95c5db3c63352f876bca1f97d2bc
       - token: eusdt
-        vault-id: 0x6bcce93fa8421410342bf811055bcb4b87db84053336d3da0e86c3f7eb5e5443
+        vault-id: 0xd0aa6ad975ec5d7f64f64814c6cd98fe088c95c5db3c63352f876bca1f97d2bc
 
 scenarios:
   flare:
     orderbook: flare
     runs: 1
     bindings:
-      raindex-subparser: 0xF836f2746B407136a5bCB515495949B1edB75184
-      flare-subparser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
+      raindex-subparser: 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E
+      flare-subparser: 0x87D1f842347b7802A29FD9010c464E760745a4d2
       fallback-ratio: '''fallback-ftso-usd'
       fallback-ftso-multiplier: 1e18
     scenarios:
@@ -40,16 +40,45 @@ scenarios:
       linear-decay:
         bindings:
           ratio-multiplier: '''linear-decay-multiplier'
-          linear-decay-start18: 101e16
-          seconds-per-epoch18: 3600e18
-          linear-decay-floor18: 0
+          linear-decay-start18: 105e16
+          # 1% per day
+          linear-decay-rate18: 115740740740
+          seconds-per-epoch: 3600
+          linear-decay-floor18: 1e18
       ramp-down:
         bindings:
-          # https://www.desmos.com/calculator/u40dpvk0jf
+          # C = 1.02
+          # D = 14
+          # => start at 102% and hit 0 after 14 epochs.
+          # => cuts below 100% after about 10 epochs.
+          # https://www.desmos.com/calculator/rac340ngwk
           ratio-multiplier: '''ramp-down'
-          ramp-down-c18: 101e16
-          ramp-down-d18: 6e18
-          seconds-per-epoch18: 86400e18
+          ramp-down-c18: 102e16
+          ramp-down-d18: 14e18
+          seconds-per-epoch: 86400
+  any-flare:
+    deployer: flare
+    orderbook: flare
+    bindings:
+      raindex-subparser: 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E
+      flare-subparser: 0x87D1f842347b7802A29FD9010c464E760745a4d2
+      fallback-ratio: '''fb-halflife'
+      # date +%s
+      fb-halflife-start-time: 1714979808
+      # anything way bigger than the expected ratio is fine
+      fb-halflife-start-io18: 1e36
+      # half an hour per halving covers a lot of space while
+      # giving time for bots to respond in the correct range
+      fb-halflife-seconds: 1800
+      # C = 1.011
+      # D = 7
+      # => start at 101% and hit 0 after 7 epochs.
+      # => cuts below 100% after 2.5 epochs.
+      # https://www.desmos.com/calculator/38ien12798
+      ratio-multiplier: '''ramp-down'
+      ramp-down-c18: 1011e15
+      ramp-down-d18: 7e18
+      seconds-per-epoch: 86400
 
 charts:
   flare:
@@ -67,9 +96,17 @@ deployments:
     order: flare
     scenario: flare.ramp-down
 
+  any-ramp-down:
+    order: flare
+    scenario: any-flare
+
+metaboards:
+  flare: http://subgraphs.h20liquidity.tech/subgraphs/name/flare-mb-0x59401C93
+
+
 ---
 
-#seconds-per-epoch18 !Number of seconds to treat as 1 epoch. E.g. 86400e18 is 1 day per epoch.
+#seconds-per-epoch !Number of seconds to treat as 1 epoch. E.g. 86400 is 1 day per epoch.
 #linear-decay-time-key "linear-decay-last-time"
 #epochs-since-last-trade
 input-time-key: hash(order-hash() input-token() linear-decay-time-key),
@@ -79,7 +116,7 @@ output-time-key: hash(order-hash() output-token() linear-decay-time-key),
 output-last-time: any(get(output-time-key) block-timestamp()),
 duration-seconds: int-sub(block-timestamp() output-last-time),
 duration-seconds18: int-to-decimal18(duration-seconds),
-epochs18: decimal18-div(duration-seconds18 seconds-per-epoch18);
+epochs18: decimal18-div(duration-seconds18 int-to-decimal18(seconds-per-epoch));
 
 #ramp-down-c18 !C in ramp down equation.
 #ramp-down-d18 !D in ramp down equation.
@@ -108,6 +145,31 @@ _: decimal18-max(decay-amount18 linear-decay-floor18);
 #constant-ratio-multiplier-val18 !Constant value to multiply the breakeven ratio by.
 #constant-ratio-multiplier
 _: constant-ratio-multiplier-val18;
+
+#fb-halflife-start-time !Starting time for the fallback dutch auction.
+#fb-halflife-start-io18 !Starting value for the fallback dutch auction.
+#fb-halflife-seconds !Number of seconds per halflife.
+#fb-halflife
+time-key: hash(order-hash() "fb-halflife-last-time"),
+last-time: any(
+  get(time-key)
+  fb-halflife-start-time
+),
+:set(time-key block-timestamp()),
+duration: int-sub(
+  block-timestamp()
+  last-time
+),
+_: decimal18-mul(
+  fb-halflife-start-io18
+  decimal18-power(
+    5e17
+    decimal18-div(
+      int-to-decimal18(duration)
+      int-to-decimal18(fb-halflife-seconds)
+    )
+  )
+);
 
 #breakeven-io-ratio
 prev-input-vault-balance: get(
@@ -148,6 +210,8 @@ _: decimal18-mul(
 _: fallback-constant-value;
 
 #fallback-ratio !Expression for the ratio to use when there is no history for the pair.
+#raindex-subparser !The subparser for raindex words.
+#flare-subparser !The subparser for flare words.
 #calculate-io
 using-words-from raindex-subparser flare-subparser
 amount: decimal18-scale-18-dynamic(
