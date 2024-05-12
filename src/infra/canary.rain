@@ -1,8 +1,8 @@
 tokens:
-  nothing:
+  eusdt:
     network: flare
-    address: 0x1000000000000000000000000000000000000001
-    decimals: 18
+    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+    decimals: 6
   wflr:
     network: flare
     address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
@@ -13,7 +13,7 @@ orders:
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       # Input is irrelevant because we always set the IO ratio to 0.
-      - token: nothing
+      - token: eusdt
         vault-id: 0xaae74fdb6bfae53edd9f3bd7aa703385e505a13509e51c9f264f9a85aa97d965
     outputs:
       - token: wflr
@@ -23,7 +23,7 @@ scenarios:
   flare:
     runs: 1
     bindings:
-      raindex-subparser: 0xF836f2746B407136a5bCB515495949B1edB75184
+      raindex-subparser: 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E
       # at time of writing a transaction on flare is about 0.027 FLR
       bounty: 3e16
       cooldown: 300
@@ -36,13 +36,15 @@ deployments:
     order: flare
     scenario: flare
 
+metaboards:
+  flare: http://subgraphs.h20liquidity.tech/subgraphs/name/flare-mb-0x59401C93
+
 ---
 #raindex-subparser !The subparser for Raindex.
 #cooldown !Time between canary runs.
 #bounty !Amount of FLR to pay for a successful canary.
 #calculate-io
 using-words-from raindex-subparser
-last-update-time: get(order-hash()),
 :ensure(
     greater-than-or-equal-to(int-sub(block-timestamp() get(order-hash())) cooldown)
     "Cooldown"
