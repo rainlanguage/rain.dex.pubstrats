@@ -13,3 +13,6 @@
 [submodule "lib/rain.math.saturating"]
 	path = lib/rain.math.saturating
 	url = https://github.com/rainprotocol/rain.math.saturating
+[submodule "lib/h20.test-std"]
+	path = lib/h20.test-std
+	url = https://github.com/h20liquidity/h20.test-std.git
