@@ -1,0 +1,69 @@
+# The canary order does nothing except run on a cooldown.
+#
+# It is useful only to show that orders clear on some network. If the canary is
+# deployed and does not run, it means that there are no solvers monitoring the
+# network, or at least not the raindex contract that the canary is deployed on.
+#
+# The canary is basically a stripped back version of the sampler. It runs but
+# doesn't sample anything.
+
+tokens:
+  eusdt:
+    network: flare
+    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+    decimals: 6
+  wflr:
+    network: flare
+    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+    decimals: 18
+
+orders:
+  flare:
+    orderbook: flare
+    # vault-id is generated on cli `openssl rand -hex 32`
+    inputs:
+      # Input is irrelevant because we always set the IO ratio to 0.
+      - token: eusdt
+        vault-id: 0xaae74fdb6bfae53edd9f3bd7aa703385e505a13509e51c9f264f9a85aa97d965
+    outputs:
+      - token: wflr
+        vault-id: 0xaae74fdb6bfae53edd9f3bd7aa703385e505a13509e51c9f264f9a85aa97d965
+
+scenarios:
+  flare:
+    runs: 1
+    deployer: flare
+    orderbook: flare
+    bindings:
+      raindex-subparser: 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E
+      # at time of writing a transaction on flare is about 0.027 FLR
+      bounty: 3e16
+      cooldown: 600
+
+charts:
+  flare:
+
+deployments:
+  flare:
+    order: flare
+    scenario: flare
+
+metaboards:
+  flare: http://subgraphs.h20liquidity.tech/subgraphs/name/flare-mb-0x59401C93
+
+---
+#raindex-subparser !The subparser for Raindex.
+#cooldown !Time between canary runs.
+#bounty !Amount of FLR to pay for a successful canary.
+#calculate-io
+using-words-from raindex-subparser
+:ensure(
+    greater-than-or-equal-to(int-sub(block-timestamp() get(order-hash())) cooldown)
+    "Cooldown"
+),
+:set(order-hash() block-timestamp()),
+amount: bounty,
+io-ratio: 0;
+
+#handle-io
+:;
