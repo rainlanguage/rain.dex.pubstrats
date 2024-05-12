@@ -10,6 +10,7 @@ tokens:
 
 orders:
   flare:
+    orderbook: flare
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       # Input is irrelevant because we always set the IO ratio to 0.
@@ -28,7 +29,7 @@ scenarios:
       raindex-subparser: 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E
       # at time of writing a transaction on flare is about 0.027 FLR
       bounty: 3e16
-      cooldown: 300
+      cooldown: 600
 
 charts:
   flare:
