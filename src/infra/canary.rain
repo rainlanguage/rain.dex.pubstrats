@@ -1,3 +1,12 @@
+# The canary order does nothing except run on a cooldown.
+#
+# It is useful only to show that orders clear on some network. If the canary is
+# deployed and does not run, it means that there are no solvers monitoring the
+# network, or at least not the raindex contract that the canary is deployed on.
+#
+# The canary is basically a stripped back version of the sampler. It runs but
+# doesn't sample anything.
+
 tokens:
   eusdt:
     network: flare
