@@ -14,14 +14,14 @@ orders:
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
-        vault-id: 0xd0aa6ad975ec5d7f64f64814c6cd98fe088c95c5db3c63352f876bca1f97d2bc
+        vault-id: 0x12147e071edd5369b7e6ed92d776ae60907abb86958d532390f9b57b64b68239
       - token: eusdt
-        vault-id: 0xd0aa6ad975ec5d7f64f64814c6cd98fe088c95c5db3c63352f876bca1f97d2bc
+        vault-id: 0x12147e071edd5369b7e6ed92d776ae60907abb86958d532390f9b57b64b68239
     outputs:
       - token: wflr
-        vault-id: 0xd0aa6ad975ec5d7f64f64814c6cd98fe088c95c5db3c63352f876bca1f97d2bc
+        vault-id: 0x12147e071edd5369b7e6ed92d776ae60907abb86958d532390f9b57b64b68239
       - token: eusdt
-        vault-id: 0xd0aa6ad975ec5d7f64f64814c6cd98fe088c95c5db3c63352f876bca1f97d2bc
+        vault-id: 0x12147e071edd5369b7e6ed92d776ae60907abb86958d532390f9b57b64b68239
 
 scenarios:
   flare:
@@ -64,7 +64,7 @@ scenarios:
       flare-subparser: 0x87D1f842347b7802A29FD9010c464E760745a4d2
       fallback-ratio: '''fb-halflife'
       # date +%s
-      fb-halflife-start-time: 1714979808
+      fb-halflife-start-time: 1715543775
       # anything way bigger than the expected ratio is fine
       fb-halflife-start-io18: 1e36
       # half an hour per halving covers a lot of space while
@@ -160,15 +160,22 @@ duration: int-sub(
   block-timestamp()
   last-time
 ),
+fb-halflife-seconds-stretched: int-mul(fb-halflife-seconds 10),
+multiplier: decimal18-power(5e17 decimal18-div(int-to-decimal18(duration) int-to-decimal18(fb-halflife-seconds-stretched))),
+/* multiply by the multiplier 10 times because we stretched the halflife duration by 10x */
+/* this avoids precision issues at the lower end of a large dutch auction */
 _: decimal18-mul(
   fb-halflife-start-io18
-  decimal18-power(
-    5e17
-    decimal18-div(
-      int-to-decimal18(duration)
-      int-to-decimal18(fb-halflife-seconds)
-    )
-  )
+  multiplier
+  multiplier
+  multiplier
+  multiplier
+  multiplier
+  multiplier
+  multiplier
+  multiplier
+  multiplier
+  multiplier
 );
 
 #breakeven-io-ratio
