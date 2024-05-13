@@ -31,7 +31,7 @@ scenarios:
     runs: 1
     bindings:
       cooldown-time: 30
-      per-trade-amount: 1e18
+      per-trade-amount: 1
 
 deployments:
   default:
@@ -66,19 +66,19 @@ now: block-timestamp(),
 :ensure(
   greater-than-or-equal-to(
     now
-    int-add(get("last-traded-235") cooldown-time)
+    add(get("last-traded-235") cooldown-time)
   )
   "cooldown"
 ),
 :set("last-traded-235" now),
 
 /* getting a quote from the Flare FTSO */
-ftso-price: decimal18-inv(ftso-current-price-usd("FLR" 3600)),
-adjusted-price: decimal18-mul(ftso-price 99e16),
+ftso-price: inv(ftso-current-price-usd("FLR" 3600)),
+adjusted-price: mul(ftso-price 0.99),
 
 /* added for charting */
 _: cooldown-time,
-flr-amount: decimal18-mul(ftso-price per-trade-amount),
+flr-amount: mul(ftso-price per-trade-amount),
 
 max-output: per-trade-amount,
 io-ratio: adjusted-price;

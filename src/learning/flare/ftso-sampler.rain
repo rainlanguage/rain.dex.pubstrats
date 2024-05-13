@@ -38,9 +38,9 @@ scenarios:
       flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
       samples-count: 5
       cooldown: 120
-      bounty-base: 2e17
-      # 1e17 / 3600 = 0.1 FLR per hour
-      bounty-rate: 27777777777777
+      bounty-base: 0.2
+      # 0.1 / 3600 = 0.1 FLR per hour
+      bounty-rate: 0.000027777777777777
 
 # There's not really anything to chart without overcomplicating the
 # strat itself in ways that would obfuscate the core lesson of the example.
@@ -64,12 +64,12 @@ using-words-from 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E 0x50fB1Be59721E7A2a3
 
 ftso-price: ftso-current-price-usd("FLR" 3600),
 
-index: int-mod(get("index") samples-count),
-:set("index" int-add(index 1)),
+index: mod(get("index") samples-count),
+:set("index" add(index 1)),
 :set(hash("base" index) ftso-price),
 
 last-update-time: any(get("last-update-time") block-timestamp()),
-last-update-ago: int-sub(block-timestamp() last-update-time),
+last-update-ago: sub(block-timestamp() last-update-time),
 :ensure(
   any(greater-than-or-equal-to(last-update-ago cooldown) is-zero(get("initialize")))
   "Cooling down."
@@ -78,10 +78,10 @@ last-update-ago: int-sub(block-timestamp() last-update-time),
 :set("last-update-time" block-timestamp()),
 
 /* linear auction for the bounty to mitigate unpredictable gas spikes */
-bounty: decimal18-linear-growth(
+bounty: linear-growth(
   bounty-base
   bounty-rate
-  int-to-decimal18(int-saturating-sub(last-update-ago cooldown))
+  saturating-sub(last-update-ago cooldown)
 ),
 /* 0 io ratio means no input required from the counterparty for them to receive the bounty */
 io-ratio: 0;

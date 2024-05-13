@@ -31,20 +31,21 @@ scenarios:
       raindex-subparser: 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E
       flare-subparser: 0x87D1f842347b7802A29FD9010c464E760745a4d2
       fallback-ratio: '''fallback-ftso-usd'
-      fallback-ftso-multiplier: 1e18
+      fallback-ftso-multiplier: 1
     scenarios:
       constant:
         bindings:
           ratio-multiplier: '''constant-ratio-multiplier'
-          constant-ratio-multiplier-val18: 1e15
+          constant-ratio-multiplier-val: 0.001
       linear-decay:
         bindings:
           ratio-multiplier: '''linear-decay-multiplier'
-          linear-decay-start18: 105e16
+          linear-decay-start: 1.05
           # 1% per day
-          linear-decay-rate18: 115740740740
+          # 0.01 / 86400 = 1.15740741e-7
+          linear-decay-rate: 1.15740741e-7
           seconds-per-epoch: 3600
-          linear-decay-floor18: 1e18
+          linear-decay-floor: 1
       ramp-down:
         bindings:
           # C = 1.02
@@ -53,8 +54,8 @@ scenarios:
           # => cuts below 100% after about 10 epochs.
           # https://www.desmos.com/calculator/rac340ngwk
           ratio-multiplier: '''ramp-down'
-          ramp-down-c18: 102e16
-          ramp-down-d18: 14e18
+          ramp-down-c: 1.02
+          ramp-down-d: 14
           seconds-per-epoch: 86400
   any-flare:
     deployer: flare
@@ -66,7 +67,7 @@ scenarios:
       # date +%s
       fb-halflife-start-time: 1715543775
       # anything way bigger than the expected ratio is fine
-      fb-halflife-start-io18: 1e36
+      fb-halflife-start-io: 1e10
       # half an hour per halving covers a lot of space while
       # giving time for bots to respond in the correct range
       fb-halflife-seconds: 1800
@@ -76,8 +77,8 @@ scenarios:
       # => cuts below 100% after 2.5 epochs.
       # https://www.desmos.com/calculator/38ien12798
       ratio-multiplier: '''ramp-down'
-      ramp-down-c18: 1011e15
-      ramp-down-d18: 7e18
+      ramp-down-c: 1.011
+      ramp-down-d: 7
       seconds-per-epoch: 86400
 
 charts:
@@ -114,40 +115,39 @@ output-time-key: hash(order-hash() output-token() linear-decay-time-key),
 /* the input time key in this trade will be the output time key for the next trade */
 :set(input-time-key block-timestamp()),
 output-last-time: any(get(output-time-key) block-timestamp()),
-duration-seconds: int-sub(block-timestamp() output-last-time),
-duration-seconds18: int-to-decimal18(duration-seconds),
-epochs18: decimal18-div(duration-seconds18 int-to-decimal18(seconds-per-epoch));
+duration-seconds: sub(block-timestamp() output-last-time),
+epochs: div(duration-seconds seconds-per-epoch);
 
-#ramp-down-c18 !C in ramp down equation.
-#ramp-down-d18 !D in ramp down equation.
+#ramp-down-c !C in ramp down equation.
+#ramp-down-d !D in ramp down equation.
 #ramp-down
 /* y = C - e^(x - D) */
-x18: call<'epochs-since-last-trade>(),
+x: call<'epochs-since-last-trade>(),
 /* want the absolute diff here so we don't go negative */
-exponent18: decimal18-sub(
-  decimal18-max(x18 ramp-down-d18)
-  decimal18-min(x18 ramp-down-d18)
+exponent: sub(
+  max(x ramp-down-d)
+  min(x ramp-down-d)
 ),
-e: 2718281828459045235,
-uramp18: decimal18-power(e exponent18),
+e: 2.718281828459045235,
+uramp: power(e exponent),
 /* invert uramp18 if (x - D) is negative */
-ramp18: if(greater-than(ramp-down-d18 x18) decimal18-inv(uramp18) uramp18),
-y18: decimal18-saturating-sub(ramp-down-c18 ramp18);
+ramp: if(greater-than(ramp-down-d x) inv(uramp) uramp),
+y: saturating-sub(ramp-down-c ramp);
 
-#linear-decay-start18 !Starting position for the linear decay.
-#linear-decay-rate18 !Linear decay decrease per unit time (seconds).
-#linear-decay-floor18 !Minimum value the multiplier will decay to.
+#linear-decay-start !Starting position for the linear decay.
+#linear-decay-rate !Linear decay decrease per unit time (seconds).
+#linear-decay-floor !Minimum value the multiplier will decay to.
 #linear-decay-multiplier
-epochs18: call<'epochs-since-last-trade>(),
-decay-amount18: decimal18-saturating-sub(linear-decay-start18 decimal18-mul(linear-decay-rate18 epochs18)),
-_: decimal18-max(decay-amount18 linear-decay-floor18);
+epochs: call<'epochs-since-last-trade>(),
+decay-amount: saturating-sub(linear-decay-start mul(linear-decay-rate epochs)),
+_: max(decay-amount linear-decay-floor);
 
-#constant-ratio-multiplier-val18 !Constant value to multiply the breakeven ratio by.
+#constant-ratio-multiplier-val !Constant value to multiply the breakeven ratio by.
 #constant-ratio-multiplier
-_: constant-ratio-multiplier-val18;
+_: constant-ratio-multiplier-val;
 
 #fb-halflife-start-time !Starting time for the fallback dutch auction.
-#fb-halflife-start-io18 !Starting value for the fallback dutch auction.
+#fb-halflife-start-io !Starting value for the fallback dutch auction.
 #fb-halflife-seconds !Number of seconds per halflife.
 #fb-halflife
 time-key: hash(order-hash() "fb-halflife-last-time"),
@@ -156,16 +156,16 @@ last-time: any(
   fb-halflife-start-time
 ),
 :set(time-key block-timestamp()),
-duration: int-sub(
+duration: sub(
   block-timestamp()
   last-time
 ),
-fb-halflife-seconds-stretched: int-mul(fb-halflife-seconds 10),
-multiplier: decimal18-power(5e17 decimal18-div(int-to-decimal18(duration) int-to-decimal18(fb-halflife-seconds-stretched))),
+fb-halflife-seconds-stretched: mul(fb-halflife-seconds 10),
+multiplier: power(0.5 div(duration fb-halflife-seconds-stretched)),
 /* multiply by the multiplier 10 times because we stretched the halflife duration by 10x */
 /* this avoids precision issues at the lower end of a large dutch auction */
-_: decimal18-mul(
-  fb-halflife-start-io18
+_: mul(
+  fb-halflife-start-io
   multiplier
   multiplier
   multiplier
@@ -185,29 +185,29 @@ prev-input-vault-balance: get(
     input-token()
   )
 ),
-prev-input-vault-balance18: decimal18-scale-18-dynamic(
+prev-input-vault-balance: scale-18-dynamic(
   input-token-decimals()
   prev-input-vault-balance
 ),
-output-vault-balance18: decimal18-scale-18-dynamic(
+output-vault-balance: scale-18-dynamic(
   output-token-decimals()
   output-vault-balance-before()
 ),
-_: decimal18-div(
-  prev-input-vault-balance18
-  output-vault-balance18
+_: div(
+  prev-input-vault-balance
+  output-vault-balance
 );
 
 #ratio-multiplier !Expression for the multiplier to the breakeven ratio.
 #desired-ratio
-_: decimal18-mul(
+_: mul(
   call<'breakeven-io-ratio>()
   call<ratio-multiplier>()
 );
 
 #fallback-ftso-multiplier !The multiplier to apply to the FTSO to incentivise the initial clear.
 #fallback-ftso-usd
-_: decimal18-mul(
+_: mul(
   ftso-current-price-usd("FLR" 3600)
   fallback-ftso-multiplier
 );
@@ -221,7 +221,7 @@ _: fallback-constant-value;
 #flare-subparser !The subparser for flare words.
 #calculate-io
 using-words-from raindex-subparser flare-subparser
-amount: decimal18-scale-18-dynamic(
+amount: scale-18-dynamic(
   output-token-decimals()
   output-vault-balance-before()
 ),

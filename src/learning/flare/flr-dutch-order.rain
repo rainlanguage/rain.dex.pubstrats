@@ -33,9 +33,9 @@ scenarios:
     deployer: flare
     runs: 1
     bindings:
-      trade-amount: 500e18
+      trade-amount: 500
       start-time: 1712582040
-      auction-rate-percentage: 1e15
+      auction-rate-percentage: 0.001
 
 deployments:
   default:
@@ -77,14 +77,14 @@ using-words-from 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E 0x50fB1Be59721E7A2a3
 /* getting a quote from the Flare FTSO */
 ftso-price: ftso-current-price-usd("FLR" 3600),
 
-time-elapsed: int-saturating-sub(block-timestamp() start-time),
+time-elapsed: saturating-sub(block-timestamp() start-time),
 
 /* determining the percentage below the FTSO price we'll offer this block */
-total-percentage-deducted: int-mul(time-elapsed auction-rate-percentage),
-percentage-multiplier: int-saturating-sub(1e18 total-percentage-deducted),
+total-percentage-deducted: mul(time-elapsed auction-rate-percentage),
+percentage-multiplier: saturating-sub(1 total-percentage-deducted),
 
 /* applying that percentage to the FTSO price */
-trade-price: decimal18-mul(ftso-price percentage-multiplier),
+trade-price: mul(ftso-price percentage-multiplier),
 
 :set("already traded" 1),
 

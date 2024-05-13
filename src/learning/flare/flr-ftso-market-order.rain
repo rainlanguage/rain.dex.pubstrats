@@ -53,9 +53,9 @@ using-words-from 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E 0x50fB1Be59721E7A2a3
 /* getting a quote from the Flare FTSO */
 ftso-price: ftso-current-price-usd("FLR" 3600),
 
-adjusted-price: decimal18-mul(ftso-price 99e16), /* ftsoprice * 0.99 */
+adjusted-price: mul(ftso-price 0.99),
 
-max-output-amount: 10e18,
+max-output-amount: 10,
 io-ratio: adjusted-price;
 
 #handle-io

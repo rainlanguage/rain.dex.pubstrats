@@ -28,9 +28,9 @@ scenarios:
   flare:
     runs: 1
     bindings:
-      trade-amount: 5e18
-      limit-price: 35e15
-      stop-price: 5e16
+      trade-amount: 5
+      limit-price: 0.035
+      stop-price: 0.05
 
 deployments:
   flare:
