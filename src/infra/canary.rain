@@ -37,7 +37,7 @@ scenarios:
     bindings:
       raindex-subparser: 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E
       # at time of writing a transaction on flare is about 0.027 FLR
-      bounty: 3e16
+      bounty: 0.03
       cooldown: 600
 
 charts:
