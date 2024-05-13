@@ -27,8 +27,6 @@ scenarios:
   default:
     deployer: flare
     runs: 1
-    bindings:
-      flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
 
 deployments:
   default:
