@@ -83,14 +83,14 @@ charts:
         value: 0.2
 
 ---
-#flare-sub-parser !The flare subparser address.
 #spread-multiplier !The spread multiplier. 1e18 is 1x i.e. "no spread". 101e16 is 1.01x i.e. 1% spread.
 
 #ftso-base !The base token of the FTSO pair.
 #ftso-quote !The quote token of the FTSO pair.
 
 #calculate-io
-using-words-from flare-sub-parser
+using-words-from 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
+
 ftso-price: ftso-current-price-pair(ftso-base ftso-quote 3600),
 amount: max-decimal18-value(),
 price: decimal18-mul(ftso-price spread-multiplier);

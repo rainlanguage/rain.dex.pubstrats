@@ -47,10 +47,8 @@ charts:
       - label: Max output
         value: 0.2
 ---
-#flare-sub-parser !The flare subparser address.
-
 #calculate-io
-using-words-from flare-sub-parser
+using-words-from 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
 
 /* getting a quote from the Flare FTSO */
 ftso-price: ftso-current-price-usd("FLR" 3600),
