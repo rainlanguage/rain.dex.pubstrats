@@ -18,31 +18,30 @@
 #jittery-binomial-bits !The number of bits to use for the binomial distribution.
 #jittery-binomial
   seed:,
-  binomial18-10:
-    int-to-decimal18(bitwise-count-ones(bitwise-decode<0 jittery-binomial-bits>(hash(seed)))),
-  noise18-1:
-    int-mod(hash(seed 0) 1e18),
+  binomial-10:
+    bitwise-count-ones(bitwise-decode<0 jittery-binomial-bits>(hash(seed))),
+  noise-1:
+    mod(hash(seed 0) 1),
   jittery-combined:
-    decimal18-add(binomial18-10 noise18-1),
+    add(binomial-10 noise-1),
   jittery-combined-normalized:
-    decimal18-div(jittery-combined decimal18-add(1e18 int-to-decimal18(jittery-binomial-bits)));
+    div(jittery-combined add(1 jittery-binomial-bits));
 
 #mean-cooldown !The mean cooldown time in seconds.
 #ensure-cooldown
   last-time
   now:,
   /* hash the last-time here to make sure the seed wont collide with the seed in target-reserve */
-  random-multiplier18: call<'jittery-binomial>(hash(last-time)),
-  cooldown18: decimal18-mul(
-    decimal18-mul(int-to-decimal18(mean-cooldown) 2e18)
-    random-multiplier18
+  random-multiplier: call<'jittery-binomial>(hash(last-time)),
+  cooldown: mul(
+    mul(mean-cooldown 2)
+    random-multiplier
   ),
-  cooldown: decimal18-scale-n<0>(cooldown18),
-  :ensure(less-than(int-add(last-time cooldown) now) "Trade cooldown.");
+  :ensure(less-than(add(last-time cooldown) now) "Trade cooldown.");
 
-#trend-ratio-exp !Expression to get the trend ratio as 18 decimal fixed point.
+#trend-ratio-exp !Expression to get the trend ratio.
 
-#constant-trend-ratio-value !The trend ratio as 18 decimal fixed point.
+#constant-trend-ratio-value !The trend ratio.
 #constant-trend-ratio
   _: constant-trend-ratio-value;
 
@@ -62,63 +61,63 @@
     twap-trend-ratio-long-time 0
     twap-trend-ratio-fee
   ),
-  trend-ratio: decimal18-div(numerator denominator);
+  trend-ratio: div(numerator denominator);
 
-#mean-reserve-amount18 !The mean amount of reserve to offer per trade as normalized 18 decimals.
-#trend-up-factor !The factor to multiply the trend with when the trend is up as normalized 18 decimals.
-#trend-down-factor !The factor to multiply the trend with when the trend is down as normalized 18 decimals.
-#calculate-reserve-amount18
+#mean-reserve-amount !The mean amount of reserve to offer per trade.
+#trend-up-factor !The factor to multiply the trend with when the trend is up.
+#trend-down-factor !The factor to multiply the trend with when the trend is down.
+#calculate-reserve-amount
   last-time now: call<times>(),
   :call<'ensure-cooldown>(last-time now),
-  random-multiplier18: call<'jittery-binomial>(last-time),
-  jittered-reserve-amount18: decimal18-mul(
-    decimal18-mul(mean-reserve-amount18 2e18)
-    random-multiplier18
+  random-multiplier: call<'jittery-binomial>(last-time),
+  jittered-reserve-amount: mul(
+    mul(mean-reserve-amount 2)
+    random-multiplier
   ),
   trend-ratio: call<'trend-ratio-exp>(),
   skewed-trend-ratio: if(
-    greater-than(trend-ratio 1e18)
-    decimal18-power(trend-ratio trend-up-factor)
-    decimal18-power(trend-ratio trend-down-factor)
+    greater-than(trend-ratio 1)
+    power(trend-ratio trend-up-factor)
+    power(trend-ratio trend-down-factor)
   ),
-  reserve-amount18: decimal18-mul(jittered-reserve-amount18 skewed-trend-ratio);
+  reserve-amount: mul(jittered-reserve-amount skewed-trend-ratio);
 
-#calculate-tkn-amount18
-  reserve-amount18:,
+#calculate-tkn-amount
+  reserve-amount:,
   now: call<times>(),
-  tkn-amount18-exact-input last-price-timestamp: uniswap-v2-quote-exact-input<1>(
-    output-token() input-token() decimal18-scale-n<reserve-decimals>(reserve-amount18)
+  tkn-amount-exact-input last-price-timestamp: uniswap-v2-quote-exact-input<1>(
+    output-token() input-token() scale-n<reserve-decimals>(reserve-amount)
   ),
   :ensure(less-than(last-price-timestamp now) "Price change in same block."),
-  tkn-amount18-exact-output: uniswap-v2-quote-exact-output(
-    output-token() input-token() decimal18-scale-n<reserve-decimals>(reserve-amount18)
+  tkn-amount-exact-output: uniswap-v2-quote-exact-output(
+    output-token() input-token() scale-n<reserve-decimals>(reserve-amount)
   ),
   _: if(
     equal-to(output-token() reserve-token)
-    tkn-amount18-exact-input
-    tkn-amount18-exact-output
+    tkn-amount-exact-input
+    tkn-amount-exact-output
   );
 
-#bounty !The bounty to offer for the trade as normalized 18 decimal reserve amount.
+#bounty !The bounty to offer for the trade as normalized.
 
 #calculate-io
-  trend-ratio _ reserve-amount18: call<'calculate-reserve-amount18>(),
-  tkn-amount18: call<'calculate-tkn-amount18>(reserve-amount18),
+  trend-ratio _ reserve-amount: call<'calculate-reserve-amount>(),
+  tkn-amount: call<'calculate-tkn-amount>(reserve-amount),
   is-buying-tkn: equal-to(output-token() reserve-token),
   amount: if(
     is-buying-tkn
-    decimal18-add(reserve-amount18 bounty)
-    tkn-amount18),
+    add(reserve-amount bounty)
+    tkn-amount),
   io-ratio: if(
     is-buying-tkn
-    decimal18-div(tkn-amount18 amount)
-    decimal18-div(decimal18-sub(reserve-amount18 bounty) amount));
+    div(tkn-amount amount)
+    div(sub(reserve-amount bounty) amount));
 
 #handle-io
   :ensure(
     greater-than-or-equal-to(
       output-vault-balance-decrease()
-      decimal18-scale-n-dynamic(output-token-decimals() calculated-max-output())
+      scale-n-dynamic(output-token-decimals() calculated-max-output())
     )
     "Partial trade."
   );
