@@ -69,19 +69,19 @@ orders:
     orderbook: polygon-quickswap
     inputs:
       - token: polygon-moon
-        vault-id: 0x06a6e9ba5540e57f30de1b70fcedbe5971cd345743fb74044d966798b509c97d
+        vault-id: 0xa512a935f3429316ac8e10e8191cd3bdffb7797812575f0bf2d99e4975668234
     outputs:
       - token: polygon-usdt
-        vault-id: 0x06a6e9ba5540e57f30de1b70fcedbe5971cd345743fb74044d966798b509c97d
+        vault-id: 0xa512a935f3429316ac8e10e8191cd3bdffb7797812575f0bf2d99e4975668234
 
   polygon-moon-sell:
     orderbook: polygon-quickswap
     inputs:
       - token: polygon-usdt
-        vault-id: 0x06a6e9ba5540e57f30de1b70fcedbe5971cd345743fb74044d966798b509c97d
+        vault-id: 0x7c03b9427e6a548aebc9d875eaff01f838a376a316490eead7345411f00b747c
     outputs:
       - token: polygon-moon
-        vault-id: 0x06a6e9ba5540e57f30de1b70fcedbe5971cd345743fb74044d966798b509c97d
+        vault-id: 0x7c03b9427e6a548aebc9d875eaff01f838a376a316490eead7345411f00b747c
   
   # ROND-USDT orders
   polygon-rond-buy:
@@ -243,7 +243,7 @@ scenarios:
             bindings:
               amount-is-output: 1
               io-ratio-expr: '''linear-growth'
-              io-ratio-base: 1400e18
+              io-ratio-base: 1200e18
               io-ratio-growth: 15e18
               tranche-size-expr: '''exponential-growth'
               tranche-size-base: 2e18
@@ -251,7 +251,7 @@ scenarios:
             scenarios:
               initialized:
                 bindings:
-                  initial-tranche-space: 11e18
+                  initial-tranche-space: 0
                 scenarios:
                   prod:
                     bindings:
@@ -282,8 +282,8 @@ scenarios:
             bindings:
               amount-is-output: 0
               io-ratio-expr: '''linear-growth'
-              io-ratio-base: 68e13
-              io-ratio-growth: 1e13
+              io-ratio-base: 90e13
+              io-ratio-growth: 2e13
               tranche-size-expr: '''exponential-growth'
               tranche-size-base: 2e18
               tranche-size-growth: 1e16
