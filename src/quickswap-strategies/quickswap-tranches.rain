@@ -1,6 +1,6 @@
 networks:
   polygon-quickswap: 
-    rpc: https://rpc.ankr.com/polygon  
+    rpc: https://polygon.drpc.org  
     chain-id: 137 
     network-id: 137 
     currency: MATIC
@@ -485,7 +485,7 @@ scenarios:
             scenarios:
               initialized:
                 bindings:
-                  initial-tranche-space: 4e18
+                  initial-tranche-space: 0
                 scenarios:
                   prod:
                     bindings:
@@ -516,7 +516,7 @@ scenarios:
             bindings:
               amount-is-output: 0
               io-ratio-expr: '''linear-growth'
-              io-ratio-base: 95e15
+              io-ratio-base: 12e16
               io-ratio-growth: 5e14
               tranche-size-expr: '''exponential-growth'
               tranche-size-base: 2e18
