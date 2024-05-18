@@ -1,6 +1,6 @@
 networks:
   polygon-quickswap: 
-    rpc: https://polygon.drpc.org  
+    rpc: https://rpc.ankr.com/polygon/8e4cac5728d95471ae55724953c7ae6f19a227ac05146276f09717692b732dae  
     chain-id: 137 
     network-id: 137 
     currency: MATIC
@@ -126,19 +126,19 @@ orders:
     orderbook: polygon-quickswap
     inputs:
       - token: polygon-ixt
-        vault-id: 0x1703d50775df07536baf9fd1332ade9449a7de8ffc2edec70bb34a34ca89616e
+        vault-id: 0xa755202ba4a825482c6019ddb13a9748140d7da9ce86788c6bf83533889f8915
     outputs:
       - token: polygon-usdt
-        vault-id: 0x1703d50775df07536baf9fd1332ade9449a7de8ffc2edec70bb34a34ca89616e
+        vault-id: 0xa755202ba4a825482c6019ddb13a9748140d7da9ce86788c6bf83533889f8915
 
   polygon-ixt-sell:
     orderbook: polygon-quickswap
     inputs:
       - token: polygon-usdt
-        vault-id: 0x1703d50775df07536baf9fd1332ade9449a7de8ffc2edec70bb34a34ca89616e
+        vault-id: 0xa755202ba4a825482c6019ddb13a9748140d7da9ce86788c6bf83533889f8915
     outputs:
       - token: polygon-ixt
-        vault-id: 0x1703d50775df07536baf9fd1332ade9449a7de8ffc2edec70bb34a34ca89616e
+        vault-id: 0xa755202ba4a825482c6019ddb13a9748140d7da9ce86788c6bf83533889f8915
 
 
 
@@ -478,7 +478,7 @@ scenarios:
               amount-is-output: 1
               io-ratio-expr: '''linear-growth'
               io-ratio-base: 10e18
-              io-ratio-growth: 2e17
+              io-ratio-growth: 5e17
               tranche-size-expr: '''exponential-growth'
               tranche-size-base: 2e18
               tranche-size-growth: 1e16
@@ -516,8 +516,8 @@ scenarios:
             bindings:
               amount-is-output: 0
               io-ratio-expr: '''linear-growth'
-              io-ratio-base: 12e16
-              io-ratio-growth: 5e14
+              io-ratio-base: 11e16
+              io-ratio-growth: 1e16
               tranche-size-expr: '''exponential-growth'
               tranche-size-base: 2e18
               tranche-size-growth: 1e16
