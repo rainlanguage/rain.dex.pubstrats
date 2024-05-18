@@ -129,19 +129,29 @@ scenarios:
           # 1e16 is 1%
           tranche-space-snap-threshold: 1e16
 
-          # This is only relevant if the tranche size/ratio is denominated in
-          # some token other than the input/output tokens. For example, if the
-          # TKN was being traded for WETH but the tranche size was denominated in
-          # USD then the reference-stable would be USD and the reference-reserve
-          # would be WETH, and the identity multiplier needs to be swapped out
-          # for e.g. a TWAP USDT based multiplier.
-          # Typically this is NOT needed as the tranche size and ratio ARE
-          # denominated in the input/output tokens.
-          io-ratio-multiplier: '''io-ratio-multiplier-identity'
-
         scenarios:
           buy:
             bindings:
+                # This is only relevant if the tranche size/ratio is denominated in
+                # some token other than the input/output tokens. For example, if the
+                # TKN was being traded for WETH but the tranche size was denominated in
+                # USD then the reference-stable would be USD and the reference-reserve
+                # would be WETH, and the identity multiplier needs to be swapped out
+                # for e.g. a TWAP USDT based multiplier.
+                # Typically this is NOT needed as the tranche size and ratio ARE
+                # denominated in the input/output tokens.
+                io-ratio-multiplier: '''io-ratio-multiplier-identity'
+
+                # If TKN was being traded for some other token, for e.g WETH and if
+                # the tranche size/ratio was denominated in USD, then the reference and
+                # reserve bindings need to be given along with the twap bindings
+                reference-stable: 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
+                reference-stable-decimals: 6
+                reference-reserve: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+                reference-reserve-decimals: 18
+                twap-fee: '[uniswap-v3-fee-high]'
+                twap-duration: 1800 
+
                 # If we want to denominate the amount in BLUE when we're
                 # buying RED with it, then the amount is the OUTPUT.
                 amount-is-output: 1
@@ -192,6 +202,26 @@ scenarios:
                     test-now: 0
           sell:
             bindings:
+                # This is only relevant if the tranche size/ratio is denominated in
+                # some token other than the input/output tokens. For example, if the
+                # TKN was being traded for WETH but the tranche size was denominated in
+                # USD then the reference-stable would be USD and the reference-reserve
+                # would be WETH, and the identity multiplier needs to be swapped out
+                # for e.g. a TWAP USDT based multiplier.
+                # Typically this is NOT needed as the tranche size and ratio ARE
+                # denominated in the input/output tokens.
+                io-ratio-multiplier: '''io-ratio-multiplier-identity'
+                
+                # If TKN was being traded for some other token, for e.g WETH and if
+                # the tranche size/ratio was denominated in USD, then the reference and
+                # reserve bindings need to be given along with the twap bindings
+                reference-stable: 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
+                reference-stable-decimals: 6
+                reference-reserve: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+                reference-reserve-decimals: 18
+                twap-fee: '[uniswap-v3-fee-high]'
+                twap-duration: 1800
+                
                 # If we want to denominate the amount in BLUE when we're
                 # selling RED for it, then the amount is the INPUT.
                 amount-is-output: 0
@@ -243,11 +273,11 @@ charts:
           value: 0.6
           unit-prefix: $
         - label: Amount of RED purchased in the first tranche
-          value: 0.5.2
+          value: 0.5.3
         - label: 'Initial io-ratio (i.e. # RED purchased per BLUE spent)'
           value: 0.7
         - label: Initial effective buy price (e.g. how much you pay for 1 RED in BLUE, visible on dextools)
-          value: 0.5.3
+          value: 0.5.4
           unit-prefix: $
         - label: Starting tranche
           value: 0.2.0
@@ -267,7 +297,7 @@ charts:
               - type: line
                 options:
                   x: 0.0
-                  y: 0.5.2
+                  y: 0.5.3
           'io-ratio (i.e. # of RED purchased per BLUE spent) vs tranche':
             marks:
               - type: line
@@ -279,7 +309,7 @@ charts:
               - type: line
                 options:
                   x: 0.0
-                  y: 0.5.3
+                  y: 0.5.4
           Starting tranche:
             marks:
               - type: dot
@@ -294,7 +324,7 @@ charts:
           value: 0.6
           unit-prefix: $
         - label: Amount of BLUE received selling the first tranche of RED tokens
-          value: 0.5.2
+          value: 0.5.3
         - label: 'Initial io-ratio (i.e. # of BLUE purchased per RED spent)'
           value: 0.7
         - label: Initial effective sell price (Amount of RED to sell 1 BLUE e.g. visible on dextools)
@@ -318,7 +348,7 @@ charts:
               - type: line
                 options:
                   x: 0.0
-                  y: 0.5.2
+                  y: 0.5.3
           'io-ratio (i.e. # of TKN purchased per $ spent) vs tranche':
             marks:
               - type: line
@@ -390,12 +420,15 @@ deployments:
 #orderbook-subparser !The subparser for the Orderbook
 
 #plottables-test
+  tranche-io-ratio
   amount
   io-ratio:,
   input-amount: decimal18-mul(amount io-ratio),
-  effective-price: decimal18-inv(io-ratio);
+  effective-price: decimal18-inv(io-ratio),
+  effective-price-twap: decimal18-inv(tranche-io-ratio);
 
 #plottables-prod
+  tranche-io-ratio
   amount
   io-ratio:;
 
@@ -481,7 +514,7 @@ deployments:
   amount-available: decimal18-mul(tranche-total-size tranche-space-available),
   amount: if(amount-is-output amount-available decimal18-div(amount-available final-io-ratio)),
   io-ratio: final-io-ratio,
-  :call<'plottables>(amount io-ratio);
+  :call<'plottables>(tranche-io-ratio amount io-ratio);
 
 #handle-io
   now
