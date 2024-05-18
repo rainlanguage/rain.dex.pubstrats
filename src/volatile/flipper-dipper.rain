@@ -3,6 +3,10 @@ tokens:
     network: flare
     address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
     decimals: 6
+  eeth:
+    network: flare
+    address: 0xa76DCDdcE60a442d69Bac7158F3660f50921b122
+    decimals: 18
   wflr:
     network: flare
     address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
@@ -14,14 +18,30 @@ orders:
     # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
-        vault-id: 0x12147e071edd5369b7e6ed92d776ae60907abb86958d532390f9b57b64b68239
+        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
       - token: eusdt
-        vault-id: 0x12147e071edd5369b7e6ed92d776ae60907abb86958d532390f9b57b64b68239
+        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
     outputs:
       - token: wflr
-        vault-id: 0x12147e071edd5369b7e6ed92d776ae60907abb86958d532390f9b57b64b68239
+        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
       - token: eusdt
-        vault-id: 0x12147e071edd5369b7e6ed92d776ae60907abb86958d532390f9b57b64b68239
+        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
+  flare-any-3:
+    orderbook: flare
+    inputs:
+      - token: wflr
+        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
+      - token: eusdt
+        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
+      - token: eeth
+        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
+    outputs:
+      - token: wflr
+        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
+      - token: eusdt
+        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
+      - token: eeth
+        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
 
 scenarios:
   flare:
@@ -64,7 +84,7 @@ scenarios:
       flare-subparser: 0x87D1f842347b7802A29FD9010c464E760745a4d2
       fallback-ratio: '''fb-halflife'
       # date +%s
-      fb-halflife-start-time: 1715543775
+      fb-halflife-start-time: 1715688843
       # anything way bigger than the expected ratio is fine
       fb-halflife-start-io18: 1e36
       # half an hour per halving covers a lot of space while
@@ -100,9 +120,12 @@ deployments:
     order: flare
     scenario: any-flare
 
+  any-3-ramp-down:
+    order: flare-any-3
+    scenario: any-flare
+
 metaboards:
   flare: http://subgraphs.h20liquidity.tech/subgraphs/name/flare-mb-0x59401C93
-
 
 ---
 
