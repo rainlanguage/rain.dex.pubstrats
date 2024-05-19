@@ -279,6 +279,9 @@ charts:
         - label: Initial effective buy price (e.g. how much you pay for 1 RED in BLUE, visible on dextools)
           value: 0.5.4
           unit-prefix: $
+        - label: IO-ratio multiplier
+          value: 0.4.0
+          description: 1 if the tranches are input/output token denominated, else the multiplier value between tokens TKN and the denominated token eg ETH.
         - label: Starting tranche
           value: 0.2.0
       plots:
@@ -330,6 +333,9 @@ charts:
         - label: Initial effective sell price (Amount of RED to sell 1 BLUE e.g. visible on dextools)
           value: 0.7
           unit-prefix: $
+        - label: IO-ratio multiplier
+          value: 0.4.0
+          description: 1 if the tranches are input/output token denominated, else the multiplier value between tokens TKN and the denominated token eg ETH.
         - label: Starting tranche
           value: 0.2.0
       plots:
@@ -425,7 +431,7 @@ deployments:
   io-ratio:,
   input-amount: decimal18-mul(amount io-ratio),
   effective-price: decimal18-inv(io-ratio),
-  effective-price-twap: decimal18-inv(tranche-io-ratio);
+  effective-tranche-io-ratio: decimal18-inv(tranche-io-ratio);
 
 #plottables-prod
   tranche-io-ratio
