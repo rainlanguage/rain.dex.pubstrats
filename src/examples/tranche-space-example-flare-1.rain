@@ -60,18 +60,14 @@ orders:
   arbitrum-one-buy:
     inputs:
       - token: arbitrum-one-red
-        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
     outputs:
       - token: arbitrum-one-blue
-        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
 
   arbitrum-one-sell:
     inputs:
       - token: arbitrum-one-blue
-        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
     outputs:
       - token: arbitrum-one-red
-        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
 
 scenarios:
     arb-red-blue-tranches:
