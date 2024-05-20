@@ -60,7 +60,7 @@ charts:
 #limit-price !The price which we'll sell at if the FTSO reports a price below the stop price.
 
 #calculate-io
-using-words-from 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
+using-words-from 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
 
 ftso-price: ftso-current-price-usd("FLR" 3600),
 
