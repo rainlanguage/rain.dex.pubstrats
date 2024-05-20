@@ -28,7 +28,7 @@ scenarios:
     runs: 1
     bindings:
       cooldown-time: 30
-      per-trade-amount: 0.5
+      per-trade-amount: 1
 
 deployments:
   default:
@@ -41,43 +41,44 @@ charts:
     metrics:
       - label: FTSO price
         description: FLR per $
-        value: 0.1
-      - label: Cooldown time
-        value: 0.3
-      - label: FLR per trade amount
         value: 0.2
-      - label: $ per trade amount
+      - label: Cooldown time
+        value: 0.4
+      - label: FLR per trade amount
         value: 0.5
-      - label: IO ratio
+      - label: $ per trade amount
         value: 0.6
+      - label: IO ratio
+        value: 0.7
 ---
+#raindex-subparser 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
 #flare-subparser 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
 
 #per-trade-amount !The amount that we'll buy or sell per trade.
 #cooldown-time !The minimum amount of seconds that must elapse between trades.
 
 #calculate-io
-using-words-from flare-subparser
+using-words-from flare-subparser raindex-subparser
 
 now: block-timestamp(),
 
 /* ensure that the cooldown time has elapsed since the last trade */
+cooldown-key: hash(order-hash() "last-traded"),
 :ensure(
   greater-than(
     now
-    add(get("last-traded-235") cooldown-time)
-  )
-  "cooldown"
-),
-:set("last-traded-235" now),
+    add(get(cooldown-key) cooldown-time)
+  "cooldown")),
+:set(cooldown-key now),
 
 /* getting a quote from the Flare FTSO */
 ftso-price: inv(ftso-current-price-usd("FLR" 3600)),
 adjusted-price: mul(ftso-price 0.99),
 
 /* added for charting */
-_cooldown-time: cooldown-time,
+cd-time: cooldown-time,
 flr-amount: mul(ftso-price per-trade-amount),
+/***/
 
 max-output: per-trade-amount,
 io-ratio: adjusted-price;
