@@ -84,7 +84,7 @@ scenarios:
       flare-subparser: 0x87D1f842347b7802A29FD9010c464E760745a4d2
       fallback-ratio: '''fb-halflife'
       # date +%s
-      fb-halflife-start-time: 1715688843
+      fb-halflife-start-time: 1715694829
       # anything way bigger than the expected ratio is fine
       fb-halflife-start-io18: 1e36
       # half an hour per halving covers a lot of space while
@@ -123,10 +123,6 @@ deployments:
   any-3-ramp-down:
     order: flare-any-3
     scenario: any-flare
-
-metaboards:
-  flare: http://subgraphs.h20liquidity.tech/subgraphs/name/flare-mb-0x59401C93
-
 ---
 
 #seconds-per-epoch !Number of seconds to treat as 1 epoch. E.g. 86400 is 1 day per epoch.
