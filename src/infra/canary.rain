@@ -32,7 +32,6 @@ scenarios:
     deployer: flare
     orderbook: flare
     bindings:
-      raindex-subparser: 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
       # at time of writing a transaction on flare is about 0.027 FLR
       bounty: 0.03
       cooldown: 600
@@ -46,11 +45,10 @@ deployments:
     scenario: flare
 
 ---
-#raindex-subparser !The subparser for Raindex.
 
+#raindex-subparser 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
 #cooldown !Time between canary runs.
-
-#bounty !Amount of FLR to pay for a successful canary.
+#bounty !Amount of gas to pay for a successful canary.
 
 #calculate-io
 using-words-from raindex-subparser
