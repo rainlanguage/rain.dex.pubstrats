@@ -27,37 +27,37 @@
 #   price, e.g. converting WETH in a vault to USD equivalent.
 
 networks:
-  arbitrum-one: 
+  arbitrum-pubstrat: 
     rpc: https://arbitrum.llamarpc.com 
     chain-id: 42161 
     network-id: 42161 
     currency: ETH
 
 subgraphs:
-  arbitrum-one: https://api.thegraph.com/subgraphs/name/h20liquidity/arbitrum-0x90caf23e
+  arbitrum-pubstrat: https://api.thegraph.com/subgraphs/name/h20liquidity/arbitrum-0x90caf23e
   
 orderbooks:
-  arbitrum-one:
+  arbitrum-pubstrat:
     address: 0x90CAF23eA7E507BB722647B0674e50D8d6468234
     network: arbitrum-one
     subgraph: arbitrum-one
 
 deployers:
-  arbitrum-one:
+  arbitrum-pubstrat:
     address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
     network: arbitrum-one
 
 tokens:
   arbitrum-one-red:
-    network: arbitrum-one
+    network: arbitrum-pubstrat
     address: 0x6d3abb80c3cbae0f60ba274f36137298d8571fbe
   arbitrum-one-blue:
-    network: arbitrum-one
+    network: arbitrum-pubstrat
     address: 0x667f41fF7D9c06D2dd18511b32041fC6570Dc468
 
 orders:
   # vault-id generated with `openssl rand -hex 32`
-  arbitrum-one-buy:
+  arbitrum-pubstrat-buy:
     inputs:
       - token: arbitrum-one-red
         vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
@@ -65,7 +65,7 @@ orders:
       - token: arbitrum-one-blue
         vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
 
-  arbitrum-one-sell:
+  arbitrum-pubstrat-sell:
     inputs:
       - token: arbitrum-one-blue
         vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
@@ -75,9 +75,9 @@ orders:
 
 scenarios:
     arb-red-blue-tranches:
-        network: arbitrum-one
-        deployer: arbitrum-one
-        orderbook: arbitrum-one
+        network: arbitrum-pubstrat
+        deployer: arbitrum-pubstrat
+        orderbook: arbitrum-pubstrat
         bindings:
           # The uniswap words are only required if there is a conversion between
           # the input/output token and some external price. Typically this is
@@ -235,116 +235,152 @@ scenarios:
                   test-last-update-time: 0
                   test-now: 0
 
+
 charts:
-    buy-initial-deployment:
-      scenario: arb-red-blue-tranches.buy.initialized.test
-      metrics:
-        - label: Amount of BLUE required to buy RED in the first tranche
-          value: 0.6
-          unit-prefix: $
-        - label: Amount of RED purchased in the first tranche
-          value: 0.5.2
-        - label: 'Initial io-ratio (i.e. # RED purchased per BLUE spent)'
-          value: 0.7
-        - label: Initial effective buy price (e.g. how much you pay for 1 RED in BLUE, visible on dextools)
-          value: 0.5.3
-          unit-prefix: $
-        - label: Starting tranche
-          value: 0.2.0
-      plots:
+  buy-initial-deployment:
+    scenario: arb-red-blue-tranches.buy.initialized.test
+    metrics:
+      - label: Initial BLUE sold
+        value: 0.6
+        description: 'Amount of BLUE sold to buy RED in the first tranche (stack item 0.6)'             
+      - label: Initial RED bought
+        value: 0.5.2
+        description: 'Amount of RED purchased in the first tranche (stack item 0.5.2)'                             
+      - label: Initial io-ratio
+        value: 0.7
+        description: '# RED purchased per BLUE spent (stack item 0.7)'        
+      - label: Starting tranche
+        value: 0.2.0
+        description: 'This strategy starts executing buys at the initial tranche (stack item 0.2.0)'          
+      - label: Initial buy price
+        value: 0.5.3
+        precision: 4
+        unit-suffix: " BLUE"             
+        description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.5.3)'     
+    plots:
 
-    buy-simulation:
-        scenario: arb-red-blue-tranches.buy.test
-        plots:
-          BLUE spent and recharge rate per tranche:
-            marks:
-              - type: line
-                options:
-                  x: 0.0
-                  y: 0.6
-          Number of RED purchased per tranche:
-            marks:
-              - type: line
-                options:
-                  x: 0.0
-                  y: 0.5.2
-          'io-ratio (i.e. # of RED purchased per BLUE spent) vs tranche':
-            marks:
-              - type: line
-                options:
-                  x: 0.0
-                  y: 0.7
-          Effective buy price by tranche (e.g. how much you pay for 1 RED token in BLUE e.g. visible on dextools):
-            marks:
-              - type: line
-                options:
-                  x: 0.0
-                  y: 0.5.3
-          Starting tranche:
-            marks:
-              - type: dot
-                options:
-                  x: 0.2.0
-                  y: 0.0
+  buy-simulation:
+    scenario: arb-red-blue-tranches.buy.test
+    plots:    
+      USDT sold per tranche:     
+        x:
+            label: 'Tranche space'
+        y:
+            label: 'USDT spent'
+        marks:
+          - type: line
+            options:
+              x: 0.0
+              y: 0.6  
+      RED bought per tranche:    
+        x:
+            label: 'Tranche space'
+        y:
+            label: 'RED bought'          
+        marks:
+          - type: line
+            options:
+              x: 0.0
+              y: 0.5.2
+      'io-ratio per tranche':
+        subtitle: 'Ratio of RED bought per 1 USDT sold per tranche'        
+        x:
+            label: 'Tranche space'
+        y:
+            label: 'RED bought per 1 USDT'            
+        marks:
+          - type: line
+            options:
+              x: 0.0
+              y: 0.7
+      buy price by tranche:
+        subtitle: 'Price paid for 1 RED in USDT, visible on dextools as RED/USDT pair'        
+        x:
+            label: 'Tranche space'
+        y:
+            label: '1 RED priced in USDT'          
+        marks:
+          - type: line
+            options:
+              x: 0.0
+              y: 0.5.3                
 
-    sell-initial-deployment:
-      scenario: arb-red-blue-tranches.sell.initialized.test
-      metrics:
-        - label: Amount of RED sold to meet the first tranche of BLUE
-          value: 0.6
-          unit-prefix: $
-        - label: Amount of BLUE received selling the first tranche of RED tokens
-          value: 0.5.2
-        - label: 'Initial io-ratio (i.e. # of BLUE purchased per RED spent)'
-          value: 0.7
-        - label: Initial effective sell price (Amount of RED to sell 1 BLUE e.g. visible on dextools)
-          value: 0.7
-          unit-prefix: $
-        - label: Starting tranche
-          value: 0.2.0
-      plots:
-                  
-    sell-simulation:
-        scenario: arb-red-blue-tranches.sell.test
-        plots:
-          Number of RED sold per tranche:
-            marks:
-              - type: line
-                options:
-                  x: 0.0
-                  y: 0.6
-          BLUE per tranche:
-            marks:
-              - type: line
-                options:
-                  x: 0.0
-                  y: 0.5.2
-          'io-ratio (i.e. # of TKN purchased per $ spent) vs tranche':
-            marks:
-              - type: line
-                options:
-                  x: 0.0
-                  y: 0.7
-          'Effective price (e.g. visible on dextools) vs tranche':
-            marks:
-              - type: line
-                options:
-                  x: 0.0
-                  y: 0.7
-          Starting tranche:
-            marks:
-              - type: dot
-                options:
-                  x: 0.2.0
-                  y: 0.0
+
+  sell-initial-deployment:
+    scenario: arb-red-blue-tranches.sell.initialized.test
+    metrics:
+      - label: Initial RED sold
+        value: 0.6
+        description: 'Amount of RED sold for BLUE in the first tranche (stack item 0.6)'             
+      - label: Initial BLUE bought
+        value: 0.5.2
+        description: 'Amount of BLUE purchased by selling RED in the first tranche (stack item 0.5.2)'                             
+      - label: Initial io-ratio
+        value: 0.7
+        description: '# BLUE purchased per RED spent (stack item 0.7)'        
+      - label: Starting tranche
+        value: 0.2.0
+        description: 'This strategy starts executing sells at the initial tranche (stack item 0.2.0)'          
+      - label: Initial sell price
+        value: 0.5.3
+        precision: 4
+        unit-suffix: " BLUE"        
+        description: 'Price you pay for 1 BLUE in RED, visible on dextools (stack item 0.5.3)'     
+    plots:
+
+  sell-simulation:
+    scenario: arb-red-blue-tranches.sell.test
+    plots:
+      RED sold per tranche:     
+        x:
+            label: 'Tranche space'
+        y:
+            label: 'RED spent'
+        marks:
+          - type: line
+            options:
+              x: 0.0
+              y: 0.6  
+      BLUE bought per tranche:    
+        x:
+            label: 'Tranche space'
+        y:
+            label: 'BLUE bought'          
+        marks:
+          - type: line
+            options:
+              x: 0.0
+              y: 0.5.2
+      'io-ratio per tranche':
+        subtitle: 'Ratio of BLUE bought per 1 RED sold per tranche'        
+        x:
+            label: 'Tranche space'
+        y:
+            label: 'RED bought per 1 BLUE'            
+        marks:
+          - type: line
+            options:
+              x: 0.0
+              y: 0.7
+      sell price by tranche:
+        subtitle: 'Price paid for 1 BLUE in RED, visible on dextools as RED/BLUE pair'        
+        x:
+            label: 'Tranche space'
+        y:
+            label: '1 BLUE priced in RED'          
+        marks:
+          - type: line
+            options:
+              x: 0.0
+              y: 0.5.3    
 
 deployments:
-  arbitrum-one-buy:
+  arbitrum-pubstrat-buy:
     scenario: arb-red-blue-tranches.buy.initialized.prod
-    order: arbitrum-one-buy
-  arbitrum-one-sell:
+    order: arbitrum-pubstrat-buy
+  arbitrum-pubstrat-sell:
     scenario: arb-red-blue-tranches.sell.initialized.prod
-    order: arbitrum-one-sell
+    order: arbitrum-pubstrat-sell
 
 ---
 #tranche-space-per-second !The amount of tranche space that is recharged per second as a normalized 18 decimal fixed point value.
