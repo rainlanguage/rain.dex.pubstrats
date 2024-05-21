@@ -22,20 +22,16 @@ tokens:
 
 orders:
   flare:
-    # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       # Input is irrelevant because we always set the IO ratio to 0.
       - token: eusdt
-        vault-id: 0xb39eed084711b7e383c97ae5a9e0aa76e01f7a641457726ebfd912fe33dd67f5
     outputs:
       - token: wflr
-        vault-id: 0xb39eed084711b7e383c97ae5a9e0aa76e01f7a641457726ebfd912fe33dd67f5
 
 scenarios:
   flare:
     runs: 1
     bindings:
-      flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
       samples-count: 5
       cooldown: 120
       bounty-base: 0.2
@@ -53,6 +49,8 @@ deployments:
     scenario: flare
 
 ---
+#flare-subparser 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
+
 #samples-count !Number of samples to collect from the FTSO.
 #cooldown !Minimum time in seconds that must elapse between samples.
 
@@ -60,29 +58,26 @@ deployments:
 #bounty-rate !Per second bounty increase.
 
 #calculate-io
-using-words-from 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
+using-words-from
+  flare-subparser
 
 ftso-price: ftso-current-price-usd("FLR" 3600),
 
-index: mod(get("index") samples-count),
-:set("index" add(index 1)),
-:set(hash("base" index) ftso-price),
+/* store the sample under a rotating index */
+index-key: order-hash(),
+index: mod(add(get(index-key) 1) samples-count),
+:set(index-key index),
+:set(hash(index-key index) ftso-price),
 
-last-update-time: any(get("last-update-time") block-timestamp()),
-last-update-ago: sub(block-timestamp() last-update-time),
-:ensure(
-  any(greater-than-or-equal-to(last-update-ago cooldown) is-zero(get("initialize")))
-  "Cooling down."
-),
-:set("initialize" 1),
-:set("last-update-time" block-timestamp()),
+/* ensure a cooldown */
+last-update-time-key: hash(order-hash() "last-update-time"),
+time-since-cooldown: saturating-sub(block-timestamp() add(get(last-update-time-key) cooldown)),
+:ensure(time-since-cooldown "Cooling down."),
+:set(last-update-time-key block-timestamp()),
 
 /* linear auction for the bounty to mitigate unpredictable gas spikes */
-bounty: linear-growth(
-  bounty-base
-  bounty-rate
-  saturating-sub(last-update-ago cooldown)
-),
+bounty: linear-growth(bounty-base bounty-rate time-since-cooldown),
+
 /* 0 io ratio means no input required from the counterparty for them to receive the bounty */
 io-ratio: 0;
 
