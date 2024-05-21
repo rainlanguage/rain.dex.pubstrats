@@ -67,8 +67,8 @@ cooldown-key: hash(order-hash() "last-traded"),
 :ensure(
   greater-than(
     now
-    add(get(cooldown-key) cooldown-time)
-  "cooldown")),
+    add(get(cooldown-key) cooldown-time))
+  "cooldown"),
 :set(cooldown-key now),
 
 /* getting a quote from the Flare FTSO */
