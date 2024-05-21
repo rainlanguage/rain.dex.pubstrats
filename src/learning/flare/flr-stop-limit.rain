@@ -16,13 +16,10 @@ tokens:
 orders:
   flare:
     orderbook: flare
-    # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: eusdt
-        vault-id: 0xc000bc8ae30330757787fa5b6435b2bd5ecf8b0c087a8034a09cd0fda43513f0
     outputs:
       - token: wflr
-        vault-id: 0xc000bc8ae30330757787fa5b6435b2bd5ecf8b0c087a8034a09cd0fda43513f0
 
 scenarios:
   flare:
