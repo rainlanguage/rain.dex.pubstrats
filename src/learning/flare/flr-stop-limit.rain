@@ -53,6 +53,7 @@ charts:
         value: 0.5
 ---
 #flare-subparser 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
+#raindex-subparser 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
 
 #trade-amount !The amount of WFLR that we will sell.
 #stop-price !The price below which we'll sell WFLR.
@@ -61,6 +62,7 @@ charts:
 #calculate-io
 using-words-from
   flare-subparser
+  raindex-subparser
 
 ftso-price: ftso-current-price-usd("FLR" 3600),
 
