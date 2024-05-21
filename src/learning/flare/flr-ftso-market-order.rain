@@ -13,22 +13,17 @@ tokens:
     decimals: 18
 
 orders:
-  # vault-id is `openssl rand -hex 32`
   sell-wflr:
     orderbook: flare
     inputs:
       - token: eusdt
-        vault-id: 0xce7cff94ca97c481063dae48cfb378eb4dd3c6b935aef16c2397624c300045fb
     outputs:
       - token: wflr
-        vault-id: 0xce7cff94ca97c481063dae48cfb378eb4dd3c6b935aef16c2397624c300045fb
 
 scenarios:
   default:
     deployer: flare
     runs: 1
-    bindings:
-      flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
 
 deployments:
   default:
@@ -47,8 +42,11 @@ charts:
       - label: Max output
         value: 0.2
 ---
+#flare-subparser 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
+
 #calculate-io
-using-words-from 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
+using-words-from
+  flare-subparser
 
 /* getting a quote from the Flare FTSO */
 ftso-price: ftso-current-price-usd("FLR" 3600),
