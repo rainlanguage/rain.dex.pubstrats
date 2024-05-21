@@ -22,6 +22,7 @@ tokens:
 
 orders:
   flare:
+    orderbook: flare
     inputs:
       # Input is irrelevant because we always set the IO ratio to 0.
       - token: eusdt
@@ -34,9 +35,10 @@ scenarios:
     bindings:
       samples-count: 5
       cooldown: 120
-      bounty-base: 0.2
-      # 0.1 / 3600 = 0.1 FLR per hour
-      bounty-rate: 0.000027777777777777
+      bounty-min: 0.02
+      bounty-unit-increase: 0.01
+      bounty-unit-time: 60
+      bounty-max: 0.1
 
 # There's not really anything to chart without overcomplicating the
 # strat itself in ways that would obfuscate the core lesson of the example.
@@ -50,16 +52,20 @@ deployments:
 
 ---
 #flare-subparser 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
+#raindex-subparser 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
 
 #samples-count !Number of samples to collect from the FTSO.
 #cooldown !Minimum time in seconds that must elapse between samples.
 
-#bounty-base !Minimum bounty to offer for each sample in WFLR.
-#bounty-rate !Per second bounty increase.
+#bounty-min !Minimum bounty to offer for each sample in WFLR.
+#bounty-unit-increase !Amount to increase bounty per unit time.
+#bounty-unit-time !Unit of time to increase the bounty.
+#bounty-max !Maximum bounty that can be offered. Will ALWAYS be offered on first sample.
 
 #calculate-io
 using-words-from
   flare-subparser
+  raindex-subparser
 
 ftso-price: ftso-current-price-usd("FLR" 3600),
 
@@ -76,7 +82,13 @@ time-since-cooldown: saturating-sub(block-timestamp() add(get(last-update-time-k
 :set(last-update-time-key block-timestamp()),
 
 /* linear auction for the bounty to mitigate unpredictable gas spikes */
-bounty: linear-growth(bounty-base bounty-rate time-since-cooldown),
+bounty: min(
+  linear-growth(
+    bounty-min
+    div(bounty-unit-increase bounty-unit-time)
+    time-since-cooldown)
+  bounty-max
+),
 
 /* 0 io ratio means no input required from the counterparty for them to receive the bounty */
 io-ratio: 0;
