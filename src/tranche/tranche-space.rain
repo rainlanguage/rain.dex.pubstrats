@@ -26,27 +26,6 @@
 # - An optional conversion between the input/output token and some external
 #   price, e.g. converting WETH in a vault to USD equivalent.
 
-networks:
-  arbitrum-one:
-    rpc: https://arbitrum.llamarpc.com
-    chain-id: 42161
-    network-id: 42161
-    currency: ETH
-
-subgraphs:
-  arbitrum-one: https://api.thegraph.com/subgraphs/name/h20liquidity/arbitrum-0x90caf23e
-
-orderbooks:
-  arbitrum-one:
-    address: 0x90CAF23eA7E507BB722647B0674e50D8d6468234
-    network: arbitrum-one
-    subgraph: arbitrum-one
-
-deployers:
-  arbitrum-one:
-    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
-    network: arbitrum-one
-
 tokens:
   arbitrum-one-red:
     network: arbitrum-one
@@ -57,12 +36,14 @@ tokens:
 
 orders:
   arbitrum-one-buy:
+    orderbook: arbitrum-one
     inputs:
       - token: arbitrum-one-red
     outputs:
       - token: arbitrum-one-blue
 
   arbitrum-one-sell:
+    orderbook: arbitrum-one
     inputs:
       - token: arbitrum-one-blue
     outputs:
