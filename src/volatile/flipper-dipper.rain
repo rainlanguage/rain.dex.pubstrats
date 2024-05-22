@@ -15,41 +15,28 @@ tokens:
 orders:
   flare:
     orderbook: flare
-    # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: wflr
-        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
       - token: eusdt
-        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
     outputs:
       - token: wflr
-        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
       - token: eusdt
-        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
   flare-any-3:
     orderbook: flare
     inputs:
       - token: wflr
-        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
       - token: eusdt
-        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
       - token: eeth
-        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
     outputs:
       - token: wflr
-        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
       - token: eusdt
-        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
       - token: eeth
-        vault-id: 0x93479e9a7d7dd2757a668a27ce29698e370ab655d2b39344cc5c0e246a07f38d
 
 scenarios:
   flare:
     orderbook: flare
     runs: 1
     bindings:
-      raindex-subparser: 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
-      flare-subparser: 0x87D1f842347b7802A29FD9010c464E760745a4d2
       fallback-ratio: '''fallback-ftso-usd'
       fallback-ftso-multiplier: 1
     scenarios:
@@ -62,8 +49,8 @@ scenarios:
           ratio-multiplier: '''linear-decay-multiplier'
           linear-decay-start: 1.05
           # 1% per day
-          # 0.01 / 86400 = 1.15740741e-7
-          linear-decay-rate: 1.15740741e-7
+          # 0.01 / 86400 = 0.000000115740740740
+          linear-decay-rate: 0.000000115740740740
           seconds-per-epoch: 3600
           linear-decay-floor: 1
       ramp-down:
@@ -81,8 +68,6 @@ scenarios:
     deployer: flare
     orderbook: flare
     bindings:
-      raindex-subparser: 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
-      flare-subparser: 0x87D1f842347b7802A29FD9010c464E760745a4d2
       fallback-ratio: '''fb-halflife'
       # date +%s
       fb-halflife-start-time: 1715688843
@@ -91,15 +76,27 @@ scenarios:
       # half an hour per halving covers a lot of space while
       # giving time for bots to respond in the correct range
       fb-halflife-seconds: 1800
-      # C = 1.011
-      # D = 7
-      # => start at 101% and hit 0 after 7 epochs.
-      # => cuts below 100% after 2.5 epochs.
-      # https://www.desmos.com/calculator/38ien12798
-      ratio-multiplier: '''ramp-down'
-      ramp-down-c: 1.011
-      ramp-down-d: 7
-      seconds-per-epoch: 86400
+    scenarios:
+      linear-decay:
+        bindings:
+          ratio-multiplier: '''linear-decay-multiplier'
+          linear-decay-start: 1.05
+          # 1% per day
+          # 0.01 / 86400 = 0.000000115740740740
+          linear-decay-rate: 0.000000115740740740
+          seconds-per-epoch: 3600
+          linear-decay-floor: 1
+      ramp-down:
+        bindings:
+          # C = 1.011
+          # D = 7
+          # => start at 101% and hit 0 after 7 epochs.
+          # => cuts below 100% after 2.5 epochs.
+          # https://www.desmos.com/calculator/38ien12798
+          ratio-multiplier: '''ramp-down'
+          ramp-down-c: 1.011
+          ramp-down-d: 7
+          seconds-per-epoch: 86400
 
 charts:
   flare:
@@ -119,16 +116,21 @@ deployments:
 
   any-ramp-down:
     order: flare
-    scenario: any-flare
+    scenario: any-flare.ramp-down
 
   any-3-ramp-down:
     order: flare-any-3
-    scenario: any-flare
+    scenario: any-flare.ramp-down
 
-metaboards:
-  flare: http://subgraphs.h20liquidity.tech/subgraphs/name/flare-mb-0x59401C93
+  any-3-linear-decay:
+    order: flare-any-3
+    scenario: any-flare.linear-decay
 
 ---
+
+#raindex-subparser 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
+
+#flare-subparser 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
 
 #seconds-per-epoch !Number of seconds to treat as 1 epoch. E.g. 86400 is 1 day per epoch.
 #linear-decay-time-key "linear-decay-last-time"
@@ -202,7 +204,7 @@ _: mul(
 );
 
 #breakeven-io-ratio
-prev-input-vault-balance: get(
+prev-input-vault-balance-raw: get(
   hash(
     order-hash()
     input-token()
@@ -210,11 +212,11 @@ prev-input-vault-balance: get(
 ),
 prev-input-vault-balance: scale-18-dynamic(
   input-token-decimals()
-  prev-input-vault-balance
+  prev-input-vault-balance-raw
 ),
 output-vault-balance: scale-18-dynamic(
   output-token-decimals()
-  output-vault-balance-before()
+  uint256-output-vault-before()
 ),
 _: div(
   prev-input-vault-balance
@@ -240,13 +242,14 @@ _: mul(
 _: fallback-constant-value;
 
 #fallback-ratio !Expression for the ratio to use when there is no history for the pair.
-#raindex-subparser !The subparser for raindex words.
-#flare-subparser !The subparser for flare words.
 #calculate-io
-using-words-from raindex-subparser flare-subparser
+using-words-from
+  raindex-subparser
+  flare-subparser
+
 amount: scale-18-dynamic(
   output-token-decimals()
-  output-vault-balance-before()
+  uint256-output-vault-before()
 ),
 io-ratio: any(
   call<'desired-ratio>()
@@ -256,14 +259,14 @@ io-ratio: any(
 #handle-io
 /* avoid noops corrupting state */
 :ensure(
-  output-vault-balance-before()
+  uint256-output-vault-before()
   "Output noop."
 ),
 /* avoid partial vault clears as it would break our ratio logic */
 :ensure(
   equal-to(
-    output-vault-balance-before()
-    output-vault-balance-decrease()
+    uint256-output-vault-before()
+    uint256-output-vault-decrease()
   )
   "Partial clear."
 ),
@@ -273,5 +276,5 @@ io-ratio: any(
     order-hash()
     output-token()
   )
-  output-vault-balance-before()
+  uint256-output-vault-before()
 );
