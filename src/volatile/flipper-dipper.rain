@@ -70,7 +70,7 @@ scenarios:
     bindings:
       fallback-ratio: '''fb-halflife'
       # date +%s
-      fb-halflife-start-time: 1715688843
+      fb-halflife-start-time: 1716383480
       # anything way bigger than the expected ratio is fine
       fb-halflife-start-io: 1e10
       # half an hour per halving covers a lot of space while
