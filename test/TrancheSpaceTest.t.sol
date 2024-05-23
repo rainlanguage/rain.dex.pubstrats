@@ -36,8 +36,8 @@ contract TrancheSpaceTest is StrategyTests {
 
     uint256 constant FORK_BLOCK_NUMBER = 201303042;
     uint256 constant VAULT_ID = uint256(keccak256("vault"));
-    
-    IERC20 constant RED_TOKEN = IERC20(0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe); 
+
+    IERC20 constant RED_TOKEN = IERC20(0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe);
     IERC20 constant BLUE_TOKEN = IERC20(0x667f41fF7D9c06D2dd18511b32041fC6570Dc468);
 
     function selectPolygonFork() internal {
@@ -65,7 +65,7 @@ contract TrancheSpaceTest is StrategyTests {
 
     function arbBlueIo() internal pure returns (IO memory) {
         return IO(address(BLUE_TOKEN), 18, VAULT_ID);
-    } 
+    }
 
     function testTrancheSpaceShyness() public {
 
@@ -78,7 +78,7 @@ contract TrancheSpaceTest is StrategyTests {
         outputVaults[0] = arbBlueIo();
 
         uint256 expectedRatio = 1e18;
-        uint256 expectedAmountOutputMax = 1e18;   
+        uint256 expectedAmountOutputMax = 1e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             "",
@@ -100,26 +100,26 @@ contract TrancheSpaceTest is StrategyTests {
         OrderV2 memory orderMinimumTrade = addOrderDepositOutputTokens(strategy);
 
         //Tranche 0- Full Tranche
-        {   
+        {
             vm.recordLogs();
             takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex);
 
             Vm.Log[] memory entries = vm.getRecordedLogs();
-            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries); 
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
             // 1 * (1 + 0.01) ^ 0 = 1
             uint256 expectedTrancheAmount = 1e18;
 
             // 1 + (0.05 * 0) = 1
-            uint256 expectedTrancheRatio = 1e18; 
+            uint256 expectedTrancheRatio = 1e18;
 
             assertEq(strategyAmount, expectedTrancheAmount);
             assertEq(strategyRatio, expectedTrancheRatio);
 
-        } 
+        }
 
         // Tranche 1 - Shy Tranche
-        {   
+        {
             vm.recordLogs();
             takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex);
 
@@ -136,12 +136,12 @@ contract TrancheSpaceTest is StrategyTests {
             uint256 expectedTrancheRatio = 1.05e18;
 
             assertEq(strategyAmount, expectedShyTrancheAmount);
-            assertEq(strategyRatio, expectedTrancheRatio); 
+            assertEq(strategyRatio, expectedTrancheRatio);
         }
-  
 
 
-    } 
+
+    }
 
     function testSuccessiveTranches() public {
 
@@ -154,7 +154,7 @@ contract TrancheSpaceTest is StrategyTests {
         outputVaults[0] = arbBlueIo();
 
         uint256 expectedRatio = 1e18;
-        uint256 expectedAmountOutputMax = 1e18;  
+        uint256 expectedAmountOutputMax = 1e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             "",
@@ -165,7 +165,7 @@ contract TrancheSpaceTest is StrategyTests {
             10e18,
             expectedRatio,
             expectedAmountOutputMax,
-            "src/tranche-space.rain",
+            "src/tranche/tranche-space.rain",
             "arb-red-blue-tranches.buy.initialized.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
@@ -173,7 +173,7 @@ contract TrancheSpaceTest is StrategyTests {
             outputVaults
         );
 
-        OrderV2 memory orderMinimumTrade = addOrderDepositOutputTokens(strategy);   
+        OrderV2 memory orderMinimumTrade = addOrderDepositOutputTokens(strategy);
 
         // Asserting for tranche ratios and amounts
 
@@ -184,18 +184,18 @@ contract TrancheSpaceTest is StrategyTests {
         // Expected Ratio = base + (tranche-ratio-rate * t)
 
         // Tranche 0
-        {   
+        {
             vm.recordLogs();
             takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex);
 
             Vm.Log[] memory entries = vm.getRecordedLogs();
-            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries); 
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
             // 1 * (1 + 0.01) ^ 0 = 1
             uint256 expectedTrancheAmount = 1e18;
 
             // 1 + (0.05 * 0) = 1
-            uint256 expectedTrancheRatio = 1e18; 
+            uint256 expectedTrancheRatio = 1e18;
 
             assertEq(strategyAmount, expectedTrancheAmount);
             assertEq(strategyRatio, expectedTrancheRatio);
@@ -203,7 +203,7 @@ contract TrancheSpaceTest is StrategyTests {
         }
 
         // Tranche 1
-        {   
+        {
             vm.recordLogs();
             takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex);
 
@@ -217,11 +217,11 @@ contract TrancheSpaceTest is StrategyTests {
             uint256 expectedTrancheRatio = 1.05e18;
 
             assertEq(strategyAmount, expectedTrancheAmount);
-            assertEq(strategyRatio, expectedTrancheRatio); 
+            assertEq(strategyRatio, expectedTrancheRatio);
         }
 
         // Tranche 2
-        {   
+        {
             vm.recordLogs();
             takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex);
 
@@ -235,7 +235,7 @@ contract TrancheSpaceTest is StrategyTests {
             uint256 expectedTrancheRatio = 1.1e18;
 
             assertEq(strategyAmount, expectedTrancheAmount);
-            assertEq(strategyRatio, expectedTrancheRatio); 
+            assertEq(strategyRatio, expectedTrancheRatio);
 
         }
 
@@ -251,7 +251,7 @@ contract TrancheSpaceTest is StrategyTests {
         outputVaults[0] = arbBlueIo();
 
         uint256 expectedRatio = 1e18;
-        uint256 expectedAmountOutputMax = 1e18;  
+        uint256 expectedAmountOutputMax = 1e18;
 
         // Minimum Revert Amount = expectedAmountOutputMax * 10% = 1e17
         uint256 minimumRevertAmount = 1e17;
@@ -288,7 +288,7 @@ contract TrancheSpaceTest is StrategyTests {
         }
 
         // Order fails with less than minimum trade size
-        {   
+        {
             strategy.takerAmount = minimumRevertAmount - 1;
             OrderV2 memory orderMinimumTradeRevert = addOrderDepositOutputTokens(strategy);
 
@@ -314,7 +314,7 @@ contract TrancheSpaceTest is StrategyTests {
         outputVaults[0] = arbBlueIo();
 
         uint256 expectedRatio = 1e18;
-        uint256 expectedAmountOutputMax = 1e18; 
+        uint256 expectedAmountOutputMax = 1e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             "",
@@ -348,7 +348,7 @@ contract TrancheSpaceTest is StrategyTests {
         outputVaults[0] = arbBlueIo();
 
         uint256 expectedRatio = 1e18;
-        uint256 expectedAmountOutputMax = 1e18; 
+        uint256 expectedAmountOutputMax = 1e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             getEncodedRedToBlueRoute(address(ARB_INSTANCE)),
@@ -370,7 +370,7 @@ contract TrancheSpaceTest is StrategyTests {
         // OrderBook 'takeOrder'
         checkStrategyCalculationsArbOrder(strategy);
 
-    }  
+    }
 
     // Inheriting contract defines the route for the strategy.
     function getEncodedRedToBlueRoute(address toAddress) internal pure returns (bytes memory) {
@@ -401,5 +401,5 @@ contract TrancheSpaceTest is StrategyTests {
     }
 
 
-    
+
 }
