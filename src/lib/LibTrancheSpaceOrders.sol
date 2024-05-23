@@ -63,7 +63,7 @@ library LibTrancheSpaceOrders {
         ffi[1] = "dotrain";
         ffi[2] = "compose";
         ffi[3] = "-i";
-        ffi[4] = "src/tranche-space.rain";
+        ffi[4] = "src/tranche/tranche-space.rain";
         ffi[5] = "--entrypoint";
         ffi[6] = "calculate-io";
         ffi[7] = "--entrypoint";
@@ -122,7 +122,7 @@ library LibTrancheSpaceOrders {
         ffi[1] = "dotrain";
         ffi[2] = "compose";
         ffi[3] = "-i";
-        ffi[4] = "src/tranche-space.rain";
+        ffi[4] = "src/tranche/tranche-space.rain";
         ffi[5] = "--entrypoint";
         ffi[6] = "calculate-io";
         ffi[7] = "--entrypoint";
@@ -194,7 +194,7 @@ library LibTrancheSpaceOrders {
         ffi[1] = "dotrain";
         ffi[2] = "compose";
         ffi[3] = "-i";
-        ffi[4] = "src/tranche-space.rain";
+        ffi[4] = "src/tranche/tranche-space.rain";
         ffi[5] = "--entrypoint";
         ffi[6] = "calculate-tranche";
         ffi[7] = "--bind";
@@ -231,7 +231,7 @@ library LibTrancheSpaceOrders {
         ffi[1] = "dotrain";
         ffi[2] = "compose";
         ffi[3] = "-i";
-        ffi[4] = "src/tranche-space.rain";
+        ffi[4] = "src/tranche/tranche-space.rain";
         ffi[5] = "--entrypoint";
         ffi[6] = "handle-io";
         ffi[7] = "--bind";
