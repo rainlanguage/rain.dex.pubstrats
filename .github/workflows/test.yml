@@ -26,9 +26,9 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v4
       - uses: DeterminateSystems/magic-nix-cache-action@v2
 
-      - run: nix run .#rainix-sol-prelude
+      - run: nix develop -c rainix-sol-prelude
 
       - run: ./prep-tauri.sh
         working-directory: lib/h20.test-std/lib/rain.orderbook
 
-      - run: nix run .#rainix-sol-test
+      - run: nix develop -c rainix-sol-test
