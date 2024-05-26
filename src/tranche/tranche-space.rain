@@ -27,75 +27,72 @@
 #   price, e.g. converting WETH in a vault to USD equivalent.
 
 networks:
-  arbitrum-one: 
-    rpc: https://arbitrum.llamarpc.com 
-    chain-id: 42161 
-    network-id: 42161 
-    currency: ETH
+  flare:
+    rpc: https://flare.rpc.thirdweb.com
+    chain-id: 14
+    network-id: 14
+    currency: FLR
 
 subgraphs:
-  arbitrum-one: https://api.thegraph.com/subgraphs/name/h20liquidity/arbitrum-0x90caf23e
-  
+  flare: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-0xb06202aA
+
 orderbooks:
-  arbitrum-one:
-    address: 0x90CAF23eA7E507BB722647B0674e50D8d6468234
-    network: arbitrum-one
-    subgraph: arbitrum-one
+  flare:
+    address: 0x07701e3BcE4248EFDFc7D31392a43c8b82a7A260
+    network: flare
+    subgraph: flare
 
 deployers:
-  arbitrum-one:
-    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
-    network: arbitrum-one
+  flare:
+    address: 0x8ceC9e3Ec2F8838000b91CfB97403A6Bb0F4036A
+    network: flare
 
 tokens:
-  arbitrum-one-red:
-    network: arbitrum-one
-    address: 0x6d3abb80c3cbae0f60ba274f36137298d8571fbe
-  arbitrum-one-blue:
-    network: arbitrum-one
-    address: 0x667f41fF7D9c06D2dd18511b32041fC6570Dc468
+  flare-red:
+    network: flare
+    address: 0xE38D92733203E6f93C634304b777490e67Dc4Bdf
+  flare-blue:
+    network: flare
+    address: 0x40D44abeC30288BFcd400200BA65FBD05daA5321
 
 orders:
-  # vault-id generated with `openssl rand -hex 32`
-  arbitrum-one-buy:
+  flare-buy:
+    orderbook: flare
     inputs:
-      - token: arbitrum-one-red
-        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
+      - token: flare-red
     outputs:
-      - token: arbitrum-one-blue
-        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
+      - token: flare-blue
 
-  arbitrum-one-sell:
+  flare-sell:
+    orderbook: flare
     inputs:
-      - token: arbitrum-one-blue
-        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
+      - token: flare-blue
     outputs:
-      - token: arbitrum-one-red
-        vault-id: 0x562bd75e19e548420f9f3da43a7d7d67c6344580256b952c9214192c445d6053
+      - token: flare-red
 
 scenarios:
-    arb-red-blue-tranches:
-        network: arbitrum-one
-        deployer: arbitrum-one
-        orderbook: arbitrum-one
+    flare-red-blue-tranches:
+        network: flare
+        deployer: flare
+        orderbook: flare
         bindings:
           # The uniswap words are only required if there is a conversion between
           # the input/output token and some external price. Typically this is
           # not the case as the io-ratio is defined in terms of the input/output
           # token and the io-ratio-multiplier is set to the identity function.
-          uniswap-words: 0x5Cf7d0a8c61c8dcC6b0ECB281dF1C17264C2A517
+          uniswap-words: 0x7692BA8446Bb8B3140A2c02df073080BeD0a7F8E
 
-          orderbook-subparser: 0x23F77e7Bc935503e437166498D7D72f2Ea290E1f
+          orderbook-subparser: 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
 
           # How far we move through tranche space in a second.
-          # 1e18 is a whole tranche, so we divide 1e18 by the number of seconds
+          # 1e18 is a whole tranche, so we divide 1 by the number of seconds
           # per recharge to calculate the per-second rate.
           # Examples:
-          # 172800 seconds in 2 days, 48 hours = 1e18 / 172800  = 5787037037037
-          # 86400 seconds in 1 day, 24 hours = 1e18 / 86400 = 11574074074074
-          # 43200 seconds in 12 hours, 12 hours = 1e18 / 43200 = 23148148148148
-          # 3600 seconds in 1 hour, 1 hour = 1e18 / 3600 = 277777777777777
-          tranche-space-per-second: 11574074074074
+          # 172800 seconds in 2 days, 48 hours = 1 / 172800 = 0.000005787037037037
+          # 86400 seconds in 1 day, 24 hours = 1 / 86400 = 0.000011574074074074
+          # 43200 seconds in 12 hours, 12 hours = 1 / 43200 = 0.000023148148148148
+          # 3600 seconds in 1 hour, 1 hour = 1 / 3600 = 0.000277777777777777
+          tranche-space-per-second: 0.000011574074074074
 
           # After any trade happens we pause before recharging.
           # Delay is to observe market feedback to the previous trade, e.g. to
@@ -108,7 +105,7 @@ scenarios:
           tranche-space-recharge-delay: 300
 
           # When a tranche is completely cleared, the next tranche MAY be jumped
-          # into partially. For example, if tranches are 90% shy (i.e. 9e17) then
+          # into partially. For example, if tranches are 90% shy (i.e. 0.9) then
           # if a tranche is cleared completely then the next tranche will be
           # started at 10% of its maximum size. This means that the capital
           # requirements for the strategy to reprice itself as the market moves
@@ -122,12 +119,12 @@ scenarios:
           # Minimum trade size, if you put in a trade for less than x% of a
           # tranche it wont clear.
           # Mitigates people pinging strat for dust orders to stop recharging.
-          min-tranche-space-diff: 1e17
+          min-tranche-space-diff: 0.1
 
           # Snap to the nearest tranche to avoid dust issues at the edges, either
           # due to rounding in the evm or potentially malicious trades.
-          # 1e16 is 1%
-          tranche-space-snap-threshold: 1e16
+          # 0.01 is 1%
+          tranche-space-snap-threshold: 0.01
 
           # This is only relevant if the tranche size/ratio is denominated in
           # some token other than the input/output tokens. For example, if the
@@ -146,11 +143,11 @@ scenarios:
                 # buying RED with it, then the amount is the OUTPUT.
                 amount-is-output: 1
                 io-ratio-expr: '''linear-growth'
-                io-ratio-base: 1e18
-                io-ratio-growth: 5e16
+                io-ratio-base: 1
+                io-ratio-growth: 0.05
                 tranche-size-expr: '''exponential-growth'
-                tranche-size-base: 1e18
-                tranche-size-growth: 1e16
+                tranche-size-base: 1
+                tranche-size-growth: 0.01
             scenarios:
               initialized:
                 bindings:
@@ -180,14 +177,14 @@ scenarios:
                       get-last-tranche: '''get-last-tranche-prod'
                       set-last-tranche: '''set-last-tranche-prod'
                       plottables: '''plottables-prod'
-                      tranche-space-shyness: 9e17
+                      tranche-space-shyness: 0.9
               test:
                   runs: 10000
                   bindings:
                     get-last-tranche: '''get-last-tranche-test'
                     set-last-tranche: '''set-last-tranche-test'
                     plottables: '''plottables-test'
-                    max-test-tranche-space: 20e18
+                    max-test-tranche-space: 20
                     test-last-update-time: 0
                     test-now: 0
           sell:
@@ -196,11 +193,11 @@ scenarios:
                 # selling RED for it, then the amount is the INPUT.
                 amount-is-output: 0
                 io-ratio-expr: '''linear-growth'
-                io-ratio-base: 10e18
-                io-ratio-growth: 5e17
+                io-ratio-base: 10
+                io-ratio-growth: 0.5
                 tranche-size-expr: '''exponential-growth'
-                tranche-size-base: 1e18
-                tranche-size-growth: 1e16
+                tranche-size-base: 1
+                tranche-size-growth: 0.01
             scenarios:
               initialized:
                 bindings:
@@ -224,20 +221,20 @@ scenarios:
                       set-last-tranche: '''set-last-tranche-test'
                       plottables: '''plottables-test'
                       test-last-update-time: 0
-                      test-now: 0         
+                      test-now: 0
               test:
                 runs: 10000
                 bindings:
                   get-last-tranche: '''get-last-tranche-test'
                   set-last-tranche: '''set-last-tranche-test'
                   plottables: '''plottables-test'
-                  max-test-tranche-space: 20e18
+                  max-test-tranche-space: 20
                   test-last-update-time: 0
                   test-now: 0
 
 charts:
     buy-initial-deployment:
-      scenario: arb-red-blue-tranches.buy.initialized.test
+      scenario: flare-red-blue-tranches.buy.initialized.test
       metrics:
         - label: Amount of BLUE required to buy RED in the first tranche
           value: 0.6
@@ -254,7 +251,7 @@ charts:
       plots:
 
     buy-simulation:
-        scenario: arb-red-blue-tranches.buy.test
+        scenario: flare-red-blue-tranches.buy.test
         plots:
           BLUE spent and recharge rate per tranche:
             marks:
@@ -288,7 +285,7 @@ charts:
                   y: 0.0
 
     sell-initial-deployment:
-      scenario: arb-red-blue-tranches.sell.initialized.test
+      scenario: flare-red-blue-tranches.sell.initialized.test
       metrics:
         - label: Amount of RED sold to meet the first tranche of BLUE
           value: 0.6
@@ -303,9 +300,9 @@ charts:
         - label: Starting tranche
           value: 0.2.0
       plots:
-                  
+
     sell-simulation:
-        scenario: arb-red-blue-tranches.sell.test
+        scenario: flare-red-blue-tranches.sell.test
         plots:
           Number of RED sold per tranche:
             marks:
@@ -339,24 +336,24 @@ charts:
                   y: 0.0
 
 deployments:
-  arbitrum-one-buy:
-    scenario: arb-red-blue-tranches.buy.initialized.prod
-    order: arbitrum-one-buy
-  arbitrum-one-sell:
-    scenario: arb-red-blue-tranches.sell.initialized.prod
-    order: arbitrum-one-sell
+  flare-buy:
+    scenario: flare-red-blue-tranches.buy.initialized.prod
+    order: flare-buy
+  flare-sell:
+    scenario: flare-red-blue-tranches.sell.initialized.prod
+    order: flare-sell
 
 ---
-#tranche-space-per-second !The amount of tranche space that is recharged per second as a normalized 18 decimal fixed point value.
+#tranche-space-per-second !The amount of tranche space that is recharged per second.
 #tranche-space-recharge-delay !The duration in seconds that no recharging occurs after a trade occurs.
 
 #tranche-size-expr !The binding to get the tranche size for the current tranche space.
 #tranche-size-base !Base tranche size is the size of the smallest tranche, denominated in output token.
-#tranche-size-growth !The exponential growth factor of the size of each tranche, as a decimal 18 fixed point number. E.g. 1e16 is 1% output amount growth per tranche.
+#tranche-size-growth !The exponential growth factor of the size of each tranche. E.g. 0.01 is 1% output amount growth per tranche.
 
 #io-ratio-expr !The binding to get the IO ratio for the current tranche space.
 #io-ratio-base !The base IO ratio, as a decimal 18 fixed point number. This is the IO ratio at tranche space 0 and grows according to the growth factor per tranche.
-#io-ratio-growth !The exponential growth factor of the IO ratio, as a decimal 18 fixed point number. E.g. 1e16 is 1% io-ratio growth per tranche.
+#io-ratio-growth !The exponential growth factor of the IO ratio. E.g. 0.01 is 1% io-ratio growth per tranche.
 
 #reference-stable !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
 #reference-stable-decimals !The number of decimals of the reference stable token.
@@ -365,7 +362,7 @@ deployments:
 #twap-duration !The duration in seconds of the TWAP window for dollar equivalence conversions.
 #twap-fee !The uniswap fee tier to use for the TWAP.
 
-#min-tranche-space-diff !The minimum tranche space difference that is allowed per trade, as a decimal 18 fixed point number. Prevents dusting the strat to stop it recharging.
+#min-tranche-space-diff !The minimum tranche space difference that is allowed per trade. Prevents dusting the strat to stop it recharging.
 #tranche-space-snap-threshold !The threshold in tranche space to snap to the nearest tranche to avoid dust issues at the edges.
 
 #initial-tranche-space !The initial tranche space when the order is first deployed.
@@ -392,8 +389,8 @@ deployments:
 #plottables-test
   amount
   io-ratio:,
-  input-amount: decimal18-mul(amount io-ratio),
-  effective-price: decimal18-inv(io-ratio);
+  input-amount: mul(amount io-ratio),
+  effective-price: inv(io-ratio);
 
 #plottables-prod
   amount
@@ -413,12 +410,12 @@ deployments:
   ),
   now: block-timestamp();
 
-#tranche-space-shyness !The shyness of the liquidity in tranches, as a decimal 18 fixed point number. E.g. 9e17 is 90% shy.
+#tranche-space-shyness !The shyness of the liquidity in tranches. E.g. 0.9 is 90% shy.
 #set-last-tranche-prod
   tranche-space now:,
   shy-tranche-space: if(
-    is-zero(decimal18-frac(tranche-space))
-    decimal18-add(tranche-space tranche-space-shyness)
+    is-zero(frac(tranche-space))
+    add(tranche-space tranche-space-shyness)
     tranche-space),
   :set(hash(order-hash() init-key) 1),
   :set(hash(order-hash() tranche-space-key) shy-tranche-space),
@@ -427,7 +424,7 @@ deployments:
 /* Forward the bindings through as is to the caller. */
 #max-test-tranche-space !The maximum tranche space that will appear on the test chart.
 #get-last-tranche-test
-  tranche-space-before: int-mod(test-tranche-space-before max-test-tranche-space),
+  tranche-space-before: mod(test-tranche-space-before max-test-tranche-space),
   last-update-time: test-last-update-time,
   now: test-now;
 #get-last-tranche-test-init
@@ -440,11 +437,11 @@ deployments:
 
 #exponential-growth
   base rate t:,
-  _: decimal18-exponential-growth(base rate t);
+  _: exponential-growth(base rate t);
 
 #linear-growth
   base rate t:,
-  _: decimal18-linear-growth(base rate t);
+  _: linear-growth(base rate t);
 
 #constant-growth
   base _ _:,
@@ -454,13 +451,13 @@ deployments:
   tranche-space-before
   last-update-time
   now: call<'get-last-tranche>(),
-  recharge-duration: int-saturating-sub(now int-add(last-update-time tranche-space-recharge-delay)),
-  recharged-tranche-space: decimal18-mul(int-to-decimal18(recharge-duration) tranche-space-per-second),
+  recharge-duration: saturating-sub(now add(last-update-time tranche-space-recharge-delay)),
+  recharged-tranche-space: mul(recharge-duration tranche-space-per-second),
   /* repeat now for easy access by callers */
   _: now,
-  tranche-space-now: decimal18-saturating-sub(tranche-space-before recharged-tranche-space),
-  tranche-space-available: decimal18-headroom(tranche-space-now),
-  tranche-total-size: call<'tranche-size-expr>(tranche-size-base tranche-size-growth decimal18-floor(tranche-space-now));
+  tranche-space-now: saturating-sub(tranche-space-before recharged-tranche-space),
+  tranche-space-available: headroom(tranche-space-now),
+  tranche-total-size: call<'tranche-size-expr>(tranche-size-base tranche-size-growth floor(tranche-space-now));
 
 #io-ratio-multiplier-sell
   multiplier: uniswap-v3-twap-output-ratio(reference-stable reference-stable-decimals reference-reserve reference-reserve-decimals twap-duration 0 twap-fee);
@@ -469,17 +466,17 @@ deployments:
   multiplier: uniswap-v3-twap-output-ratio(reference-reserve reference-reserve-decimals reference-stable reference-stable-decimals twap-duration 0 twap-fee);
 
 #io-ratio-multiplier-identity
-  multiplier: 1e18;
+  multiplier: 1;
 
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
   tranche-space-now
   tranche-space-available
   tranche-total-size: call<'calculate-tranche>(),
-  tranche-io-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth decimal18-floor(tranche-space-now)),
-  final-io-ratio: decimal18-mul(tranche-io-ratio call<'io-ratio-multiplier>()),
-  amount-available: decimal18-mul(tranche-total-size tranche-space-available),
-  amount: if(amount-is-output amount-available decimal18-div(amount-available final-io-ratio)),
+  tranche-io-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth floor(tranche-space-now)),
+  final-io-ratio: mul(tranche-io-ratio call<'io-ratio-multiplier>()),
+  amount-available: mul(tranche-total-size tranche-space-available),
+  amount: if(amount-is-output amount-available div(amount-available final-io-ratio)),
   io-ratio: final-io-ratio,
   :call<'plottables>(amount io-ratio);
 
@@ -490,14 +487,14 @@ deployments:
   tranche-total-size: call<'calculate-tranche>(),
   tranche-amount-diff: if(
     amount-is-output
-    decimal18-scale-18-dynamic(output-token-decimals() output-vault-balance-decrease())
-    decimal18-scale-18-dynamic(input-token-decimals() input-vault-balance-increase())),
-  tranche-space-diff: decimal18-div(tranche-amount-diff tranche-total-size),
-  tranche-space-after: decimal18-add(tranche-space-before tranche-space-diff),
+    scale-18-dynamic(output-token-decimals() uint256-output-vault-decrease())
+    scale-18-dynamic(input-token-decimals() uint256-input-vault-increase())),
+  tranche-space-diff: div(tranche-amount-diff tranche-total-size),
+  tranche-space-after: add(tranche-space-before tranche-space-diff),
   /* Snap tranche space to the nearest tranche to avoid dust issues at the edges */
-  tranche-space-after-snapped: decimal18-snap-to-unit(tranche-space-snap-threshold tranche-space-after),
+  tranche-space-after-snapped: snap-to-unit(tranche-space-snap-threshold tranche-space-after),
   :ensure(
-    greater-than-or-equal-to(tranche-space-after-snapped decimal18-add(tranche-space-before min-tranche-space-diff))
+    greater-than-or-equal-to(tranche-space-after-snapped add(tranche-space-before min-tranche-space-diff))
     "Minimum trade size not met."
   ),
   :call<'set-last-tranche>(tranche-space-after-snapped now);
