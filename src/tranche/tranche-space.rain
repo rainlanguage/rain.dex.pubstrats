@@ -424,7 +424,7 @@ deployments:
 /* Forward the bindings through as is to the caller. */
 #max-test-tranche-space !The maximum tranche space that will appear on the test chart.
 #get-last-tranche-test
-  tranche-space-before: int-mod(test-tranche-space-before max-test-tranche-space),
+  tranche-space-before: mod(test-tranche-space-before max-test-tranche-space),
   last-update-time: test-last-update-time,
   now: test-now;
 #get-last-tranche-test-init
