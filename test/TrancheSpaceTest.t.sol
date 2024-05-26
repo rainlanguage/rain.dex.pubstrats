@@ -43,7 +43,7 @@ contract TrancheSpaceTest is StrategyTests {
     IERC20 constant BLUE_TOKEN = IERC20(0x40D44abeC30288BFcd400200BA65FBD05daA5321);
 
     function selectFlareFork() internal {
-        uint256 fork = vm.createFork("https://flare.rpc.thirdweb.com");
+        uint256 fork = vm.createFork(vm.envString("RPC_URL_FLARE"));
         vm.selectFork(fork);
         vm.rollFork(FORK_BLOCK_NUMBER);
     }
