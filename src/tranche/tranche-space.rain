@@ -38,7 +38,7 @@ subgraphs:
 
 orderbooks:
   flare:
-    address: 0x07701e3BcE4248EFDFc7D31392a43c8b82a7A260
+    address: 0xb06202aA3Fe7d85171fB7aA5f17011d17E63f382
     network: flare
     subgraph: flare
 
