@@ -27,44 +27,44 @@
 #   price, e.g. converting WETH in a vault to USD equivalent.
 
 networks:
-  flare:
+  flare-pubstrats:
     rpc: https://flare.rpc.thirdweb.com
     chain-id: 14
     network-id: 14
     currency: FLR
 
 subgraphs:
-  flare: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-0xb06202aA
+  flare-pubstrats: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-0xb06202aA
 
 orderbooks:
-  flare:
+  flare-pubstrats:
     address: 0x07701e3BcE4248EFDFc7D31392a43c8b82a7A260
-    network: flare
-    subgraph: flare
+    network: flare-pubstrats
+    subgraph: flare-pubstrats
 
 deployers:
-  flare:
+  flare-pubstrats:
     address: 0x8ceC9e3Ec2F8838000b91CfB97403A6Bb0F4036A
-    network: flare
+    network: flare-pubstrats
 
 tokens:
   flare-red:
-    network: flare
+    network: flare-pubstrats
     address: 0xE38D92733203E6f93C634304b777490e67Dc4Bdf
   flare-blue:
-    network: flare
+    network: flare-pubstrats
     address: 0x40D44abeC30288BFcd400200BA65FBD05daA5321
 
 orders:
   flare-buy:
-    orderbook: flare
+    orderbook: flare-pubstrats
     inputs:
       - token: flare-red
     outputs:
       - token: flare-blue
 
   flare-sell:
-    orderbook: flare
+    orderbook: flare-pubstrats
     inputs:
       - token: flare-blue
     outputs:
@@ -72,9 +72,9 @@ orders:
 
 scenarios:
     flare-red-blue-tranches:
-        network: flare
-        deployer: flare
-        orderbook: flare
+        network: flare-pubstrats
+        deployer: flare-pubstrats
+        orderbook: flare-pubstrats
         bindings:
           # The uniswap words are only required if there is a conversion between
           # the input/output token and some external price. Typically this is
