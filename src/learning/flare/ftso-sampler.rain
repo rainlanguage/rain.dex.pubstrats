@@ -22,25 +22,23 @@ tokens:
 
 orders:
   flare:
-    # vault-id is generated on cli `openssl rand -hex 32`
+    orderbook: flare
     inputs:
       # Input is irrelevant because we always set the IO ratio to 0.
       - token: eusdt
-        vault-id: 0xb39eed084711b7e383c97ae5a9e0aa76e01f7a641457726ebfd912fe33dd67f5
     outputs:
       - token: wflr
-        vault-id: 0xb39eed084711b7e383c97ae5a9e0aa76e01f7a641457726ebfd912fe33dd67f5
 
 scenarios:
   flare:
     runs: 1
     bindings:
-      flare-sub-parser: 0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4
       samples-count: 5
       cooldown: 120
-      bounty-base: 2e17
-      # 1e17 / 3600 = 0.1 FLR per hour
-      bounty-rate: 27777777777777
+      bounty-min: 0.02
+      bounty-unit-increase: 0.01
+      bounty-unit-time: 60
+      bounty-max: 0.1
 
 # There's not really anything to chart without overcomplicating the
 # strat itself in ways that would obfuscate the core lesson of the example.
@@ -53,36 +51,45 @@ deployments:
     scenario: flare
 
 ---
+#flare-subparser 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
+#raindex-subparser 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
+
 #samples-count !Number of samples to collect from the FTSO.
 #cooldown !Minimum time in seconds that must elapse between samples.
 
-#bounty-base !Minimum bounty to offer for each sample in WFLR.
-#bounty-rate !Per second bounty increase.
+#bounty-min !Minimum bounty to offer for each sample in WFLR.
+#bounty-unit-increase !Amount to increase bounty per unit time.
+#bounty-unit-time !Unit of time to increase the bounty.
+#bounty-max !Maximum bounty that can be offered. Will ALWAYS be offered on first sample.
 
 #calculate-io
-using-words-from 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
+using-words-from
+  flare-subparser
+  raindex-subparser
 
 ftso-price: ftso-current-price-usd("FLR" 3600),
 
-index: int-mod(get("index") samples-count),
-:set("index" int-add(index 1)),
-:set(hash("base" index) ftso-price),
+/* store the sample under a rotating index */
+index-key: order-hash(),
+index: mod(add(get(index-key) 1) samples-count),
+:set(index-key index),
+:set(hash(index-key index) ftso-price),
 
-last-update-time: any(get("last-update-time") block-timestamp()),
-last-update-ago: int-sub(block-timestamp() last-update-time),
-:ensure(
-  any(greater-than-or-equal-to(last-update-ago cooldown) is-zero(get("initialize")))
-  "Cooling down."
-),
-:set("initialize" 1),
-:set("last-update-time" block-timestamp()),
+/* ensure a cooldown */
+last-update-time-key: hash(order-hash() "last-update-time"),
+time-since-cooldown: saturating-sub(block-timestamp() add(get(last-update-time-key) cooldown)),
+:ensure(time-since-cooldown "Cooling down."),
+:set(last-update-time-key block-timestamp()),
 
 /* linear auction for the bounty to mitigate unpredictable gas spikes */
-bounty: decimal18-linear-growth(
-  bounty-base
-  bounty-rate
-  int-to-decimal18(int-saturating-sub(last-update-ago cooldown))
+bounty: min(
+  linear-growth(
+    bounty-min
+    div(bounty-unit-increase bounty-unit-time)
+    time-since-cooldown)
+  bounty-max
 ),
+
 /* 0 io ratio means no input required from the counterparty for them to receive the bounty */
 io-ratio: 0;
 

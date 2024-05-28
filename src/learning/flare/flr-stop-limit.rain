@@ -16,21 +16,18 @@ tokens:
 orders:
   flare:
     orderbook: flare
-    # vault-id is generated on cli `openssl rand -hex 32`
     inputs:
       - token: eusdt
-        vault-id: 0xc000bc8ae30330757787fa5b6435b2bd5ecf8b0c087a8034a09cd0fda43513f0
     outputs:
       - token: wflr
-        vault-id: 0xc000bc8ae30330757787fa5b6435b2bd5ecf8b0c087a8034a09cd0fda43513f0
 
 scenarios:
   flare:
     runs: 1
     bindings:
-      trade-amount: 5e18
-      limit-price: 35e15
-      stop-price: 5e16
+      trade-amount: 5
+      limit-price: 0.027
+      stop-price: 0.035
 
 deployments:
   flare:
@@ -55,25 +52,30 @@ charts:
         description: Amount of USD per WFLR sold.
         value: 0.5
 ---
+#flare-subparser 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
+#raindex-subparser 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
+
 #trade-amount !The amount of WFLR that we will sell.
 #stop-price !The price below which we'll sell WFLR.
 #limit-price !The price which we'll sell at if the FTSO reports a price below the stop price.
 
 #calculate-io
-using-words-from 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
+using-words-from
+  flare-subparser
+  raindex-subparser
 
 ftso-price: ftso-current-price-usd("FLR" 3600),
 
 :ensure(less-than(ftso-price stop-price) "Threshold not hit."),
 
 /* ensure that this strat only runs once. */
-:ensure(is-zero(get("did-run")) "Already run."),
-:set("did-run" 1),
+:ensure(is-zero(get(order-hash())) "Already run."),
+:set(order-hash() 1),
 
 /* added this here to help charting */
 _: stop-price,
 _: limit-price,
-input-amount: decimal18-mul(trade-amount limit-price),
+input-amount: mul(trade-amount limit-price),
 
 max-output: trade-amount,
 price: limit-price;
