@@ -248,6 +248,9 @@ charts:
           unit-prefix: $
         - label: Starting tranche
           value: 0.2.0
+        - label: Recharge rate
+          value: 0.5.4
+          description: 'Number of tranche recharges per day'   
       plots:
 
     buy-simulation:
@@ -299,6 +302,9 @@ charts:
           unit-prefix: $
         - label: Starting tranche
           value: 0.2.0
+        - label: Recharge rate
+          value: 0.5.4
+          description: 'Number of tranche recharges per day'   
       plots:
 
     sell-simulation:
@@ -390,7 +396,8 @@ deployments:
   amount
   io-ratio:,
   input-amount: mul(amount io-ratio),
-  effective-price: inv(io-ratio);
+  effective-price: inv(io-ratio),
+  _: mul(tranche-space-per-second 86400);
 
 #plottables-prod
   amount
