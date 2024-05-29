@@ -1,13 +1,64 @@
+tokens:
+  eusdt:
+    network: flare
+    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+    decimals: 6
+  eeth:
+    network: flare
+    address: 0xa76DCDdcE60a442d69Bac7158F3660f50921b122
+    decimals: 18
+  wflr:
+    network: flare
+    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+    decimals: 18
+
+orders:
+  flare:
+    orderbook: flare
+    inputs:
+      - token: wflr
+      - token: eusdt
+      - token: eeth
+    outputs:
+      - token: wflr
+      - token: eusdt
+      - token: eeth
+
+scenarios:
+  flare:
+    orderbook: flare
+    runs: 1
+    bindings:
+      strat-start-time: 1717000298
+
+      time-per-epoch-init: 1800
+      initial-max-io: 1e10
+
+      time-per-epoch-trading: 28800
+      io-multiplier: 0.1
+
+charts:
+  flare:
+
+deployments:
+  flare:
+    order: flare
+    scenario: flare
+
 ---
+#raindex-subparser 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
+
 #trade-time-ago-key "trade-time-ago-key"
 
 #strat-start-time !Time the strat starts at.
-#time-per-epoch !Number of seconds per epoch. An epoch is one halving.
-
+#time-per-epoch-init !Number of seconds per epoch during initialization. An epoch is one halving.
 #initial-max-io !A very large io that is the starting auction for pairs before any trades have happened.
+
+#time-per-epoch-trading !Number of seconds per epoch during trading. An epoch is one halving.
 #io-multiplier !Multiple of the breakeven io to start each flip at. E.g. 0.2 starts 20% above breakeven.
 
 #epochs-since-trade
+time-per-epoch:,
 key:
   hash(order-hash() trade-time-ago-key),
 last-time:
@@ -71,29 +122,24 @@ io:
   div(prev-input-vault-balance output-vault-balance);
 
 #calculate-io
+using-words-from
+  raindex-subparser
+
 baseline-io:
   call<'breakeven-io>(),
 max-additional-io:
-  if(
-    baseline-io
-    mul(baseline-io io-multiplier)
-    initial-max-io
-  ),
+  if(baseline-io mul(baseline-io io-multiplier) initial-max-io),
+time-per-epoch:
+  if(baseline-io time-per-epoch-trading time-per-epoch-init),
 additional-io:
-  call<'halflife>(
-    max-additional-io
-    call<'epochs-since-trade>()
-  ),
+  call<'halflife>(max-additional-io call<'epochs-since-trade>(time-per-epoch)),
 _: max-value(),
 _: add(baseline-io additional-io);
 
 #handle-io
   :ensure(uint256-output-vault-before() "No output."),
   :ensure(
-    equal-to(
-      uint256-output-vault-before()
-      uint256-output-vault-decrease()
-    )
+    equal-to(uint256-output-vault-before() uint256-output-vault-decrease())
     "Partial clear."
   ),
   :set(
