@@ -30,7 +30,7 @@ scenarios:
     runs: 1
     bindings:
       # date +%s
-      strat-start-time: 1717005907
+      strat-start-time: 9999999999
 
       time-per-epoch-init: 1800
       initial-max-io: 1e10
