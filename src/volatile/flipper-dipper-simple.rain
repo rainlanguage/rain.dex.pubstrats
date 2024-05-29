@@ -1,0 +1,102 @@
+---
+#trade-time-ago-key "trade-time-ago-key"
+
+#strat-start-time !Time the strat starts at.
+#time-per-epoch !Number of seconds per epoch. An epoch is one halving.
+
+#initial-max-io !A very large io that is the starting auction for pairs before any trades have happened.
+#io-multiplier !Multiple of the breakeven io to start each flip at. E.g. 0.2 starts 20% above breakeven.
+
+#epochs-since-trade
+key:
+  hash(order-hash() trade-time-ago-key),
+last-time:
+  any(get(key) strat-start-time),
+time-ago:
+  sub(now() last-time),
+epochs:
+  div(time-ago time-per-epoch),
+
+:set(key now());
+
+#halflife
+max-io epochs:,
+/**
+ * Shrinking the multiplier like this
+ * then applying it 10 times allows for
+ * better precision when max-io-ratio
+ * is very large, e.g. ~1e10 or ~1e20+
+ *
+ * This works because `power` loses
+ * precision on base `0.5` when the
+ * exponent is large and can even go
+ * to `0` while the io-ratio is still
+ * large. Better to keep the multiplier
+ * higher precision and drop the io-ratio
+ * smoothly for as long as we can.
+ */
+multiplier:
+  power(0.5 div(epochs 10)),
+io:
+  mul(
+    max-io
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+  );
+
+#breakeven-io
+prev-input-vault-balance-raw:
+  get(hash(order-hash() input-token())),
+prev-input-vault-balance:
+  scale-18-dynamic(input-token-decimals() prev-input-vault-balance-raw),
+output-vault-balance:
+  scale-18-dynamic(output-token-decimals() uint256-output-vault-before()),
+/**
+ * This will be `0` initially which is a dangerous edge case
+ * as we will naively ask for `0` input and instantly lose
+ * all our funds. This needs to be handled carefully.
+ *
+ * After at least one trade has occurred on this pair it will
+ * never be `0` again and so is safe.
+ */
+io:
+  div(prev-input-vault-balance output-vault-balance);
+
+#calculate-io
+baseline-io:
+  call<'breakeven-io>(),
+max-additional-io:
+  if(
+    baseline-io
+    mul(baseline-io io-multiplier)
+    initial-max-io
+  ),
+additional-io:
+  call<'halflife>(
+    max-additional-io
+    call<'epochs-since-trade>()
+  ),
+_: max-value(),
+_: add(baseline-io additional-io);
+
+#handle-io
+  :ensure(uint256-output-vault-before() "No output."),
+  :ensure(
+    equal-to(
+      uint256-output-vault-before()
+      uint256-output-vault-decrease()
+    )
+    "Partial clear."
+  ),
+  :set(
+    hash(order-hash() output-token())
+    uint256-output-vault-before()
+  );
