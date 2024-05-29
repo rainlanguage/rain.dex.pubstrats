@@ -29,7 +29,8 @@ scenarios:
     orderbook: flare
     runs: 1
     bindings:
-      strat-start-time: 1717000298
+      # date +%s
+      strat-start-time: 1717005907
 
       time-per-epoch-init: 1800
       initial-max-io: 1e10
