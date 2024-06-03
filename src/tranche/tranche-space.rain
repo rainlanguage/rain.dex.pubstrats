@@ -39,8 +39,8 @@ subgraphs:
 orderbooks:
   flare-pubstrats:
     address: 0xb06202aA3Fe7d85171fB7aA5f17011d17E63f382
-    network: flare
-    subgraph: flare
+    network: flare-pubstrats
+    subgraph: flare-pubstrats
 
 deployers:
   flare-pubstrats:
