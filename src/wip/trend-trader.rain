@@ -1,0 +1,123 @@
+---
+#reserve-token !The token that is considered the reserve which defines trade sizings and that TKN trends against.
+#reserve-decimals !The decimals of the reserve token.
+
+#times !The expression to get the last time and now as unix timestamps in seconds.
+#real-times
+  last-time:
+    get(order-hash()),
+  now:
+    block-timestamp(),
+  :set(order-hash() now);
+
+#constant-last-time !The last time a trade cleared as unix timestamp in seconds.
+#constant-now !The current time as unix timestamp in seconds.
+#constant-times
+  _ _: constant-last-time constant-now;
+
+#jittery-binomial-bits !The number of bits to use for the binomial distribution.
+#jittery-binomial
+  seed:,
+  binomial-10:
+    bitwise-count-ones(bitwise-decode<0 jittery-binomial-bits>(hash(seed))),
+  noise-1:
+    mod(hash(seed 0) 1),
+  jittery-combined:
+    add(binomial-10 noise-1),
+  jittery-combined-normalized:
+    div(jittery-combined add(1 jittery-binomial-bits));
+
+#mean-cooldown !The mean cooldown time in seconds.
+#ensure-cooldown
+  last-time
+  now:,
+  /* hash the last-time here to make sure the seed wont collide with the seed in target-reserve */
+  random-multiplier: call<'jittery-binomial>(hash(last-time)),
+  cooldown: mul(
+    mul(mean-cooldown 2)
+    random-multiplier
+  ),
+  :ensure(less-than(add(last-time cooldown) now) "Trade cooldown.");
+
+#trend-ratio-exp !Expression to get the trend ratio.
+
+#constant-trend-ratio-value !The trend ratio.
+#constant-trend-ratio
+  _: constant-trend-ratio-value;
+
+#twap-trend-ratio-long-time !The long time period for the twap based trend detection as seconds.
+#twap-trend-ratio-short-time !The short time period for the twap based trend detection as seconds.
+#twap-trend-ratio-fee !The pool fee to use for the twap based trend detection.
+#uni-v3-twap-trend-ratio
+  numerator: uniswap-v3-twap-output-ratio(
+    input-token() input-token-decimals()
+    output-token() output-token-decimals()
+    twap-trend-ratio-short-time 0
+    twap-trend-ratio-fee
+  ),
+  denominator: uniswap-v3-twap-output-ratio(
+    input-token() input-token-decimals()
+    output-token() output-token-decimals()
+    twap-trend-ratio-long-time 0
+    twap-trend-ratio-fee
+  ),
+  trend-ratio: div(numerator denominator);
+
+#mean-reserve-amount !The mean amount of reserve to offer per trade.
+#trend-up-factor !The factor to multiply the trend with when the trend is up.
+#trend-down-factor !The factor to multiply the trend with when the trend is down.
+#calculate-reserve-amount
+  last-time now: call<times>(),
+  :call<'ensure-cooldown>(last-time now),
+  random-multiplier: call<'jittery-binomial>(last-time),
+  jittered-reserve-amount: mul(
+    mul(mean-reserve-amount 2)
+    random-multiplier
+  ),
+  trend-ratio: call<'trend-ratio-exp>(),
+  skewed-trend-ratio: if(
+    greater-than(trend-ratio 1)
+    power(trend-ratio trend-up-factor)
+    power(trend-ratio trend-down-factor)
+  ),
+  reserve-amount: mul(jittered-reserve-amount skewed-trend-ratio);
+
+#calculate-tkn-amount
+  reserve-amount:,
+  now: call<times>(),
+  tkn-amount-exact-input last-price-timestamp: uniswap-v2-quote-exact-input<1>(
+    output-token() input-token() scale-n<reserve-decimals>(reserve-amount)
+  ),
+  :ensure(less-than(last-price-timestamp now) "Price change in same block."),
+  tkn-amount-exact-output: uniswap-v2-quote-exact-output(
+    output-token() input-token() scale-n<reserve-decimals>(reserve-amount)
+  ),
+  _: if(
+    equal-to(output-token() reserve-token)
+    tkn-amount-exact-input
+    tkn-amount-exact-output
+  );
+
+#bounty !The bounty to offer for the trade as normalized.
+
+#calculate-io
+  trend-ratio _ reserve-amount: call<'calculate-reserve-amount>(),
+  tkn-amount: call<'calculate-tkn-amount>(reserve-amount),
+  is-buying-tkn: equal-to(output-token() reserve-token),
+  amount: if(
+    is-buying-tkn
+    add(reserve-amount bounty)
+    tkn-amount),
+  io-ratio: if(
+    is-buying-tkn
+    div(tkn-amount amount)
+    div(sub(reserve-amount bounty) amount));
+
+#handle-io
+  :ensure(
+    greater-than-or-equal-to(
+      output-vault-balance-decrease()
+      scale-n-dynamic(output-token-decimals() calculated-max-output())
+    )
+    "Partial trade."
+  );

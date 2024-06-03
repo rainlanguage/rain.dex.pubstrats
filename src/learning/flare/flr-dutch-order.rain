@@ -18,24 +18,21 @@ tokens:
     decimals: 18
 
 orders:
-  # vault-id is `openssl rand -hex 32`
   sell-wflr:
     orderbook: flare
     inputs:
       - token: eusdt
-        vault-id: 0xdce98e3a7ee4b8b7ec1def4542b220083f8c3f0d569f142752cdc5bad6e14092
     outputs:
       - token: wflr
-        vault-id: 0xdce98e3a7ee4b8b7ec1def4542b220083f8c3f0d569f142752cdc5bad6e14092
 
 scenarios:
   default:
     deployer: flare
     runs: 1
     bindings:
-      trade-amount: 500e18
-      start-time: 1712582040
-      auction-rate-percentage: 1e15
+      trade-amount: 500
+      start-time: 1716297140
+      auction-rate-percentage: 0.001
 
 deployments:
   default:
@@ -58,35 +55,33 @@ charts:
       - label: Trade price
         value: 0.4
 ---
+#flare-subparser 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
+#raindex-subparser 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
+
 #trade-amount !The amount that we want to sell.
 #start-time !The timestamp in seconds when the auction starts - works best as a minute or two after the order will be deployed
 #auction-rate-percentage !The percentage of the price that we'll deduct every second from our offer
 
 #calculate-io
-using-words-from 0xAfD94467d2eC43D9aD39f835BA758b61b2f41A0E 0x50fB1Be59721E7A2a3434dDd726d53780bfDe344
+using-words-from
+  flare-subparser
+  raindex-subparser
 
-/* ensure that the cooldown time has elapsed since the last trade */
-:ensure(
-  any(
-    greater-than-or-equal-to(block-timestamp() start-time)
-    is-zero(get("already traded"))
-  )
-  "Auction hasn't started"
-),
+:ensure(is-zero(get(order-hash())) "Already traded."),
+:set(order-hash() 1),
 
 /* getting a quote from the Flare FTSO */
 ftso-price: ftso-current-price-usd("FLR" 3600),
 
-time-elapsed: int-saturating-sub(block-timestamp() start-time),
+/* sub will error on negative values so nothing can happen before the start time */
+time-elapsed: sub(block-timestamp() start-time),
 
 /* determining the percentage below the FTSO price we'll offer this block */
-total-percentage-deducted: int-mul(time-elapsed auction-rate-percentage),
-percentage-multiplier: int-saturating-sub(1e18 total-percentage-deducted),
+total-percentage-deducted: mul(time-elapsed auction-rate-percentage),
+percentage-multiplier: saturating-sub(1 total-percentage-deducted),
 
 /* applying that percentage to the FTSO price */
-trade-price: decimal18-mul(ftso-price percentage-multiplier),
-
-:set("already traded" 1),
+trade-price: mul(ftso-price percentage-multiplier),
 
 max-output: trade-amount,
 io-ratio: trade-price;
