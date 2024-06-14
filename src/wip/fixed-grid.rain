@@ -1,13 +1,13 @@
 # Strategy: Fixed Grid
 #
 # High level, this strategy trades mean amount of BLUE denominated RED tokens at the end of every cooldown period
-# provided that current calculated dollar price of RED falls within the price gird.
+# provided that current calculated BLUE denominated price of RED falls within the price gird.
 #
 # - Amount of RED bought/sold per trade within the price band is randomized and centered around a mean,
 #   value for which can be set within the bindings.
-# - Range for the grid can also be provided within the bindings
-# - Strategy provides a guard against orcale manipulation, where a binding can be provided to check against
-#   the 30 min twap deviation.
+# - Range for the grid can also be provided within the bindings.
+# - Strategy provides a guard against orcale manipulation by enforcing that the ratio of the current price offered
+#   by the order to the 30 min average price is within the threshold, which can be provided as a binding in the strategy.
 
 networks:
   polygon-red: 
@@ -33,16 +33,10 @@ deployers:
 tokens:
   polygon-red:
     network: polygon-red
-    address: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
-  polygon-usdt:
+    address: 0x222789334D44bB5b2364939477E15A6c981Ca165
+  polygon-blue:
     network: polygon-red
-    address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
-  polygon-usdc:
-    network: polygon-red
-    address: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
-  polygon-wmatic:
-    network: polygon-red
-    address: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+    address: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
 
 scenarios:
     polygon-red-fixed-grid:
@@ -55,9 +49,9 @@ scenarios:
           orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1 
 
           # Distribution token, i.e token that is bought or sold, for and against the stable token.
-          distribution-token: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
+          distribution-token: 0x222789334D44bB5b2364939477E15A6c981Ca165
           # Stable token, token with price pegged to one dollar.
-          stable-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+          stable-token: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
 
           # If the distribution token is paired with a stable token in a univ3 pool,
           # then address for this binding is same as the stable token address.
@@ -68,7 +62,7 @@ scenarios:
           # Eg: If the uniswap-v3 pair is TKN-WETH, then reserve token address is same as WETH address.
           # This reserve token will be compared against stable token to calculate the dollar
           # equivalent twap.
-          reserve-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+          reserve-token: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
           
           # Twap fee for tokens
           # `twap-io-fee`: Uniswap-v3 pool fee for token pair.
@@ -77,7 +71,7 @@ scenarios:
           #
           # If distribution token is paired with native wrapped token, for eg WETH, then the 
           # binding value is the fee for TKN-WETH pool.
-          twap-io-fee: '[uniswap-v3-fee-medium]'
+          twap-io-fee: '[uniswap-v3-fee-low]'
 
           # `twap-multiplier-feee`: Uniswap-v3 pool fee for stable-reserve pair.
           # If distribution token is paired with a stable token then binding value is irrelevant.
@@ -102,11 +96,11 @@ scenarios:
           # Bounty amount offered for trade in dollar.
           #
           # Minimum amount of bounty offered for the trade, depending upon the network this value might change.
-          bounty-min: 0.015
+          bounty-min: 0.01
 
           # Maximum amount of bounty offered for the trade, this will also the amount offered for the first trade,
           # as well as to calculate the twap deviation for the first trade which is visible in the metrics.
-          bounty-max: 0.3
+          bounty-max: 0.1
 
           # Bounty unit increase, amount by which to increase the bounty amount.
           bounty-unit-increase: 0.01
@@ -120,22 +114,22 @@ scenarios:
           buy:
             bindings:
               # Cooldown between two trades in seconds.
-              cooldown-time: 14400
+              cooldown-time: 60
               # Mean amount of usdc offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate
               # for gas fee and bounty.
-              mean-input-usdc-amount: 15 
+              mean-input-usdc-amount: 1 
               # Grid minimum price
-              grid-min: 0.001
+              grid-min: 0.1
               # Grid maximum price
-              grid-max: 100
+              grid-max: 3
               calculate-exact-quote: '''calculate-exact-buy-quote'
               calculate-io-ratio: '''calculate-io-ratio-buy'
             scenarios:
               deviation:
                 bindings:
                   # Percentage acceptable twap deviation
-                  twap-deviation: 0.03
+                  twap-deviation: 0.6
                 scenarios:
                   prod:
                     bindings:
@@ -159,31 +153,31 @@ scenarios:
                       plottables: '''plottables-chart'
               test:
                 bindings:
-                  twap-deviation: 0.01
+                  twap-deviation: 0.12
                   twap-check: '''twap-check-buy'
                   ensure-grid-band: '''ensure-grid-band-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
-                  plottables: '''plottables-chart'
+                  plottables: '''plottables-prod'
 
           sell:
             bindings:
               # Cooldown between two trades in seconds.
-              cooldown-time: 14400
+              cooldown-time: 60
               # Mean amount of usdc offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate
               # for gas fee and bounty.
-              mean-input-usdc-amount: 15 
+              mean-input-usdc-amount: 1 
               # Grid minimum price
-              grid-min: 0.001
+              grid-min: 0.1
               # Grid maximum price
-              grid-max: 100
+              grid-max: 3
               calculate-exact-quote: '''calculate-exact-sell-quote'
               calculate-io-ratio: '''calculate-io-ratio-sell'
             scenarios:
               deviation:
                 bindings:
                   # Percentage acceptable twap deviation
-                  twap-deviation: 0.03
+                  twap-deviation: 0.6
                 scenarios:
                   prod:
                     bindings:
@@ -207,11 +201,11 @@ scenarios:
                       plottables: '''plottables-chart'
               test:
                 bindings:
-                  twap-deviation: 0.01
+                  twap-deviation: 0.12
                   twap-check: '''twap-check-sell'
                   ensure-grid-band: '''ensure-grid-band-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
-                  plottables: '''plottables-chart'
+                  plottables: '''plottables-prod'
                 
 charts:
   red-buy-fixed-grid: 
