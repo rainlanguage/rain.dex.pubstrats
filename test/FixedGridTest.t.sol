@@ -318,7 +318,7 @@ contract FixedGridTest is StrategyTests {
                     3e18,
                     strategy.takerRoute
             );
-            vm.expectRevert("twap check buy");
+            vm.expectRevert("twap check");
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
         }
 
@@ -375,7 +375,7 @@ contract FixedGridTest is StrategyTests {
                 4e18,
                 strategy.takerRoute
             );
-            vm.expectRevert("twap check sell");
+            vm.expectRevert("twap check");
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
         }
     } 

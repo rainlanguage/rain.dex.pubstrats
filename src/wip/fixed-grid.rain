@@ -140,28 +140,32 @@ scenarios:
                 scenarios:
                   prod:
                     bindings:
-                      twap-check: '''twap-check-buy'
+                      calculate-twap-ratio: '''calculate-twap-ratio-buy'
+                      enforce-twap-check: '''enforce-twap-check-prod'
                       ensure-grid-band: '''ensure-grid-band-prod'
                       ensure-cooldown: '''ensure-cooldown-prod'
                       plottables: '''plottables-prod'
                   chart:
                     runs: 1000
                     bindings:
-                      twap-check: '''twap-check-chart'
+                      calculate-twap-ratio: '''calculate-twap-ratio-buy'
+                      enforce-twap-check: '''enforce-twap-check-chart'
                       ensure-grid-band: '''ensure-grid-band-chart'
                       ensure-cooldown: '''ensure-cooldown-chart'
                       plottables: '''plottables-chart'
                   metric:
                     runs: 1
                     bindings:
-                      twap-check: '''twap-check-chart'
+                      calculate-twap-ratio: '''calculate-twap-ratio-buy'
+                      enforce-twap-check: '''enforce-twap-check-chart'
                       ensure-grid-band: '''ensure-grid-band-chart'
                       ensure-cooldown: '''ensure-cooldown-metric'
                       plottables: '''plottables-chart'
               test:
                 bindings:
                   twap-deviation: 0.12
-                  twap-check: '''twap-check-buy'
+                  calculate-twap-ratio: '''calculate-twap-ratio-buy'
+                  enforce-twap-check: '''enforce-twap-check-prod'
                   ensure-grid-band: '''ensure-grid-band-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-prod'
@@ -195,28 +199,32 @@ scenarios:
                 scenarios:
                   prod:
                     bindings:
-                      twap-check: '''twap-check-sell'
+                      calculate-twap-ratio: '''calculate-twap-ratio-sell'
+                      enforce-twap-check: '''enforce-twap-check-prod'
                       ensure-grid-band: '''ensure-grid-band-prod'
                       ensure-cooldown: '''ensure-cooldown-prod'
                       plottables: '''plottables-prod'
                   chart:
                     runs: 1000
                     bindings:
-                      twap-check: '''twap-check-chart'
+                      calculate-twap-ratio: '''calculate-twap-ratio-sell'
+                      enforce-twap-check: '''enforce-twap-check-chart'
                       ensure-grid-band: '''ensure-grid-band-chart'
                       ensure-cooldown: '''ensure-cooldown-chart'
                       plottables: '''plottables-chart'
                   metric:
                     runs: 1
                     bindings:
-                      twap-check: '''twap-check-chart'
+                      calculate-twap-ratio: '''calculate-twap-ratio-sell'
+                      enforce-twap-check: '''enforce-twap-check-chart'
                       ensure-grid-band: '''ensure-grid-band-chart'
                       ensure-cooldown: '''ensure-cooldown-metric'
                       plottables: '''plottables-chart'
               test:
                 bindings:
                   twap-deviation: 0.12
-                  twap-check: '''twap-check-sell'
+                  calculate-twap-ratio: '''calculate-twap-ratio-sell'
+                  enforce-twap-check: '''enforce-twap-check-prod'
                   ensure-grid-band: '''ensure-grid-band-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-prod'
@@ -451,7 +459,8 @@ charts:
 #ensure-grid-band !Binding to enforce price remains between minimum and maximum price set.
 #calculate-exact-quote !Binding to calculate exact amount of distribution tokens required for buys and sells.
 #calculate-io-ratio !Binding to calculate io-ratio for the order.
-#twap-check !Binding to enforce oracle manipulation protection guard
+#calculate-twap-ratio !Binding to calculate order to 30min twap ratio.
+#enforce-twap-check !Binding to enforce oracle manipulation protection guard.
 #io-multiplier !Binding to get the ratio multiplier for distribution token.
 #plottables !The binding for additional things we want to plot during testing.
 
@@ -459,43 +468,36 @@ charts:
 #orderbook-subparser !The subparser for the Orderbook words
 #cooldown-key "cooldown-key"
 
-#twap-check-chart
-  io-ratio ratio-multiplier: ,
-  twap-30: mul(
-    uniswap-v3-twap-output-ratio(reserve-token distribution-token 1800 0 twap-io-fee)
-    ratio-multiplier
-  ),
-  twap-ratio: div(twap-30 io-ratio);
+#enforce-twap-check-chart
+  _: ;
 
-#twap-check-buy
+#enforce-twap-check-prod
+  twap-ratio: ,
+  :ensure(
+      less-than(
+        twap-ratio
+        add(1 twap-deviation)
+        )
+    "twap check"
+  );
+
+#calculate-twap-ratio-buy
   io-ratio ratio-multiplier: ,
   twap-30: mul(
     uniswap-v3-twap-output-ratio(reserve-token distribution-token 1800 0 twap-io-fee)
     ratio-multiplier
   ),
   twap-ratio: div(twap-30 io-ratio),
-  :ensure(
-      less-than(
-        twap-ratio
-        add(1 twap-deviation)
-        )
-    "twap check buy"
-  );
+  :call<'enforce-twap-check>(twap-ratio);
 
-#twap-check-sell
+#calculate-twap-ratio-sell
   io-ratio ratio-multiplier: ,
   twap-30: mul(
     uniswap-v3-twap-output-ratio(distribution-token reserve-token 1800 0 twap-io-fee)
     ratio-multiplier
   ),
   twap-ratio: div(twap-30 io-ratio),
-  :ensure(
-    less-than(
-      twap-ratio
-      add(1 twap-deviation)
-    )
-    "twap check sell"
-  );
+  :call<'enforce-twap-check>(twap-ratio);
 
 #jittery-binomial
   seed:,
@@ -575,7 +577,7 @@ charts:
   ratio-multiplier
   time-since-cooldown: ,
   io-ratio: div(token-amount18 add(usd-amount18 call<'bounty-auction>(time-since-cooldown))),
-  _ :call<'twap-check>(io-ratio ratio-multiplier),
+  _ :call<'calculate-twap-ratio>(io-ratio ratio-multiplier),
   /* Add io-ratio and max-op on stack*/
   _: usd-amount18,
   _: io-ratio;
@@ -586,7 +588,7 @@ charts:
   ratio-multiplier
   time-since-cooldown: ,
   io-ratio: div(saturating-sub(usd-amount18 call<'bounty-auction>(time-since-cooldown)) token-amount18),
-  _ :call<'twap-check>(io-ratio inv(ratio-multiplier)),
+  _ :call<'calculate-twap-ratio>(io-ratio inv(ratio-multiplier)),
   /* Add io-ratio and max-op on stack*/
   _: token-amount18,
   _: io-ratio;
