@@ -55,11 +55,11 @@ scenarios:
 
           # If the distribution token is paired with a stable token in a univ3 pool,
           # then address for this binding is same as the stable token address.
-          # Eg: If the uniswap-v3 pair is TKN-BLUE, then reserve token address is same as BLUE address.
+          # Eg: If the uniswap-v3 pair is RED-BLUE, then reserve token address is same as BLUE address.
           #
           # If the distribution token is paired with native wrapped token in a univ3 pool,
           # then address for this binding is the address of the native wrapped token.
-          # Eg: If the uniswap-v3 pair is TKN-WETH, then reserve token address is same as WETH address.
+          # Eg: If the uniswap-v3 pair is RED-WETH, then reserve token address is same as WETH address.
           # This reserve token will be compared against stable token to calculate the dollar
           # equivalent twap.
           reserve-token: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
@@ -67,17 +67,17 @@ scenarios:
           # Twap fee for tokens
           # `twap-io-fee`: Uniswap-v3 pool fee for token pair.
           # If distribution token is paired with a stable token, the binding value is the fee
-          # for the TKN-STABLE pool.
+          # for the RED-BLUE pool.
           #
           # If distribution token is paired with native wrapped token, for eg WETH, then the 
-          # binding value is the fee for TKN-WETH pool.
+          # binding value is the fee for RED-WETH pool.
           twap-io-fee: '[uniswap-v3-fee-low]'
 
           # `twap-multiplier-feee`: Uniswap-v3 pool fee for stable-reserve pair.
           # If distribution token is paired with a stable token then binding value is irrelevant.
           #
           # If distribution token is paired with native wrapped token, for eg WETH, then the 
-          # binding value is the fee for WETH-STABLE pool eg : WETH-BLUE.
+          # binding value is the fee for WETH-BLUE pool
           twap-multiplier-fee: '[uniswap-v3-fee-low]'
 
           # IO multiplier binding
@@ -115,10 +115,10 @@ scenarios:
             bindings:
               # Cooldown between two trades in seconds.
               cooldown-time: 60
-              # Mean amount of usdc offered per trade.
+              # Mean amount of BLUE offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate
               # for gas fee and bounty.
-              mean-input-usdc-amount: 1 
+              mean-usd-amount: 1 
               # Grid minimum price
               grid-min: 0.1
               # Grid maximum price
@@ -129,6 +129,13 @@ scenarios:
               deviation:
                 bindings:
                   # Percentage acceptable twap deviation
+                  # Acceptable deviation from the 30min average price.
+                  # Binding value is dependent upon the network, token pair and the mean amount of 
+                  # tokens traded per trade. If the mean amount of tokens traded is low, or if 
+                  # the network gas fee is high, then deviation needs to be a higher value.
+                  # - For 1% deviation, binding value is 0.01
+                  # - For 5% deviation, binding value is 0.05
+                  # - For 10% deviation, binding value is 0.1
                   twap-deviation: 0.6
                 scenarios:
                   prod:
@@ -163,10 +170,10 @@ scenarios:
             bindings:
               # Cooldown between two trades in seconds.
               cooldown-time: 60
-              # Mean amount of usdc offered per trade.
+              # Mean amount of BLUE offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate
               # for gas fee and bounty.
-              mean-input-usdc-amount: 1 
+              mean-usd-amount: 1 
               # Grid minimum price
               grid-min: 0.1
               # Grid maximum price
@@ -177,6 +184,13 @@ scenarios:
               deviation:
                 bindings:
                   # Percentage acceptable twap deviation
+                  # Acceptable deviation from the 30min average price.
+                  # Binding value is dependent upon the network, token pair and the mean amount of 
+                  # tokens traded per trade. If the mean amount of tokens traded is low, or if 
+                  # the network gas fee is high, then deviation needs to be a higher value.
+                  # - For 1% deviation, binding value is 0.01
+                  # - For 5% deviation, binding value is 0.05
+                  # - For 10% deviation, binding value is 0.1
                   twap-deviation: 0.6
                 scenarios:
                   prod:
@@ -265,11 +279,20 @@ charts:
       - label: Current twap buy deviation
         value: 0.8.8
         unit-suffix: '%'       
-        description: Twap deviation occuring at current block with maximum bounty on the buy side.
-      - label: Cummulative amount traded in a day
+        description: Twap deviation occuring at current block with maximum bounty on the buy side to prevent higher than deviations buys.
+      - label: Cummulative amount traded daily
         value: 0.8.13     
         unit-prefix: $ 
-        description: Cummulative dollar equivalent amount of RED tokens traded in a day.
+        description: Cummulative dollar equivalent amount of RED tokens sold in a day.
+      - label: Cummulative amount traded weekly
+        value: 0.8.14     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of RED tokens sold in a week.
+      - label: Cummulative amount traded montly
+        value: 0.8.15     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of RED tokens sold in a month.
+
     plots:
 
   buy-red-simulation:
@@ -358,11 +381,19 @@ charts:
       - label: Current sell twap deviation
         value: 0.8.8
         unit-suffix: '%'       
-        description: Twap deviation occuring at current block with maximum bounty on the sell side.
-      - label: Cummulative amount traded in a day
+        description: Twap deviation occuring at current block with maximum bounty on the sell side to prevent lower than deviation sells.
+      - label: Cummulative amount traded daily
         value: 0.8.13     
         unit-prefix: $ 
-        description: Cummulative dollar equivalent amount of RED tokens traded in a day.
+        description: Cummulative dollar equivalent amount of RED tokens sold in a day.
+      - label: Cummulative amount traded weekly
+        value: 0.8.14     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of RED tokens sold in a week.
+      - label: Cummulative amount traded montly
+        value: 0.8.15     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of RED tokens sold in a month.
 
   sell-red-simulation:
     scenario: polygon-red-fixed-grid.sell.deviation.chart
@@ -406,7 +437,7 @@ charts:
 
 #grid-min !Minimum dollar denominated price to trade distribution token for and against stable token.
 #grid-max !Maximum dollar denominated price to trade distribution token for and against stable token.
-#mean-input-usdc-amount !Mean dollar denominated amount of stable tokens traded.
+#mean-usd-amount !Mean dollar denominated amount of stable tokens traded.
 #jittery-binomial-bits !Number of bits for jittery binomial to calculate random amount of stable token traded per trade.
 
 #twap-io-fee !Twap fee for the distribution token pool, paired with either stable or reserve token.
@@ -539,34 +570,34 @@ charts:
   );
 
 #calculate-io-ratio-buy
-  usdc-amount18
-  link-amount18
+  usd-amount18
+  token-amount18
   ratio-multiplier
   time-since-cooldown: ,
-  io-ratio: div(link-amount18 add(usdc-amount18 call<'bounty-auction>(time-since-cooldown))),
+  io-ratio: div(token-amount18 add(usd-amount18 call<'bounty-auction>(time-since-cooldown))),
   _ :call<'twap-check>(io-ratio ratio-multiplier),
   /* Add io-ratio and max-op on stack*/
-  _: usdc-amount18,
+  _: usd-amount18,
   _: io-ratio;
 
 #calculate-io-ratio-sell
-  usdc-amount18
-  link-amount18
+  usd-amount18
+  token-amount18
   ratio-multiplier
   time-since-cooldown: ,
-  io-ratio: div(saturating-sub(usdc-amount18 call<'bounty-auction>(time-since-cooldown)) link-amount18),
+  io-ratio: div(saturating-sub(usd-amount18 call<'bounty-auction>(time-since-cooldown)) token-amount18),
   _ :call<'twap-check>(io-ratio inv(ratio-multiplier)),
   /* Add io-ratio and max-op on stack*/
-  _: link-amount18,
+  _: token-amount18,
   _: io-ratio;
 
 #calculate-exact-buy-quote
-  amount-usdc18 ratio-multiplier: ,
-  _: uniswap-v3-quote-exact-input(reserve-token distribution-token mul(amount-usdc18 ratio-multiplier) twap-io-fee);
+  amount-usd18 ratio-multiplier: ,
+  _: uniswap-v3-quote-exact-input(reserve-token distribution-token mul(amount-usd18 ratio-multiplier) twap-io-fee);
 
 #calculate-exact-sell-quote
-  amount-usdc18 ratio-multiplier: ,
-  _: uniswap-v3-quote-exact-output(distribution-token reserve-token mul(amount-usdc18 ratio-multiplier) twap-io-fee);
+  amount-usd18 ratio-multiplier: ,
+  _: uniswap-v3-quote-exact-output(distribution-token reserve-token mul(amount-usd18 ratio-multiplier) twap-io-fee);
 
 #io-multiplier-reserve
   _: uniswap-v3-twap-output-ratio(
@@ -582,7 +613,7 @@ charts:
 #plottables-chart
   max-output-amount io-ratio twap-ratio: ,
   _: cooldown-time,
-  _: mean-input-usdc-amount,
+  _: mean-usd-amount,
   _: bounty-min,
   _: bounty-max,
   _: mul(twap-deviation 100),
@@ -591,11 +622,14 @@ charts:
     mul(saturating-sub(1 twap-ratio) 100)
     mul(saturating-sub(twap-ratio 1) 100)
   ),
-  max-bounty-ratio: mul(div(bounty-max mean-input-usdc-amount) 100),
+  max-bounty-ratio: mul(div(bounty-max mean-usd-amount) 100),
   bounty-increase-per-minute: mul(div(bounty-unit-increase bounty-unit-time) 60),
   cooldown-in-minutes: div(cooldown-time 60),
   cooldown-in-hours: div(60 cooldown-in-minutes),
-  cummulative-amount: mul(cooldown-in-hours mean-input-usdc-amount 24);
+  total-amount-daily: mul(cooldown-in-hours mean-usd-amount 24),
+  total-amount-weekly: mul(total-amount-daily 7),
+  total-amount-montly: mul(total-amount-daily 30);
+
 
 #plottables-prod
   _ _ _: ;
@@ -607,14 +641,14 @@ charts:
   :call<'ensure-grid-band>(grid-min grid-max inv(io-ratio-multiplier)),
   current-time last-time: call<'ensure-cooldown>(),
   random-multiplier18: call<'jittery-binomial>(last-time), 
-  jittered-amount-usdc18: mul(
-    mul(mean-input-usdc-amount 2)
+  jittered-amount-usd18: mul(
+    mul(mean-usd-amount 2)
     random-multiplier18
   ), 
-  link-amount-output18: call<'calculate-exact-quote>(jittered-amount-usdc18 io-ratio-multiplier),
+  token-amount-output18: call<'calculate-exact-quote>(jittered-amount-usd18 io-ratio-multiplier),
   twap-ratio max-output final-io-ratio: call<'calculate-io-ratio>(
-    jittered-amount-usdc18
-    link-amount-output18
+    jittered-amount-usd18
+    token-amount-output18
     io-ratio-multiplier
     saturating-sub(current-time add(last-time cooldown-time))
   ),
