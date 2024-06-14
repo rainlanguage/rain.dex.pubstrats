@@ -258,14 +258,18 @@ charts:
       - label: Trades per hour
         value: 0.8.12       
         description: Number of trades per hour  
-      - label: Strategy twap deviation
+      - label: Strategy twap buy deviation
         value: 0.8.7
         unit-suffix: '%'         
         description: Twap deviation percentage acceptable     
-      - label: Current twap deviation
+      - label: Current twap buy deviation
         value: 0.8.8
         unit-suffix: '%'       
-        description: Twap deviation occuring at current block with maximum bounty.        
+        description: Twap deviation occuring at current block with maximum bounty on the buy side.
+      - label: Cummulative amount traded in a day
+        value: 0.8.13     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of RED tokens traded in a day.
     plots:
 
   buy-red-simulation:
@@ -347,14 +351,18 @@ charts:
       - label: Trades per hour
         value: 0.8.12       
         description: Number of trades per hour  
-      - label: Strategy twap deviation
+      - label: Strategy twap sell deviation
         value: 0.8.7
         unit-suffix: '%'         
         description: Twap deviation percentage acceptable     
-      - label: Current twap deviation
+      - label: Current sell twap deviation
         value: 0.8.8
         unit-suffix: '%'       
-        description: Twap deviation occuring at current block with maximum bounty.
+        description: Twap deviation occuring at current block with maximum bounty on the sell side.
+      - label: Cummulative amount traded in a day
+        value: 0.8.13     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of RED tokens traded in a day.
 
   sell-red-simulation:
     scenario: polygon-red-fixed-grid.sell.deviation.chart
@@ -446,14 +454,14 @@ charts:
 #twap-check-sell
   io-ratio ratio-multiplier: ,
   twap-30: mul(
-    uniswap-v3-twap-output-ratio(reserve-token distribution-token 1800 0 twap-io-fee)
+    uniswap-v3-twap-output-ratio(distribution-token reserve-token 1800 0 twap-io-fee)
     ratio-multiplier
   ),
   twap-ratio: div(twap-30 io-ratio),
   :ensure(
-    greater-than(
+    less-than(
       twap-ratio
-      saturating-sub(1 twap-deviation)
+      add(1 twap-deviation)
     )
     "twap check sell"
   );
@@ -547,7 +555,7 @@ charts:
   ratio-multiplier
   time-since-cooldown: ,
   io-ratio: div(saturating-sub(usdc-amount18 call<'bounty-auction>(time-since-cooldown)) link-amount18),
-  _ :call<'twap-check>(inv(io-ratio) ratio-multiplier),
+  _ :call<'twap-check>(io-ratio inv(ratio-multiplier)),
   /* Add io-ratio and max-op on stack*/
   _: link-amount18,
   _: io-ratio;
@@ -586,7 +594,8 @@ charts:
   max-bounty-ratio: mul(div(bounty-max mean-input-usdc-amount) 100),
   bounty-increase-per-minute: mul(div(bounty-unit-increase bounty-unit-time) 60),
   cooldown-in-minutes: div(cooldown-time 60),
-  cooldown-in-hours: div(60 cooldown-in-minutes);
+  cooldown-in-hours: div(60 cooldown-in-minutes),
+  cummulative-amount: mul(cooldown-in-hours mean-input-usdc-amount 24);
 
 #plottables-prod
   _ _ _: ;
