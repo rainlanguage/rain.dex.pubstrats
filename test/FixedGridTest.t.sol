@@ -24,9 +24,9 @@ import "h20.test-std/lib/LibProcessStream.sol";
 
 uint256 constant VAULT_ID = uint256(keccak256("vault"));
 
-string constant FIXED_GRID = "src/wip/fixed-grid.rain";
-string constant FIXED_GRID_BUY_PROD = "polygon-red-fixed-grid.buy.deviation.prod";
-string constant FIXED_GRID_SELL_PROD = "polygon-red-fixed-grid.sell.deviation.prod";
+string constant FIXED_GRID = "src/wip/fixed-trader.rain";
+string constant FIXED_GRID_BUY_PROD = "polygon-red-fixed-price.buy.deviation.prod";
+string constant FIXED_GRID_SELL_PROD = "polygon-red-fixed-price.sell.deviation.prod";
 
 
 /// @dev https://polygonscan.com/address/0x222789334D44bB5b2364939477E15A6c981Ca165
@@ -290,7 +290,7 @@ contract FixedGridTest is StrategyTests {
             expectedRatio,
             expectedAmountOutputMax,
             FIXED_GRID,
-            "polygon-red-fixed-grid.buy.test",
+            "polygon-red-fixed-price.buy.test",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -345,7 +345,7 @@ contract FixedGridTest is StrategyTests {
             expectedRatio,
             expectedAmountOutputMax,
             FIXED_GRID,
-            "polygon-red-fixed-grid.sell.test",
+            "polygon-red-fixed-price.sell.test",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -418,20 +418,9 @@ contract FixedGridTest is StrategyTests {
                 5e18,
                 strategy.makerRoute
             );
-            vm.expectRevert("grid band");
+            vm.expectRevert("min price");
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
         }
-        {   
-            moveExternalPrice(
-                strategy.outputVaults[strategy.outputTokenIndex].token,
-                strategy.inputVaults[strategy.inputTokenIndex].token,
-                8e18,
-                strategy.takerRoute
-            );
-            vm.expectRevert("grid band");
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
-        }
-
     }
 
     function getBounty(Vm.Log[] memory entries)

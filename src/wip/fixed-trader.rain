@@ -1,11 +1,11 @@
-# Strategy: Fixed Grid
+# Strategy: Fixed Trader
 #
 # High level, this strategy trades mean amount of BLUE denominated RED tokens at the end of every cooldown period
-# provided that current calculated BLUE denominated price of RED falls within the price gird.
+# provided that current calculated BLUE denominated price of RED falls above a set ratio.
 #
-# - Amount of RED bought/sold per trade within the price band is randomized and centered around a mean,
+# - Amount of RED bought/sold per trade above the minimum price is randomized and centered around a mean,
 #   value for which can be set within the bindings.
-# - Range for the grid can also be provided within the bindings.
+# - Minimum price can be set in the bindings.
 # - Strategy provides a guard against orcale manipulation by enforcing that the ratio of the current price offered
 #   by the order to the 30 min average price is within the threshold, which can be provided as a binding in the strategy.
 
@@ -39,7 +39,7 @@ tokens:
     address: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
 
 scenarios:
-    polygon-red-fixed-grid:
+    polygon-red-fixed-price:
         network: polygon-red
         deployer: polygon-red
         orderbook: polygon-red
@@ -119,10 +119,8 @@ scenarios:
               # For gas expensive networks mean amount needs to be higher to compensate
               # for gas fee and bounty.
               mean-usd-amount: 1 
-              # Grid minimum price
-              grid-min: 0.1
-              # Grid maximum price
-              grid-max: 1.5
+              # Minimum BLUE/RED ratio.
+              min-price: 0.1
               calculate-exact-quote: '''calculate-exact-buy-quote'
               calculate-io-ratio: '''calculate-io-ratio-buy'
             scenarios:
@@ -142,7 +140,7 @@ scenarios:
                     bindings:
                       calculate-twap-ratio: '''calculate-twap-ratio-buy'
                       enforce-twap-check: '''enforce-twap-check-prod'
-                      ensure-grid-band: '''ensure-grid-band-prod'
+                      ensure-fixed-price: '''ensure-fixed-price-prod'
                       ensure-cooldown: '''ensure-cooldown-prod'
                       plottables: '''plottables-prod'
                   chart:
@@ -150,7 +148,7 @@ scenarios:
                     bindings:
                       calculate-twap-ratio: '''calculate-twap-ratio-buy'
                       enforce-twap-check: '''enforce-twap-check-chart'
-                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-fixed-price: '''ensure-fixed-price-chart'
                       ensure-cooldown: '''ensure-cooldown-chart'
                       plottables: '''plottables-chart'
                   metric:
@@ -158,7 +156,7 @@ scenarios:
                     bindings:
                       calculate-twap-ratio: '''calculate-twap-ratio-buy'
                       enforce-twap-check: '''enforce-twap-check-chart'
-                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-fixed-price: '''ensure-fixed-price-chart'
                       ensure-cooldown: '''ensure-cooldown-metric'
                       plottables: '''plottables-chart'
               test:
@@ -166,7 +164,7 @@ scenarios:
                   twap-deviation: 0.12
                   calculate-twap-ratio: '''calculate-twap-ratio-buy'
                   enforce-twap-check: '''enforce-twap-check-prod'
-                  ensure-grid-band: '''ensure-grid-band-chart'
+                  ensure-fixed-price: '''ensure-fixed-price-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-prod'
 
@@ -178,10 +176,8 @@ scenarios:
               # For gas expensive networks mean amount needs to be higher to compensate
               # for gas fee and bounty.
               mean-usd-amount: 1 
-              # Grid minimum price
-              grid-min: 0.1
-              # Grid maximum price
-              grid-max: 1.5
+              # Minimum BLUE/RED ratio.
+              min-price: 0.1
               calculate-exact-quote: '''calculate-exact-sell-quote'
               calculate-io-ratio: '''calculate-io-ratio-sell'
             scenarios:
@@ -201,7 +197,7 @@ scenarios:
                     bindings:
                       calculate-twap-ratio: '''calculate-twap-ratio-sell'
                       enforce-twap-check: '''enforce-twap-check-prod'
-                      ensure-grid-band: '''ensure-grid-band-prod'
+                      ensure-fixed-price: '''ensure-fixed-price-prod'
                       ensure-cooldown: '''ensure-cooldown-prod'
                       plottables: '''plottables-prod'
                   chart:
@@ -209,7 +205,7 @@ scenarios:
                     bindings:
                       calculate-twap-ratio: '''calculate-twap-ratio-sell'
                       enforce-twap-check: '''enforce-twap-check-chart'
-                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-fixed-price: '''ensure-fixed-price-chart'
                       ensure-cooldown: '''ensure-cooldown-chart'
                       plottables: '''plottables-chart'
                   metric:
@@ -217,7 +213,7 @@ scenarios:
                     bindings:
                       calculate-twap-ratio: '''calculate-twap-ratio-sell'
                       enforce-twap-check: '''enforce-twap-check-chart'
-                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-fixed-price: '''ensure-fixed-price-chart'
                       ensure-cooldown: '''ensure-cooldown-metric'
                       plottables: '''plottables-chart'
               test:
@@ -225,26 +221,22 @@ scenarios:
                   twap-deviation: 0.12
                   calculate-twap-ratio: '''calculate-twap-ratio-sell'
                   enforce-twap-check: '''enforce-twap-check-prod'
-                  ensure-grid-band: '''ensure-grid-band-chart'
+                  ensure-fixed-price: '''ensure-fixed-price-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-prod'
                 
 charts:
-  red-buy-fixed-grid: 
-    scenario: polygon-red-fixed-grid.buy.deviation.metric
+  red-buy-fixed-price: 
+    scenario: polygon-red-fixed-price.buy.deviation.metric
     metrics:
       - label: Current RED price.
-        value: 0.3.3
+        value: 0.3.2
         unit-prefix: $
         description: Price of RED at current block.
       - label: Minimum RED buy price.
         value: 0.3.0
         unit-prefix: $
-        description: Grid minimum BLUE/RED ratio.
-      - label: Maximum RED buy price.
-        value: 0.3.1
-        unit-prefix: $
-        description: Grid maximum BLUE/RED ratio.
+        description: Minimum BLUE/RED ratio.
       - label: Amount of BLUE offered for first trade.
         value: 0.4
         description: Amount of BLUE offered for the current block.
@@ -304,7 +296,7 @@ charts:
     plots:
 
   buy-red-simulation:
-    scenario: polygon-red-fixed-grid.buy.deviation.chart
+    scenario: polygon-red-fixed-price.buy.deviation.chart
     plots:
       Mean amount of BLUE offered:
         marks:
@@ -332,21 +324,17 @@ charts:
                     x: "0.5"
                     thresholds: 25
   
-  red-sell-fixed-grid: 
-    scenario: polygon-red-fixed-grid.sell.deviation.metric
+  red-sell-fixed-price: 
+    scenario: polygon-red-fixed-price.sell.deviation.metric
     metrics:
       - label: Current RED price.
-        value: 0.3.3
+        value: 0.3.2
         unit-prefix: $
         description: Price of RED at current block.
       - label: Minimum RED buy price.
         value: 0.3.0
         unit-prefix: $
-        description: Grid minimum BLUE/RED ratio.
-      - label: Maximum RED buy price.
-        value: 0.3.1
-        unit-prefix: $
-        description: Grid maximum BLUE/RED ratio.
+        description: Minimum BLUE/RED ratio.
       - label: Amount of RED offered for first trade.
         value: 0.5
         description: Amount of RED offered for the current block.
@@ -404,7 +392,7 @@ charts:
         description: Cummulative dollar equivalent amount of RED tokens sold in a month.
 
   sell-red-simulation:
-    scenario: polygon-red-fixed-grid.sell.deviation.chart
+    scenario: polygon-red-fixed-price.sell.deviation.chart
     plots:
       Mean amount of RED offered:
         marks:
@@ -443,8 +431,7 @@ charts:
 #stable-token !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
 #reserve-token !The token that will be used to compare against the stable token to calculate the TWAP for dollar equivalent conversions.
 
-#grid-min !Minimum dollar denominated price to trade distribution token for and against stable token.
-#grid-max !Maximum dollar denominated price to trade distribution token for and against stable token.
+#min-price !Minimum price of distribution token denominated in stable token
 #mean-usd-amount !Mean dollar denominated amount of stable tokens traded.
 #jittery-binomial-bits !Number of bits for jittery binomial to calculate random amount of stable token traded per trade.
 
@@ -456,7 +443,7 @@ charts:
 #test-last-time !Test last time for plotting.
 
 #ensure-cooldown !Binding to enforce cooldown check.
-#ensure-grid-band !Binding to enforce price remains between minimum and maximum price set.
+#ensure-fixed-price !Binding to enforce price remains between minimum and maximum price set.
 #calculate-exact-quote !Binding to calculate exact amount of distribution tokens required for buys and sells.
 #calculate-io-ratio !Binding to calculate io-ratio for the order.
 #calculate-twap-ratio !Binding to calculate order to 30min twap ratio.
@@ -539,8 +526,8 @@ charts:
  ),
  :set(hash(order-hash() cooldown-key) current-time);
 
-#ensure-grid-band-chart
-  _ _ ratio-multiplier: ,
+#ensure-fixed-price-chart
+  _ ratio-multiplier: ,
   current-price: mul(
       uniswap-v3-twap-output-ratio(
         distribution-token
@@ -552,8 +539,8 @@ charts:
   );
   
 
-#ensure-grid-band-prod
-  grid-min-price grid-max-price ratio-multiplier: ,
+#ensure-fixed-price-prod
+  min-trade-price ratio-multiplier: ,
   current-price: mul(
       uniswap-v3-quote-exact-input(
         distribution-token
@@ -564,11 +551,8 @@ charts:
       ratio-multiplier
   ),
   :ensure(
-    every(
-      greater-than-or-equal-to(current-price grid-min-price)
-      less-than-or-equal-to(current-price grid-max-price)
-    )
-    "grid band"
+    greater-than-or-equal-to(current-price min-trade-price)
+    "min price"
   );
 
 #calculate-io-ratio-buy
@@ -640,7 +624,7 @@ charts:
   using-words-from uniswap-words orderbook-subparser
 
   io-ratio-multiplier: call<'io-multiplier>(),
-  :call<'ensure-grid-band>(grid-min grid-max inv(io-ratio-multiplier)),
+  :call<'ensure-fixed-price>(min-price inv(io-ratio-multiplier)),
   current-time last-time: call<'ensure-cooldown>(),
   random-multiplier18: call<'jittery-binomial>(last-time), 
   jittered-amount-usd18: mul(
