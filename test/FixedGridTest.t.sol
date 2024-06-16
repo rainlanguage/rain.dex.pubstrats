@@ -425,7 +425,7 @@ contract FixedGridTest is StrategyTests {
             moveExternalPrice(
                 strategy.outputVaults[strategy.outputTokenIndex].token,
                 strategy.inputVaults[strategy.inputTokenIndex].token,
-                10e18,
+                8e18,
                 strategy.takerRoute
             );
             vm.expectRevert("grid band");

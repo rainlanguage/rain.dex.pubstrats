@@ -122,7 +122,7 @@ scenarios:
               # Grid minimum price
               grid-min: 0.1
               # Grid maximum price
-              grid-max: 3
+              grid-max: 1.5
               calculate-exact-quote: '''calculate-exact-buy-quote'
               calculate-io-ratio: '''calculate-io-ratio-buy'
             scenarios:
@@ -181,7 +181,7 @@ scenarios:
               # Grid minimum price
               grid-min: 0.1
               # Grid maximum price
-              grid-max: 3
+              grid-max: 1.5
               calculate-exact-quote: '''calculate-exact-sell-quote'
               calculate-io-ratio: '''calculate-io-ratio-sell'
             scenarios:
@@ -555,12 +555,12 @@ charts:
 #ensure-grid-band-prod
   grid-min-price grid-max-price ratio-multiplier: ,
   current-price: mul(
-      uniswap-v3-twap-output-ratio(
+      uniswap-v3-quote-exact-input(
         distribution-token
         reserve-token
-        0 0
+        1
         twap-io-fee
-      ) 
+      )
       ratio-multiplier
   ),
   :ensure(
@@ -602,10 +602,10 @@ charts:
   _: uniswap-v3-quote-exact-output(distribution-token reserve-token mul(amount-usd18 ratio-multiplier) twap-io-fee);
 
 #io-multiplier-reserve
-  _: uniswap-v3-twap-output-ratio(
+  _: uniswap-v3-quote-exact-input(
     stable-token
     reserve-token
-    0 0
+    1
     twap-multiplier-fee
   );
 
