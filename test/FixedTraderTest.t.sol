@@ -24,9 +24,9 @@ import "h20.test-std/lib/LibProcessStream.sol";
 
 uint256 constant VAULT_ID = uint256(keccak256("vault"));
 
-string constant FIXED_GRID = "src/wip/fixed-trader.rain";
-string constant FIXED_GRID_BUY_PROD = "polygon-red-fixed-price.buy.deviation.prod";
-string constant FIXED_GRID_SELL_PROD = "polygon-red-fixed-price.sell.deviation.prod";
+string constant FIXED_TRADER = "src/wip/fixed-trader.rain";
+string constant FIXED_TRADER_BUY_PROD = "polygon-red-fixed-price.buy.deviation.prod";
+string constant FIXED_TRADER_SELL_PROD = "polygon-red-fixed-price.sell.deviation.prod";
 
 
 /// @dev https://polygonscan.com/address/0x222789334D44bB5b2364939477E15A6c981Ca165
@@ -43,7 +43,7 @@ function polygonBlueIo() pure returns (IO memory) {
     return IO(address(POLYGON_BLUE), 18, VAULT_ID);
 }
 
-contract FixedGridTest is StrategyTests {
+contract FixedTraderTest is StrategyTests {
 
     using SafeERC20 for IERC20;
     using Strings for address;
@@ -96,8 +96,8 @@ contract FixedGridTest is StrategyTests {
             10e18,
             expectedRatio,
             expectedAmountOutputMax,
-            FIXED_GRID,
-            FIXED_GRID_BUY_PROD,
+            FIXED_TRADER,
+            FIXED_TRADER_BUY_PROD,
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -135,8 +135,8 @@ contract FixedGridTest is StrategyTests {
             10e18,
             expectedRatio,
             expectedAmountOutputMax,
-            FIXED_GRID,
-            FIXED_GRID_SELL_PROD,
+            FIXED_TRADER,
+            FIXED_TRADER_SELL_PROD,
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -155,7 +155,7 @@ contract FixedGridTest is StrategyTests {
 
     }
 
-    function testGridCooldown() public {
+    function testCooldown() public {
 
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = polygonRedIo();
@@ -172,8 +172,8 @@ contract FixedGridTest is StrategyTests {
             10e18,
             0,
             0,
-            FIXED_GRID,
-            FIXED_GRID_BUY_PROD,
+            FIXED_TRADER,
+            FIXED_TRADER_BUY_PROD,
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -215,8 +215,8 @@ contract FixedGridTest is StrategyTests {
             10e18,
             0,
             0,
-            FIXED_GRID,
-            FIXED_GRID_SELL_PROD,
+            FIXED_TRADER,
+            FIXED_TRADER_SELL_PROD,
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -289,7 +289,7 @@ contract FixedGridTest is StrategyTests {
             10e18,
             expectedRatio,
             expectedAmountOutputMax,
-            FIXED_GRID,
+            FIXED_TRADER,
             "polygon-red-fixed-price.buy.test",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
@@ -344,7 +344,7 @@ contract FixedGridTest is StrategyTests {
             10e18,
             expectedRatio,
             expectedAmountOutputMax,
-            FIXED_GRID,
+            FIXED_TRADER,
             "polygon-red-fixed-price.sell.test",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
@@ -380,7 +380,7 @@ contract FixedGridTest is StrategyTests {
         }
     } 
     
-    function testGridBand() public {
+    function testMinPrice() public {
 
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = polygonRedIo();
@@ -400,8 +400,8 @@ contract FixedGridTest is StrategyTests {
             10e18,
             expectedRatio,
             expectedAmountOutputMax,
-            FIXED_GRID,
-            FIXED_GRID_BUY_PROD,
+            FIXED_TRADER,
+            FIXED_TRADER_BUY_PROD,
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -410,7 +410,7 @@ contract FixedGridTest is StrategyTests {
 
         OrderV2 memory order = addOrderDepositOutputTokens(strategy);
 
-        // Move prices outside of the grid band
+        // Move price below min price
         {   
             moveExternalPrice(
                 strategy.inputVaults[strategy.inputTokenIndex].token,
