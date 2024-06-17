@@ -46,8 +46,8 @@ scenarios:
           # BLUE/RED per second rate
           per-second-rate: 0.1
 
-          # Initial uints of time offered for the first trade.
-          init-trade-seconds: 2
+          # Unix timestamp for strating of the strategy.
+          strat-strat-time: 1718610680
 
           bounty-min: 0.0015
           bounty-max: 0.1
@@ -78,7 +78,7 @@ scenarios:
 #bounty-max !Maximum bounty that can be offered. 
 
 #per-second-rate !The rate of stable denominated distributed tokens distributed per second.
-#init-trade-seconds !Units of time offered for the first trade.
+#strat-strat-time !Strategy start timestamp
 
 #uniswap-words !The subparser for the Uniswap words
 #orderbook-subparser !The subparser for the Orderbook words
@@ -102,7 +102,7 @@ scenarios:
  last-time: if(
     is-initialized
     get(hash(order-hash() last-time-key))
-    saturating-sub(current-time init-trade-seconds)
+    strat-strat-time
   );
 
 #set-last-time
