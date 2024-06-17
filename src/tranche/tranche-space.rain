@@ -317,11 +317,11 @@ charts:
         - label: Starting tranche
           value: 0.2.0
           description: 'This strategy starts executing sells at the initial tranche (stack item 0.2.0)'          
-        - label: Initial sell price
-          value: 0.5.3
+        - label: Initial effective sell price
+          value: 0.7
           precision: 4
-          unit-suffix: " BLUE"        
-          description: 'Price you pay for 1 BLUE in RED, visible on dextools (stack item 0.5.3)'     
+          unit-suffix: "BLUE"        
+          description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.7)'     
       plots:
 
     sell-simulation:
@@ -359,16 +359,16 @@ charts:
                 x: 0.0
                 y: 0.7
         sell price by tranche:
-          subtitle: 'Price paid for 1 BLUE in RED, visible on dextools as RED/BLUE pair'        
+          subtitle: 'Price paid for 1 RED in BLUE, visible on dextools as RED/BLUE pair'        
           x:
               label: 'Tranche space'
           y:
-              label: '1 BLUE priced in RED'          
+              label: '1 RED priced in BLUE'          
           marks:
             - type: line
               options:
                 x: 0.0
-                y: 0.5.3    
+                y: 0.7    
 
 deployments:
   flare-buy:
