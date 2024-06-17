@@ -113,6 +113,7 @@ scenarios:
   usd-amount 
   bounty-amount: ,
   output-amount: uniswap-v3-quote-exact-input(reserve-token distribution-token usd-amount twap-io-fee),
+  _: usd-amount,
   io-ratio: div(output-amount add(usd-amount bounty-amount));
 
 #calculate-io-ratio-sell
