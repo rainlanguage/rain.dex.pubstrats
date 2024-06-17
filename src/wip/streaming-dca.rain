@@ -1,0 +1,137 @@
+# Strategy: Streaming DCA
+
+networks:
+  polygon-red: 
+    rpc: https://rpc.ankr.com/polygon 
+    chain-id: 137 
+    network-id: 137 
+    currency: MATIC
+
+subgraphs:
+  polygon-red: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+  
+orderbooks:
+  polygon-red:
+    address: 0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6
+    network: polygon-red
+    subgraph: polygon-red
+
+deployers:
+  polygon-red:
+    address: 0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7
+    network: polygon-red
+
+tokens:
+  polygon-red:
+    network: polygon-red
+    address: 0x222789334D44bB5b2364939477E15A6c981Ca165
+  polygon-blue:
+    network: polygon-red
+    address: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
+
+scenarios:
+    streaming-dca:
+        network: polygon-red
+        deployer: polygon-red
+        orderbook: polygon-red
+        bindings:
+          # Ask for now, registry in future.
+          uniswap-words: 0x2382e861cF4F47578aC29B50944b3b445577aF74
+          orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
+
+          # Distribution token, i.e token that is bought or sold, for and against the stable token.
+          distribution-token: 0x222789334D44bB5b2364939477E15A6c981Ca165
+          reserve-token: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
+
+          # BLUE/RED per second rate
+          per-second-rate: 0.1
+
+          # Initial uints of time offered for the first trade.
+          init-trade-seconds: 2
+
+          bounty-min: 0.0015
+          bounty-max: 0.1
+          bounty-unit-increase: 0.01
+          bounty-unit-time: 60
+
+          twap-io-fee: '[uniswap-v3-fee-low]'
+
+        scenarios:
+         buy:
+          bindings:
+           calculate-io-ratio: '''calculate-io-ratio-buy'
+         sell:
+          bindings:
+           calculate-io-ratio: '''calculate-io-ratio-sell'
+          
+                                    
+---
+#distribution-token !The distribution token, the token that is bought and sold against the stable token.
+#reserve-token !The token that will be used to compare against the stable token to calculate the TWAP for dollar equivalent conversions. 
+
+#twap-io-fee !Twap fee for the distribution token pool, paired with either stable token. 
+#calculate-io-ratio !Binding to calculate io-ratio for the order.
+
+#bounty-min !Minimum bounty to offer for each trade in USD.
+#bounty-unit-increase !Amount to increase bounty per unit time.
+#bounty-unit-time !Unit of time to increase the bounty.
+#bounty-max !Maximum bounty that can be offered. 
+
+#per-second-rate !The rate of stable denominated distributed tokens distributed per second.
+#init-trade-seconds !Units of time offered for the first trade.
+
+#uniswap-words !The subparser for the Uniswap words
+#orderbook-subparser !The subparser for the Orderbook words
+#init-key "init-key"
+#last-time-key "last-time-key"
+
+#bounty-auction
+  time-since-cooldown: ,
+  bounty: min(
+    linear-growth(
+      bounty-min
+      div(bounty-unit-increase bounty-unit-time)
+      time-since-cooldown
+    )
+    bounty-max
+  );
+
+#get-last-time
+ is-initialized: get(hash(order-hash() init-key)),
+ current-time: block-timestamp(),
+ last-time: if(
+    is-initialized
+    get(hash(order-hash() last-time-key))
+    saturating-sub(current-time init-trade-seconds)
+  );
+
+#set-last-time
+ :set(hash(order-hash() init-key) 1),
+ :set(hash(order-hash() last-time-key) block-timestamp());
+
+#calculate-io-ratio-buy
+  usd-amount 
+  bounty-amount: ,
+  output-amount: uniswap-v3-quote-exact-input(reserve-token distribution-token usd-amount twap-io-fee),
+  io-ratio: div(output-amount add(usd-amount bounty-amount));
+
+#calculate-io-ratio-sell
+  usd-amount 
+  bounty-amount: ,
+  output-amount: uniswap-v3-quote-exact-output(distribution-token reserve-token usd-amount twap-io-fee),
+  io-ratio: div(saturating-sub(usd-amount bounty-amount) output-amount);
+
+#calculate-io
+  using-words-from uniswap-words orderbook-subparser
+  
+  current-time last-time: call<'get-last-time>(), 
+  elapsed-time: saturating-sub(current-time last-time),
+  usd-amount: mul(per-second-rate elapsed-time),
+  max-output-amount io-ratio: call<'calculate-io-ratio>(usd-amount call<'bounty-auction>(elapsed-time));
+  
+#handle-io
+ :call<'set-last-time>();
+
+
+
+ 
