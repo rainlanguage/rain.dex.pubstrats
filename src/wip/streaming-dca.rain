@@ -39,45 +39,37 @@ scenarios:
           uniswap-words: 0x2382e861cF4F47578aC29B50944b3b445577aF74
           orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
 
-          # Distribution token, i.e token that is bought or sold, for and against the stable token.
-          distribution-token: 0x222789334D44bB5b2364939477E15A6c981Ca165
-          reserve-token: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
+          # Input and Output token addresses from perspective of order
+          input-token-address: 0x222789334D44bB5b2364939477E15A6c981Ca165
+          output-token-address: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
 
-          # BLUE/RED per second rate
+          # Number of output tokens offered per second.
           per-second-rate: 0.1
 
           # Unix timestamp for strating of the strategy.
-          strat-strat-time: 1718610680
+          strat-strat-time: 9999999999
+                            
+          # Bounty amount denominated in input tokens
+          bounty-min: 0.02
+          bounty-max: 2
+          bounty-epoch-increase: 0.01
+          bounty-epoch: 1800
 
-          bounty-min: 0.0015
-          bounty-max: 0.1
-          bounty-unit-increase: 0.01
-          bounty-unit-time: 60
-
+          # Uniswap v3 pool fees for input-output token pair
           twap-io-fee: '[uniswap-v3-fee-low]'
 
-        scenarios:
-         buy:
-          bindings:
-           min-ratio: 1
-           calculate-io-ratio: '''calculate-io-ratio-buy'
-         sell:
-          bindings:
-           min-ratio: 100
-           calculate-io-ratio: '''calculate-io-ratio-sell'
-          
-                                    
+          # Minimum input/output token ratio  
+          min-ratio: 0.005      
 ---
-#distribution-token !The distribution token, the token that is bought and sold against the stable token.
-#reserve-token !The token that will be used to compare against the stable token to calculate the TWAP for dollar equivalent conversions. 
+#input-token-address !Order input token address.
+#output-token-address !Order output token address.
 
 #twap-io-fee !Twap fee for the distribution token pool, paired with either stable token. 
-#calculate-io-ratio !Binding to calculate io-ratio for the order.
 #min-ratio !Minimum input ouput ratio for the order.
 
 #bounty-min !Minimum bounty to offer for each trade in USD.
-#bounty-unit-increase !Amount to increase bounty per unit time.
-#bounty-unit-time !Unit of time to increase the bounty.
+#bounty-epoch-increase !Amount to increase bounty per bounty epoch.
+#bounty-epoch !Bounty epoch in seconds.
 #bounty-max !Maximum bounty that can be offered. 
 
 #per-second-rate !The rate of stable denominated distributed tokens distributed per second.
@@ -85,7 +77,6 @@ scenarios:
 
 #uniswap-words !The subparser for the Uniswap words
 #orderbook-subparser !The subparser for the Orderbook words
-#init-key "init-key"
 #last-time-key "last-time-key"
 
 #bounty-auction
@@ -93,44 +84,17 @@ scenarios:
   bounty: min(
     linear-growth(
       bounty-min
-      div(bounty-unit-increase bounty-unit-time)
-      time-since-cooldown
+      bounty-epoch-increase
+      div(time-since-cooldown bounty-epoch) 
     )
     bounty-max
   );
 
 #get-last-time
- is-initialized: get(hash(order-hash() init-key)),
  current-time: block-timestamp(),
- last-time: if(
-    is-initialized
+ last-time: any(
     get(hash(order-hash() last-time-key))
     strat-strat-time
-  );
-
-#set-last-time
- :set(hash(order-hash() init-key) 1),
- :set(hash(order-hash() last-time-key) block-timestamp());
-
-#calculate-io-ratio-buy
-  usd-amount 
-  bounty-amount: ,
-  output-amount: uniswap-v3-quote-exact-input(reserve-token distribution-token usd-amount twap-io-fee),
-  _: usd-amount,
-  io-ratio: div(output-amount add(usd-amount bounty-amount)),
-  :ensure(
-    greater-than-or-equal-to(io-ratio min-ratio)
-    "min ratio"
-  );
-
-#calculate-io-ratio-sell
-  usd-amount 
-  bounty-amount: ,
-  output-amount: uniswap-v3-quote-exact-output(distribution-token reserve-token usd-amount twap-io-fee),
-  io-ratio: div(saturating-sub(usd-amount bounty-amount) output-amount),
-  :ensure(
-    greater-than-or-equal-to(io-ratio min-ratio)
-    "min ratio"
   );
 
 #calculate-io
@@ -138,12 +102,15 @@ scenarios:
   
   current-time last-time: call<'get-last-time>(), 
   elapsed-time: saturating-sub(current-time last-time),
-  usd-amount: mul(per-second-rate elapsed-time),
-  max-output-amount io-ratio: call<'calculate-io-ratio>(usd-amount call<'bounty-auction>(elapsed-time));
-  
+  current-budget: mul(per-second-rate elapsed-time),
+  bounty-amount: call<'bounty-auction>(elapsed-time),
+  input-amount: uniswap-v3-quote-exact-input(output-token-address input-token-address current-budget twap-io-fee),
+  max-amount: current-budget,
+  io-ratio: div(saturating-sub(input-amount bounty-amount) current-budget),
+  :ensure(
+    greater-than-or-equal-to(io-ratio min-ratio)
+    "min ratio"
+  );
+
 #handle-io
- :call<'set-last-time>();
-
-
-
- 
+ :;
