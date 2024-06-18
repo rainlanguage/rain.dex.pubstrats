@@ -97,6 +97,13 @@ scenarios:
     strat-strat-time
   );
 
+#calculate-budget-input
+  current-budget: ,
+  _: uniswap-v3-quote-exact-input(
+    output-token-address input-token-address
+    current-budget twap-io-fee
+  );
+
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
   
@@ -104,7 +111,7 @@ scenarios:
   elapsed-time: saturating-sub(current-time last-time),
   current-budget: mul(per-second-rate elapsed-time),
   bounty-amount: call<'bounty-auction>(elapsed-time),
-  input-amount: uniswap-v3-quote-exact-input(output-token-address input-token-address current-budget twap-io-fee),
+  input-amount: call<'calculate-budget-input>(current-budget),
   max-amount: current-budget,
   io-ratio: div(saturating-sub(input-amount bounty-amount) current-budget),
   :ensure(
