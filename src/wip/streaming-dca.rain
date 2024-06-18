@@ -59,9 +59,11 @@ scenarios:
         scenarios:
          buy:
           bindings:
+           min-ratio: 1
            calculate-io-ratio: '''calculate-io-ratio-buy'
          sell:
           bindings:
+           min-ratio: 100
            calculate-io-ratio: '''calculate-io-ratio-sell'
           
                                     
@@ -71,6 +73,7 @@ scenarios:
 
 #twap-io-fee !Twap fee for the distribution token pool, paired with either stable token. 
 #calculate-io-ratio !Binding to calculate io-ratio for the order.
+#min-ratio !Minimum input ouput ratio for the order.
 
 #bounty-min !Minimum bounty to offer for each trade in USD.
 #bounty-unit-increase !Amount to increase bounty per unit time.
@@ -114,13 +117,21 @@ scenarios:
   bounty-amount: ,
   output-amount: uniswap-v3-quote-exact-input(reserve-token distribution-token usd-amount twap-io-fee),
   _: usd-amount,
-  io-ratio: div(output-amount add(usd-amount bounty-amount));
+  io-ratio: div(output-amount add(usd-amount bounty-amount)),
+  :ensure(
+    greater-than-or-equal-to(io-ratio min-ratio)
+    "min ratio"
+  );
 
 #calculate-io-ratio-sell
   usd-amount 
   bounty-amount: ,
   output-amount: uniswap-v3-quote-exact-output(distribution-token reserve-token usd-amount twap-io-fee),
-  io-ratio: div(saturating-sub(usd-amount bounty-amount) output-amount);
+  io-ratio: div(saturating-sub(usd-amount bounty-amount) output-amount),
+  :ensure(
+    greater-than-or-equal-to(io-ratio min-ratio)
+    "min ratio"
+  );
 
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
