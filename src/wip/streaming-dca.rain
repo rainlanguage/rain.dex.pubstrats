@@ -30,7 +30,7 @@ tokens:
     address: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
 
 scenarios:
-    streaming-dca:
+     streaming-dca:
         network: polygon-red
         deployer: polygon-red
         orderbook: polygon-red
@@ -38,28 +38,73 @@ scenarios:
           # Ask for now, registry in future.
           uniswap-words: 0x2382e861cF4F47578aC29B50944b3b445577aF74
           orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
+        scenarios:
+          red:
+            bindings:
+              # Input and Output token addresses from perspective of order
+              input-token-address: 0x222789334D44bB5b2364939477E15A6c981Ca165
+              output-token-address: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
+    
+              # Number of output tokens offered per second.
+              per-second-rate: 0.1
+    
+              # Unix timestamp for strating of the strategy.
+              #Ideally set it 15 minutes ahead of the whatever the timestamp is while deploying
+              strat-strat-time: 1718738185
+                                
+              # Bounty amount denominated in input tokens
+              bounty-min: 0.02
+              bounty-max: 2
+              bounty-epoch-increase: 0.01
+              bounty-epoch: 1800
+    
+              # Uniswap v3 pool fees for input-output token pair
+              twap-io-fee: '[uniswap-v3-fee-low]'
+    
+              # Minimum input/output token ratio  
+              min-ratio: 0
+            scenarios:
+              prod:
+                bindings:
+                  plottables: '''plottables-prod'
+                  get-last-time: '''get-last-time-prod'
+              metric:
+                runs: 1
+                bindings:
+                  plottables: '''plottables-plot'
+                  get-last-time: '''get-last-time-plot'
+              
 
-          # Input and Output token addresses from perspective of order
-          input-token-address: 0x222789334D44bB5b2364939477E15A6c981Ca165
-          output-token-address: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
-
-          # Number of output tokens offered per second.
-          per-second-rate: 0.1
-
-          # Unix timestamp for strating of the strategy.
-          strat-strat-time: 9999999999
-                            
-          # Bounty amount denominated in input tokens
-          bounty-min: 0.02
-          bounty-max: 2
-          bounty-epoch-increase: 0.01
-          bounty-epoch: 1800
-
-          # Uniswap v3 pool fees for input-output token pair
-          twap-io-fee: '[uniswap-v3-fee-low]'
-
-          # Minimum input/output token ratio  
-          min-ratio: 0.005      
+charts:
+  red-streaming-dca:
+    scenario: streaming-dca.red.metric
+    metrics:
+      - label: RED Per second rate
+        value: 0.5.0
+        description: Amount of RED tokens sold per second.
+      - label: RED sold per hour
+        value: 0.5.1
+        description: Amount of RED tokens sold per hour.
+      - label: RED sold per day
+        value: 0.5.2
+        description: Amount of RED tokens sold per day.
+      - label: Minimum bounty
+        value: 0.5.3
+        description: Minimum bounty offered in BLUE tokens.
+      - label: Maximum bounty
+        value: 0.5.4
+        description: Maximum bounty offered in BLUE tokens.
+      - label: Bounty epoch
+        value: 0.5.5
+        description: Bounty epoch time in seconds
+      - label: Bounty epoch increase
+        value: 0.5.6
+        description: Increase in bounty per epoch
+      - label: Minimum ratio
+        value: 0.5.7
+        description: Maximum bounty offered in BLUE tokens.
+      
+                     
 ---
 #input-token-address !Order input token address.
 #output-token-address !Order output token address.
@@ -74,6 +119,8 @@ scenarios:
 
 #per-second-rate !The rate of stable denominated distributed tokens distributed per second.
 #strat-strat-time !Strategy start timestamp
+#get-last-time !Binding to get last time and current time
+#plottables !Binding for charting metrics.
 
 #uniswap-words !The subparser for the Uniswap words
 #orderbook-subparser !The subparser for the Orderbook words
@@ -90,7 +137,11 @@ scenarios:
     bounty-max
   );
 
-#get-last-time
+#get-last-time-plot
+ current-time: block-timestamp(),
+ last-time: strat-strat-time;
+
+#get-last-time-prod
  current-time: block-timestamp(),
  last-time: any(
     get(hash(order-hash() last-time-key))
@@ -104,6 +155,19 @@ scenarios:
     current-budget twap-io-fee
   );
 
+#plottables-plot
+  _: per-second-rate,
+  tokens-per-hour: mul(per-second-rate 3600),
+  tokens-per-day: mul(per-second-rate 86400),
+  _: bounty-min,
+  _: bounty-max,
+  _: bounty-epoch,
+  _: bounty-epoch-increase,
+  _: min-ratio;
+
+#plottables-prod
+ :;
+  
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
   
@@ -117,7 +181,8 @@ scenarios:
   :ensure(
     greater-than-or-equal-to(io-ratio min-ratio)
     "min ratio"
-  );
+  ),
+  :call<'plottables>();
 
 #handle-io
  :;
