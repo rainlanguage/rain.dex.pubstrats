@@ -27,54 +27,54 @@
 #   price, e.g. converting WETH in a vault to USD equivalent.
 
 networks:
-  flare-pubstrats:
+  network-flare-pubstrats:
     rpc: https://flare.rpc.thirdweb.com
     chain-id: 14
     network-id: 14
     currency: FLR
 
 subgraphs:
-  flare-pubstrats: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-0xb06202aA
+  subgraph-flare-pubstrats: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-0xb06202aA
 
 orderbooks:
-  flare-pubstrats:
+  orderbook-flare-pubstrats:
     address: 0x07701e3BcE4248EFDFc7D31392a43c8b82a7A260
-    network: flare-pubstrats
-    subgraph: flare-pubstrats
+    network: network-flare-pubstrats
+    subgraph: subgraph-flare-pubstrats
 
 deployers:
-  flare-pubstrats:
+  deployer-flare-pubstrats:
     address: 0x8ceC9e3Ec2F8838000b91CfB97403A6Bb0F4036A
-    network: flare-pubstrats
+    network: network-flare-pubstrats
 
 tokens:
-  flare-red:
-    network: flare-pubstrats
+  tkn-red:
+    network: network-flare-pubstrats
     address: 0xE38D92733203E6f93C634304b777490e67Dc4Bdf
-  flare-blue:
-    network: flare-pubstrats
+  tkn-blue:
+    network: network-flare-pubstrats
     address: 0x40D44abeC30288BFcd400200BA65FBD05daA5321
 
 orders:
-  flare-buy:
-    orderbook: flare-pubstrats
+  order-tkn-buy:
+    orderbook: orderbook-flare-pubstrats
     inputs:
-      - token: flare-red
+      - token: tkn-red
     outputs:
-      - token: flare-blue
+      - token: tkn-blue
 
-  flare-sell:
-    orderbook: flare-pubstrats
+  order-tkn-sell:
+    orderbook: orderbook-flare-pubstrats
     inputs:
-      - token: flare-blue
+      - token: tkn-red
     outputs:
-      - token: flare-red
+      - token: tkn-red
 
 scenarios:
-    flare-red-blue-tranches:
-        network: flare-pubstrats
-        deployer: flare-pubstrats
-        orderbook: flare-pubstrats
+    scenario-tkn-tranches:
+        network: network-flare-pubstrats
+        deployer: deployer-flare-pubstrats
+        orderbook: orderbook-flare-pubstrats
         bindings:
           # The uniswap words are only required if there is a conversion between
           # the input/output token and some external price. Typically this is
@@ -235,7 +235,7 @@ scenarios:
 
 charts:
     buy-initial-deployment:
-      scenario: flare-red-blue-tranches.buy.initialized.test
+      scenario: scenario-tkn-tranches.buy.initialized.test
       metrics:
         - label: Initial BLUE sold
           value: 0.6
@@ -257,7 +257,7 @@ charts:
       plots:
 
     buy-simulation:
-      scenario: flare-red-blue-tranches.buy.test
+      scenario: scenario-tkn-tranches.buy.test
       plots:    
         USDT sold per tranche:     
           x:
@@ -303,7 +303,7 @@ charts:
                 y: 0.5.3      
 
     sell-initial-deployment:
-      scenario: flare-red-blue-tranches.sell.initialized.test
+      scenario: scenario-tkn-tranches.sell.initialized.test
       metrics:
         - label: Initial RED sold
           value: 0.6
@@ -325,7 +325,7 @@ charts:
       plots:
 
     sell-simulation:
-      scenario: flare-red-blue-tranches.sell.test
+      scenario: scenario-tkn-tranches.sell.test
       plots:
         RED sold per tranche:     
           x:
@@ -371,12 +371,12 @@ charts:
                 y: 0.5.3    
 
 deployments:
-  flare-buy:
-    scenario: flare-red-blue-tranches.buy.initialized.prod
-    order: flare-buy
-  flare-sell:
-    scenario: flare-red-blue-tranches.sell.initialized.prod
-    order: flare-sell
+  order-tkn-buy:
+    scenario: scenario-tkn-tranches.buy.initialized.prod
+    order: order-tkn-buy
+  order-tkn-sell:
+    scenario: scenario-tkn-tranches.sell.initialized.prod
+    order: order-tkn-sell
 
 ---
 #tranche-space-per-second !The amount of tranche space that is recharged per second.
