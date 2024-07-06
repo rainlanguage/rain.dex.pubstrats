@@ -34,7 +34,7 @@ contract TrancheSpaceTest is StrategyTests {
     using LibFixedPointDecimalArithmeticOpenZeppelin for uint256;
     using LibFixedPointDecimalScale for uint256;
 
-    uint256 constant FORK_BLOCK_NUMBER = 24517782;
+    uint256 constant FORK_BLOCK_NUMBER = 26477351;
     uint256 constant VAULT_ID = uint256(keccak256("vault"));
 
     string constant TRANCHE_SPACE_FILE_PATH = "src/tranche/tranche-space.rain";
