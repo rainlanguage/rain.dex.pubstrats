@@ -44,7 +44,7 @@ orderbooks:
 
 deployers:
   flare-pubstrats:
-    address: 0x8ceC9e3Ec2F8838000b91CfB97403A6Bb0F4036A
+    address: 0xEBe394cff4980992B826Ec70ef0a9ec8b5D4C640
     network: flare-pubstrats
 
 tokens:
