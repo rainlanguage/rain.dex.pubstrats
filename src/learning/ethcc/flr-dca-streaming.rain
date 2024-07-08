@@ -1,0 +1,103 @@
+# This strategy will buy WFLR based on the price of the FTSO pair FLR/USD
+#
+# This strategy is a streaming strategy, meaning it has a fixed budget over time,
+# vs a cooldown with set amounts per trade.
+
+networks:
+  flare-dca:
+    rpc: https://rpc.ankr.com/flare
+    chain-id: 14
+    network-id: 14
+    currency: FLR
+
+subgraphs:
+  flare-dca: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob-flare-0xb06202aA/1.0.0/gn
+  
+metaboards:
+  flare-dca: http://subgraphs.h20liquidity.tech/subgraphs/name/flare-mb-0x59401C93
+
+orderbooks:
+  flare-dca:
+    address: 0xb06202aA3Fe7d85171fB7aA5f17011d17E63f382
+    network: flare-dca
+    subgraph: flare-dca
+
+deployers:
+  flare-dca:
+    address: 0xd58583e0C5C00C6DCF0137809EA58E9d55A72d66
+    network: flare-dca
+
+tokens:
+  eusdt:
+    network: flare-dca
+    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+    decimals: 6
+  wflr:
+    network: flare-dca
+    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+    decimals: 18
+
+orders:
+  buy-wflr:
+    orderbook: flare-dca
+    inputs:
+      - token: wflr
+        vault-id: 0xee4c4284a414696a5d768fb71329ffbb961a7184079aa0f25390deb29193b4f1
+    outputs:
+      - token: eusdt
+        vault-id: 0xee4c4284a414696a5d768fb71329ffbb961a7184079aa0f25390deb29193b4f1
+
+scenarios:
+  default:
+    deployer: flare-dca
+    runs: 1
+
+deployments:
+  default:
+    scenario: default
+    order: buy-wflr
+
+charts:
+  DCA Strategy:
+    scenario: default
+    metrics:
+      - label: Time elapsed
+        description: (in seconds)
+        value: 0.3
+      - label: Budget to date
+        unit-prefix: $
+        value: 0.4
+      - label: FLR-USD
+        unit-prefix: $
+        value: 0.7
+      - label: USD-FLR
+        value: 0.8
+        unit-suffix: " FLR"
+      - label: Final USD-FLR
+        value: 0.10
+        unit-suffix: " FLR"
+---
+#calculate-io
+using-words-from 0x31A76D8644612e0ABD1aF0D42909Ed57F16F608D 0xCE6ad0ba209e7D3B59Ddb8a63595193C11C3B0aB
+
+start-time: 1720361228,
+budget-per-day: 10,
+budget-per-second: div(budget-per-day 86400),
+
+time-elapsed: sub(now() start-time),
+budget-to-date: mul(time-elapsed budget-per-second),
+spent-so-far: get(order-hash()),
+
+spend-this-time: sub(budget-to-date spent-so-far),
+
+/* getting a quote from the Flare oracle, the FTSO */
+flr-usd: ftso-current-price-usd("FLR" 3600),
+usd-flr: inv(flr-usd),
+
+max-output: spend-this-time,
+io-ratio: mul(0.9 usd-flr),
+
+:set(order-hash() add(spent-so-far spend-this-time));
+
+#handle-io
+:;
