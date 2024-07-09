@@ -34,7 +34,7 @@ contract TrancheSpaceTest is StrategyTests {
     using LibFixedPointDecimalArithmeticOpenZeppelin for uint256;
     using LibFixedPointDecimalScale for uint256;
 
-    uint256 constant FORK_BLOCK_NUMBER = 24517782;
+    uint256 constant FORK_BLOCK_NUMBER = 26478013;
     uint256 constant VAULT_ID = uint256(keccak256("vault"));
 
     string constant TRANCHE_SPACE_FILE_PATH = "src/tranche/tranche-space.rain";
@@ -51,10 +51,10 @@ contract TrancheSpaceTest is StrategyTests {
     function setUp() public {
         selectFlareFork();
 
-        PARSER = IParserV1(0x001B302095D66b777C04cd4d64b86CCe16de55A1);
+        PARSER = IParserV1(0xA073E75E39C402d2AFFb48E5e8EC18169daeC31D);
         ORDERBOOK = IOrderBookV3(0x07701e3BcE4248EFDFc7D31392a43c8b82a7A260);
         ARB_INSTANCE = IOrderBookV3ArbOrderTaker(0xF9323B7d23c655122Fb0272D989b83E105cBcf9d);
-        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0x8ceC9e3Ec2F8838000b91CfB97403A6Bb0F4036A);
+        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0xEBe394cff4980992B826Ec70ef0a9ec8b5D4C640);
         ROUTE_PROCESSOR = IRouteProcessor(address(0x0bB72B4C7c0d47b2CaED07c804D9243C1B8a0728)); 
         EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
         APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
