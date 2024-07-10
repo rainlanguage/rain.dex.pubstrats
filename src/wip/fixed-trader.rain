@@ -1,0 +1,644 @@
+# Strategy: Fixed Trader
+#
+# High level, this strategy trades mean amount of BLUE denominated RED tokens at the end of every cooldown period
+# provided that current calculated BLUE denominated price of RED falls above a set ratio.
+#
+# - Amount of RED bought/sold per trade above the minimum price is randomized and centered around a mean,
+#   value for which can be set within the bindings.
+# - Minimum price can be set in the bindings.
+# - Strategy provides a guard against orcale manipulation by enforcing that the ratio of the current price offered
+#   by the order to the 30 min average price is within the threshold, which can be provided as a binding in the strategy.
+
+networks:
+  polygon-red: 
+    rpc: https://rpc.ankr.com/polygon 
+    chain-id: 137 
+    network-id: 137 
+    currency: MATIC
+
+subgraphs:
+  polygon-red: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+  
+orderbooks:
+  polygon-red:
+    address: 0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6
+    network: polygon-red
+    subgraph: polygon-red
+
+deployers:
+  polygon-red:
+    address: 0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7
+    network: polygon-red
+
+tokens:
+  polygon-red:
+    network: polygon-red
+    address: 0x222789334D44bB5b2364939477E15A6c981Ca165
+  polygon-blue:
+    network: polygon-red
+    address: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
+
+scenarios:
+    polygon-red-fixed-price:
+        network: polygon-red
+        deployer: polygon-red
+        orderbook: polygon-red
+        bindings:
+          # Ask for now, registry in future.
+          uniswap-words: 0x2382e861cF4F47578aC29B50944b3b445577aF74
+          orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1 
+
+          # Distribution token, i.e token that is bought or sold, for and against the stable token.
+          distribution-token: 0x222789334D44bB5b2364939477E15A6c981Ca165
+          # Stable token, token with price pegged to one dollar.
+          stable-token: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
+
+          # If the distribution token is paired with a stable token in a univ3 pool,
+          # then address for this binding is same as the stable token address.
+          # Eg: If the uniswap-v3 pair is RED-BLUE, then reserve token address is same as BLUE address.
+          #
+          # If the distribution token is paired with native wrapped token in a univ3 pool,
+          # then address for this binding is the address of the native wrapped token.
+          # Eg: If the uniswap-v3 pair is RED-WETH, then reserve token address is same as WETH address.
+          # This reserve token will be compared against stable token to calculate the dollar
+          # equivalent twap.
+          reserve-token: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
+          
+          # Twap fee for tokens
+          # `twap-io-fee`: Uniswap-v3 pool fee for token pair.
+          # If distribution token is paired with a stable token, the binding value is the fee
+          # for the RED-BLUE pool.
+          #
+          # If distribution token is paired with native wrapped token, for eg WETH, then the 
+          # binding value is the fee for RED-WETH pool.
+          twap-io-fee: '[uniswap-v3-fee-low]'
+
+          # `twap-multiplier-feee`: Uniswap-v3 pool fee for stable-reserve pair.
+          # If distribution token is paired with a stable token then binding value is irrelevant.
+          #
+          # If distribution token is paired with native wrapped token, for eg WETH, then the 
+          # binding value is the fee for WETH-BLUE pool
+          twap-multiplier-fee: '[uniswap-v3-fee-low]'
+
+          # IO multiplier binding
+          # Binding used to calculate multiplier for distribution token to get its dollor equivalent.
+          #
+          # If distribution token is paired with a stable token, the binding value is the stable multiplier.
+          # io-multiplier: '''io-multiplier-stable'
+          #
+          # If distribution token is paired with a reserve token, the binding value is the reserve multiplier
+          # io-multiplier: '''io-multiplier-reserve'
+          io-multiplier: '''io-multiplier-stable'
+          
+          #Jittery binomial bits
+          jittery-binomial-bits: 10
+
+          # Bounty amount offered for trade in dollar.
+          #
+          # Minimum amount of bounty offered for the trade, depending upon the network this value might change.
+          bounty-min: 0.01
+
+          # Maximum amount of bounty offered for the trade, this will also the amount offered for the first trade,
+          # as well as to calculate the twap deviation for the first trade which is visible in the metrics.
+          bounty-max: 0.1
+
+          # Bounty unit increase, amount by which to increase the bounty amount.
+          bounty-unit-increase: 0.01
+
+          # Bounty unit time in seconds, time in which bounty increased by `bounty-unit-increase`
+          # Eg: If `bounty-unit-increase` is 0.01 and `bounty-unit-time` is 60, then the bounty will increase linearly
+          # by `0.01` every 60 seconds.
+          bounty-unit-time: 60
+
+        scenarios:
+          buy:
+            bindings:
+              # Cooldown between two trades in seconds.
+              cooldown-time: 60
+              # Mean amount of BLUE offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate
+              # for gas fee and bounty.
+              mean-usd-amount: 1 
+              # Minimum BLUE/RED ratio.
+              min-price: 0.1
+              calculate-exact-quote: '''calculate-exact-buy-quote'
+              calculate-io-ratio: '''calculate-io-ratio-buy'
+            scenarios:
+              deviation:
+                bindings:
+                  # Percentage acceptable twap deviation
+                  # Acceptable deviation from the 30min average price.
+                  # Binding value is dependent upon the network, token pair and the mean amount of 
+                  # tokens traded per trade. If the mean amount of tokens traded is low, or if 
+                  # the network gas fee is high, then deviation needs to be a higher value.
+                  # - For 1% deviation, binding value is 0.01
+                  # - For 5% deviation, binding value is 0.05
+                  # - For 10% deviation, binding value is 0.1
+                  twap-deviation: 0.6
+                scenarios:
+                  prod:
+                    bindings:
+                      calculate-twap-ratio: '''calculate-twap-ratio-buy'
+                      enforce-twap-check: '''enforce-twap-check-prod'
+                      ensure-fixed-price: '''ensure-fixed-price-prod'
+                      ensure-cooldown: '''ensure-cooldown-prod'
+                      plottables: '''plottables-prod'
+                  chart:
+                    runs: 1000
+                    bindings:
+                      calculate-twap-ratio: '''calculate-twap-ratio-buy'
+                      enforce-twap-check: '''enforce-twap-check-chart'
+                      ensure-fixed-price: '''ensure-fixed-price-chart'
+                      ensure-cooldown: '''ensure-cooldown-chart'
+                      plottables: '''plottables-chart'
+                  metric:
+                    runs: 1
+                    bindings:
+                      calculate-twap-ratio: '''calculate-twap-ratio-buy'
+                      enforce-twap-check: '''enforce-twap-check-chart'
+                      ensure-fixed-price: '''ensure-fixed-price-chart'
+                      ensure-cooldown: '''ensure-cooldown-metric'
+                      plottables: '''plottables-chart'
+              test:
+                bindings:
+                  twap-deviation: 0.12
+                  calculate-twap-ratio: '''calculate-twap-ratio-buy'
+                  enforce-twap-check: '''enforce-twap-check-prod'
+                  ensure-fixed-price: '''ensure-fixed-price-chart'
+                  ensure-cooldown: '''ensure-cooldown-chart'
+                  plottables: '''plottables-prod'
+
+          sell:
+            bindings:
+              # Cooldown between two trades in seconds.
+              cooldown-time: 60
+              # Mean amount of BLUE offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate
+              # for gas fee and bounty.
+              mean-usd-amount: 1 
+              # Minimum BLUE/RED ratio.
+              min-price: 0.1
+              calculate-exact-quote: '''calculate-exact-sell-quote'
+              calculate-io-ratio: '''calculate-io-ratio-sell'
+            scenarios:
+              deviation:
+                bindings:
+                  # Percentage acceptable twap deviation
+                  # Acceptable deviation from the 30min average price.
+                  # Binding value is dependent upon the network, token pair and the mean amount of 
+                  # tokens traded per trade. If the mean amount of tokens traded is low, or if 
+                  # the network gas fee is high, then deviation needs to be a higher value.
+                  # - For 1% deviation, binding value is 0.01
+                  # - For 5% deviation, binding value is 0.05
+                  # - For 10% deviation, binding value is 0.1
+                  twap-deviation: 0.6
+                scenarios:
+                  prod:
+                    bindings:
+                      calculate-twap-ratio: '''calculate-twap-ratio-sell'
+                      enforce-twap-check: '''enforce-twap-check-prod'
+                      ensure-fixed-price: '''ensure-fixed-price-prod'
+                      ensure-cooldown: '''ensure-cooldown-prod'
+                      plottables: '''plottables-prod'
+                  chart:
+                    runs: 1000
+                    bindings:
+                      calculate-twap-ratio: '''calculate-twap-ratio-sell'
+                      enforce-twap-check: '''enforce-twap-check-chart'
+                      ensure-fixed-price: '''ensure-fixed-price-chart'
+                      ensure-cooldown: '''ensure-cooldown-chart'
+                      plottables: '''plottables-chart'
+                  metric:
+                    runs: 1
+                    bindings:
+                      calculate-twap-ratio: '''calculate-twap-ratio-sell'
+                      enforce-twap-check: '''enforce-twap-check-chart'
+                      ensure-fixed-price: '''ensure-fixed-price-chart'
+                      ensure-cooldown: '''ensure-cooldown-metric'
+                      plottables: '''plottables-chart'
+              test:
+                bindings:
+                  twap-deviation: 0.12
+                  calculate-twap-ratio: '''calculate-twap-ratio-sell'
+                  enforce-twap-check: '''enforce-twap-check-prod'
+                  ensure-fixed-price: '''ensure-fixed-price-chart'
+                  ensure-cooldown: '''ensure-cooldown-chart'
+                  plottables: '''plottables-prod'
+                
+charts:
+  red-buy-fixed-price: 
+    scenario: polygon-red-fixed-price.buy.deviation.metric
+    metrics:
+      - label: Current RED price.
+        value: 0.3.2
+        unit-prefix: $
+        description: Price of RED at current block.
+      - label: Minimum RED buy price.
+        value: 0.3.0
+        unit-prefix: $
+        description: Minimum BLUE/RED ratio.
+      - label: Amount of BLUE offered for first trade.
+        value: 0.4
+        description: Amount of BLUE offered for the current block.
+      - label: Amount of RED received for frist trade.
+        value: 0.5
+        description: Amount of RED received for BLUE offered.
+      - label: io-ratio RED/BLUE
+        value: 0.8
+        description: Ratio offered by the order for the current block accounting for bounty.
+      - label: Minimum Bounty amount
+        value: 0.8.5
+        unit-prefix: $        
+        description: Minimum bounty offered
+      - label: Maximum Bounty amount
+        value: 0.8.6
+        unit-prefix: $        
+        description: Maximum bounty offered
+      - label: Bounty increase per minute
+        value: 0.8.10
+        unit-prefix: $   
+        description: Amount by which bounty increases every minute after cooldown.
+      - label: Max Bounty ratio
+        value: 0.8.9
+        unit-suffix: '%'   
+        description: Ratio of max bounty amount to order amount
+      - label: Mean amount
+        value: 0.8.4
+        unit-prefix: $        
+        description: Mean amount of BLUE sold 
+      - label: Cooldown in minutes
+        value: 0.8.11        
+        description: Number of minutes between strategy running
+      - label: Trades per hour
+        value: 0.8.12       
+        description: Number of trades per hour  
+      - label: Strategy twap buy deviation
+        value: 0.8.7
+        unit-suffix: '%'         
+        description: Twap deviation percentage acceptable     
+      - label: Current twap buy deviation
+        value: 0.8.8
+        unit-suffix: '%'       
+        description: Twap deviation occuring at current block with maximum bounty on the buy side to prevent higher than deviations buys.
+      - label: Cummulative amount traded daily
+        value: 0.8.13     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of RED tokens sold in a day.
+      - label: Cummulative amount traded weekly
+        value: 0.8.14     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of RED tokens sold in a week.
+      - label: Cummulative amount traded montly
+        value: 0.8.15     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of RED tokens sold in a month.
+
+    plots:
+
+  buy-red-simulation:
+    scenario: polygon-red-fixed-price.buy.deviation.chart
+    plots:
+      Mean amount of BLUE offered:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.4"
+                    thresholds: 25
+                    
+      Mean amount of RED received:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.5"
+                    thresholds: 25
+  
+  red-sell-fixed-price: 
+    scenario: polygon-red-fixed-price.sell.deviation.metric
+    metrics:
+      - label: Current RED price.
+        value: 0.3.2
+        unit-prefix: $
+        description: Price of RED at current block.
+      - label: Minimum RED buy price.
+        value: 0.3.0
+        unit-prefix: $
+        description: Minimum BLUE/RED ratio.
+      - label: Amount of RED offered for first trade.
+        value: 0.5
+        description: Amount of RED offered for the current block.
+      - label: Amount of BLUE received for frist trade.
+        value: 0.4
+        description: Amount of BLUE received for RED offered.
+      - label: io-ratio BLUE/RED
+        value: 0.8
+        description: Ratio offered by the order for the current block accounting for bounty.
+      - label: Minimum Bounty amount
+        value: 0.8.5
+        unit-prefix: $        
+        description: Minimum bounty offered
+      - label: Maximum Bounty amount
+        value: 0.8.6
+        unit-prefix: $        
+        description: Maximum bounty offered
+      - label: Bounty increase per minute
+        value: 0.8.10
+        unit-prefix: $   
+        description: Amount by which bounty increases every minute after cooldown.
+      - label: Max Bounty ratio
+        value: 0.8.9
+        unit-suffix: '%'   
+        description: Ratio of max bounty amount to order amount
+      - label: Mean amount
+        value: 0.8.4
+        unit-prefix: $        
+        description: Mean amount of BLUE received 
+      - label: Cooldown in minutes
+        value: 0.8.11        
+        description: Number of minutes between strategy running
+      - label: Trades per hour
+        value: 0.8.12       
+        description: Number of trades per hour  
+      - label: Strategy twap sell deviation
+        value: 0.8.7
+        unit-suffix: '%'         
+        description: Twap deviation percentage acceptable     
+      - label: Current sell twap deviation
+        value: 0.8.8
+        unit-suffix: '%'       
+        description: Twap deviation occuring at current block with maximum bounty on the sell side to prevent lower than deviation sells.
+      - label: Cummulative amount traded daily
+        value: 0.8.13     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of RED tokens sold in a day.
+      - label: Cummulative amount traded weekly
+        value: 0.8.14     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of RED tokens sold in a week.
+      - label: Cummulative amount traded montly
+        value: 0.8.15     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of RED tokens sold in a month.
+
+  sell-red-simulation:
+    scenario: polygon-red-fixed-price.sell.deviation.chart
+    plots:
+      Mean amount of RED offered:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.5"
+                    thresholds: 25
+                    
+      Mean amount of BLUE received:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.4"
+                    thresholds: 25
+                                    
+---
+#cooldown-time !The minimum amount of seconds that must elapse between trades.
+#bounty-min !Minimum bounty to offer for each trade in USD.
+#bounty-unit-increase !Amount to increase bounty per unit time.
+#bounty-unit-time !Unit of time to increase the bounty.
+#bounty-max !Maximum bounty that can be offered. 
+
+#distribution-token !The distribution token, the token that is bought and sold against the stable token.
+#stable-token !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
+#reserve-token !The token that will be used to compare against the stable token to calculate the TWAP for dollar equivalent conversions.
+
+#min-price !Minimum price of distribution token denominated in stable token
+#mean-usd-amount !Mean dollar denominated amount of stable tokens traded.
+#jittery-binomial-bits !Number of bits for jittery binomial to calculate random amount of stable token traded per trade.
+
+#twap-io-fee !Twap fee for the distribution token pool, paired with either stable or reserve token.
+#twap-multiplier-fee !Twap fee for reserve token paired with stable token.
+#twap-deviation !Acceptable percentage twap deviation to guard against the 30min price change.
+
+#test-current-time !Test current time for plotting.
+#test-last-time !Test last time for plotting.
+
+#ensure-cooldown !Binding to enforce cooldown check.
+#ensure-fixed-price !Binding to enforce price remains between minimum and maximum price set.
+#calculate-exact-quote !Binding to calculate exact amount of distribution tokens required for buys and sells.
+#calculate-io-ratio !Binding to calculate io-ratio for the order.
+#calculate-twap-ratio !Binding to calculate order to 30min twap ratio.
+#enforce-twap-check !Binding to enforce oracle manipulation protection guard.
+#io-multiplier !Binding to get the ratio multiplier for distribution token.
+#plottables !The binding for additional things we want to plot during testing.
+
+#uniswap-words !The subparser for the Uniswap words
+#orderbook-subparser !The subparser for the Orderbook words
+#cooldown-key "cooldown-key"
+
+#enforce-twap-check-chart
+  _: ;
+
+#enforce-twap-check-prod
+  twap-ratio: ,
+  :ensure(
+      less-than(
+        twap-ratio
+        add(1 twap-deviation)
+        )
+    "twap check"
+  );
+
+#calculate-twap-ratio-buy
+  io-ratio ratio-multiplier: ,
+  twap-30: mul(
+    uniswap-v3-twap-output-ratio(reserve-token distribution-token 1800 0 twap-io-fee)
+    ratio-multiplier
+  ),
+  twap-ratio: div(twap-30 io-ratio),
+  :call<'enforce-twap-check>(twap-ratio);
+
+#calculate-twap-ratio-sell
+  io-ratio ratio-multiplier: ,
+  twap-30: mul(
+    uniswap-v3-twap-output-ratio(distribution-token reserve-token 1800 0 twap-io-fee)
+    ratio-multiplier
+  ),
+  twap-ratio: div(twap-30 io-ratio),
+  :call<'enforce-twap-check>(twap-ratio);
+
+#jittery-binomial
+  seed:,
+  binomial18-10:
+    bitwise-count-ones(bitwise-decode<0 jittery-binomial-bits>(hash(seed))),
+  noise18-1:
+    mod(hash(seed 0) 1),
+  jittery-combined:
+    add(binomial18-10 noise18-1),
+  jittery-combined-normalized:
+    div(jittery-combined add(1 jittery-binomial-bits));
+
+#bounty-auction
+  time-since-cooldown: ,
+  bounty: min(
+    linear-growth(
+      bounty-min
+      div(bounty-unit-increase bounty-unit-time)
+      time-since-cooldown
+    )
+    bounty-max
+  );
+
+#ensure-cooldown-metric
+ _ _: block-timestamp() 0;
+
+#ensure-cooldown-chart
+ _ _: test-current-time test-last-time;
+ 
+#ensure-cooldown-prod
+ current-time: block-timestamp(),
+ last-time: get(hash(order-hash() cooldown-key)),
+ :ensure(
+   greater-than-or-equal-to(
+     current-time
+     add(last-time cooldown-time)
+   )
+   "cooldown"
+ ),
+ :set(hash(order-hash() cooldown-key) current-time);
+
+#ensure-fixed-price-chart
+  _ ratio-multiplier: ,
+  current-price: mul(
+      uniswap-v3-twap-output-ratio(
+        distribution-token
+        reserve-token
+        0 0
+        twap-io-fee
+      ) 
+      ratio-multiplier
+  );
+  
+
+#ensure-fixed-price-prod
+  min-trade-price ratio-multiplier: ,
+  current-price: mul(
+      uniswap-v3-quote-exact-input(
+        distribution-token
+        reserve-token
+        1
+        twap-io-fee
+      )
+      ratio-multiplier
+  ),
+  :ensure(
+    greater-than-or-equal-to(current-price min-trade-price)
+    "min price"
+  );
+
+#calculate-io-ratio-buy
+  usd-amount18
+  token-amount18
+  ratio-multiplier
+  time-since-cooldown: ,
+  io-ratio: div(token-amount18 add(usd-amount18 call<'bounty-auction>(time-since-cooldown))),
+  _ :call<'calculate-twap-ratio>(io-ratio ratio-multiplier),
+  /* Add io-ratio and max-op on stack*/
+  _: usd-amount18,
+  _: io-ratio;
+
+#calculate-io-ratio-sell
+  usd-amount18
+  token-amount18
+  ratio-multiplier
+  time-since-cooldown: ,
+  io-ratio: div(saturating-sub(usd-amount18 call<'bounty-auction>(time-since-cooldown)) token-amount18),
+  _ :call<'calculate-twap-ratio>(io-ratio inv(ratio-multiplier)),
+  /* Add io-ratio and max-op on stack*/
+  _: token-amount18,
+  _: io-ratio;
+
+#calculate-exact-buy-quote
+  amount-usd18 ratio-multiplier: ,
+  _: uniswap-v3-quote-exact-input(reserve-token distribution-token mul(amount-usd18 ratio-multiplier) twap-io-fee);
+
+#calculate-exact-sell-quote
+  amount-usd18 ratio-multiplier: ,
+  _: uniswap-v3-quote-exact-output(distribution-token reserve-token mul(amount-usd18 ratio-multiplier) twap-io-fee);
+
+#io-multiplier-reserve
+  _: uniswap-v3-quote-exact-input(
+    stable-token
+    reserve-token
+    1
+    twap-multiplier-fee
+  );
+
+#io-multiplier-stable
+  _: 1;
+
+#plottables-chart
+  max-output-amount io-ratio twap-ratio: ,
+  _: cooldown-time,
+  _: mean-usd-amount,
+  _: bounty-min,
+  _: bounty-max,
+  _: mul(twap-deviation 100),
+  current-twap-deviation: if(
+    greater-than(1 twap-ratio)
+    mul(saturating-sub(1 twap-ratio) 100)
+    mul(saturating-sub(twap-ratio 1) 100)
+  ),
+  max-bounty-ratio: mul(div(bounty-max mean-usd-amount) 100),
+  bounty-increase-per-minute: mul(div(bounty-unit-increase bounty-unit-time) 60),
+  cooldown-in-minutes: div(cooldown-time 60),
+  cooldown-in-hours: div(60 cooldown-in-minutes),
+  total-amount-daily: mul(cooldown-in-hours mean-usd-amount 24),
+  total-amount-weekly: mul(total-amount-daily 7),
+  total-amount-montly: mul(total-amount-daily 30);
+
+
+#plottables-prod
+  _ _ _: ;
+
+#calculate-io
+  using-words-from uniswap-words orderbook-subparser
+
+  io-ratio-multiplier: call<'io-multiplier>(),
+  :call<'ensure-fixed-price>(min-price inv(io-ratio-multiplier)),
+  current-time last-time: call<'ensure-cooldown>(),
+  random-multiplier18: call<'jittery-binomial>(last-time), 
+  jittered-amount-usd18: mul(
+    mul(mean-usd-amount 2)
+    random-multiplier18
+  ), 
+  token-amount-output18: call<'calculate-exact-quote>(jittered-amount-usd18 io-ratio-multiplier),
+  twap-ratio max-output final-io-ratio: call<'calculate-io-ratio>(
+    jittered-amount-usd18
+    token-amount-output18
+    io-ratio-multiplier
+    saturating-sub(current-time add(last-time cooldown-time))
+  ),
+  :call<'plottables>(max-output final-io-ratio twap-ratio); 
+
+#handle-io
+:;
