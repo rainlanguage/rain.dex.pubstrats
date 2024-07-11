@@ -47,6 +47,9 @@ deployers:
     address: 0xEBe394cff4980992B826Ec70ef0a9ec8b5D4C640
     network: flare-pubstrats
 
+# Using RED when we find and replace its way too easy to have words like 'cleared' get caught in the find and replace
+# Could we make a different name project token and then just have a stable and gas token as the other two tokens in the strategy?
+
 tokens:
   flare-red:
     network: flare-pubstrats
@@ -76,11 +79,16 @@ scenarios:
         deployer: flare-pubstrats
         orderbook: flare-pubstrats
         bindings:
+          # What does this actually mean? It's confusing - in what scenarios is there conversion?
+          # Should we have this commented out in the pubstrat? And then added in in documented scenarios?
+
           # The uniswap words are only required if there is a conversion between
           # the input/output token and some external price. Typically this is
           # not the case as the io-ratio is defined in terms of the input/output
           # token and the io-ratio-multiplier is set to the identity function.
           uniswap-words: 0xAFF83Dd453f9EE510d6F623d09322A68E8ee29A3
+
+          # What does this actually mean? Do we need the uni v3 in the pubstrat?
 
           # Uniswap v3 factory contract address and corresponding init code hash.
           # If the factory address and the init code aren't available as a literals
@@ -88,15 +96,16 @@ scenarios:
           uniswap-v3-factory: '[uniswap-v3-factory]'
           uniswap-v3-init-code: '[uniswap-v3-init-code]'
 
+          # What is the orderbook-subparser?
           orderbook-subparser: 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
 
+          # Is there a way to describe this more clearly? Love the examples
+
           # How far we move through tranche space in a second.
-          # 1e18 is a whole tranche, so we divide 1 by the number of seconds
+          # 1 is a whole tranche, so we divide 1 by the number of seconds
           # per recharge to calculate the per-second rate.
           # Examples:
-          # 172800 seconds in 2 days, 48 hours = 1 / 172800 = 0.000005787037037037
           # 86400 seconds in 1 day, 24 hours = 1 / 86400 = 0.000011574074074074
-          # 43200 seconds in 12 hours, 12 hours = 1 / 43200 = 0.000023148148148148
           # 3600 seconds in 1 hour, 1 hour = 1 / 3600 = 0.000277777777777777
           tranche-space-per-second: 0.000011574074074074
 
@@ -116,11 +125,11 @@ scenarios:
           # started at 10% of its maximum size. This means that the capital
           # requirements for the strategy to reprice itself as the market moves
           # are reduced.
-          # This MUST be set to a value less than 1e18, else it will entirely
+          # This MUST be set to a value less than 1, else it will entirely
           # skip tranches.
           # Shyness MAY be set to 0, in which case every tranche will be fully
           # available as it is entered.
-          # tranche-space-shyness: 0
+          tranche-space-shyness: 0
 
           # Minimum trade size, if you put in a trade for less than x% of a
           # tranche it wont clear.
@@ -131,6 +140,14 @@ scenarios:
           # due to rounding in the evm or potentially malicious trades.
           # 0.01 is 1%
           tranche-space-snap-threshold: 0.01
+
+          # Great - what are the options here? 
+          # io-ratio-multiplier: '''io-ratio-multiplier-identity' - what other options?
+          # Probably easier to just list them and the scenarios they are relevant in
+          # This comment persists across the strategy where I really want to be able to very quickly configure and deploy
+          # Depeneding on whether the the tranche size/ratio is denominated in
+          # some token other than the input/output tokens (I'm not sure exactly where I set this)
+
 
           # This is only relevant if the tranche size/ratio is denominated in
           # some token other than the input/output tokens. For example, if the
@@ -147,11 +164,25 @@ scenarios:
             bindings:
                 # If we want to denominate the amount in BLUE when we're
                 # buying RED with it, then the amount is the OUTPUT.
+                # To make this clearer we should just say amount-is-output: 1 when; amount-is-output: 0 when in comments
                 amount-is-output: 1
+
+                # io-ratio-expr = linear, expontential; what are the different options and how do they work
+
                 io-ratio-expr: '''linear-growth'
+
+                # io-ratio-base = calculated as 1/TKN, explain how this works
+
                 io-ratio-base: 1
+
+                # io-ratio-growth = same, explain that this is relative?
+
                 io-ratio-growth: 0.05
-                tranche-size-expr: '''exponential-growth'
+
+                # Tranche size follows the same pattern as io-ratio and the same logic can be applied
+                # Except io-ratio base which is the size of the tranche expressed in a stable, gas token, pool token or trade token
+
+                tranche-size-expr: '''linear-growth'
                 tranche-size-base: 1
                 tranche-size-growth: 0.01
             scenarios:
@@ -162,6 +193,8 @@ scenarios:
                   # the market is within the chart then set this to the closest
                   # tranche that won't immediately dump into the market.
                   # If the market is outside the chart then set this to 0.
+                  # Critical to get right for tranche strategy
+                  # Starting tranche determines where liquidity is first offered
                   initial-tranche-space: 0
                 scenarios:
                   prod:
@@ -201,7 +234,7 @@ scenarios:
                 io-ratio-expr: '''linear-growth'
                 io-ratio-base: 10
                 io-ratio-growth: 0.5
-                tranche-size-expr: '''exponential-growth'
+                tranche-size-expr: '''linear-growth'
                 tranche-size-base: 1
                 tranche-size-growth: 0.01
             scenarios:
