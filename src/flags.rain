@@ -1,0 +1,55 @@
+---
+#get-t !Binding to get t
+#max-t !The maximum value of t.
+#t-key !Some universally unique key for t. Is NOT hashed with either order hash so uniqueness is the responsibility of the binder.
+
+#get-real-t
+t: get(t-key);
+
+#test-t !Value to use for t in tests.
+#get-test-t
+t: test-t;
+
+#set-real-t
+t:,
+:set(hash(order-hash() t-key) t);
+
+#set-test-t
+:;
+
+#io-ratio-curve !Binding to the curve function for this side of the spread.
+
+#sawtooth-base !The base value of the sawtooth function at t=0.
+#sawtooth-jump !The jump value of the sawtooth function.
+#sawtooth-rate !The rate of the sawtooth function decay.
+#jumpy-sawtooth
+t:,
+io-ratio: decimal18-sub(
+    decimal18-linear-growth(sawtooth-base sawtooth-jump decimal18-floor(t))
+    decimal18-linear-growth(0 sawtooth-rate t)
+);
+
+#steppy-slope-inflection !The position in t-space where the slope changes, between [0, 1].
+#steppy-slope-base !The base value of the steppy function at t=0.
+#steppy-slope-jump !The jump value of the steppy function.
+#steppy-io-rate-a !The rate of the steppy function growth before the inflection.
+#steppy-io-rate-b !The rate of the steppy function growth after the inflection.
+#steppy-slope
+t:,
+intra-t: decimal18-frac(t),
+t-a: decimal18-min(intra-t steppy-slope-inflection),
+t-b: decimal18-saturating-sub(intra-t steppy-slope-inflection),
+io-ratio: decimal18-add(
+    decimal18-linear-growth(steppy-slope-base steppy-slope-jump decimal18-floor(t))
+    decimal18-linear-growth(0 steppy-io-rate-a t-a)
+    decimal18-linear-growth(0 steppy-io-rate-b t-b)
+);
+
+#calculate-io
+t: call<get-t>(),
+:ensure(less-than-or-equal-to(t max-t)),
+amount: max-decimal18-value(),
+io-ratio: call<io-ratio-curve>(t);
+
+#handle-io
+:;
