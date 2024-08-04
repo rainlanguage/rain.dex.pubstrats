@@ -127,6 +127,10 @@ scenarios:
           # Mitigates people pinging strat for dust orders to stop recharging.
           min-tranche-space-diff: 0.1
 
+          # Maximum tranche space to be reached before the tranches stop.
+          # The tranche will not clear once the tranche space execeds the maximum.
+          max-tranche-space: 5
+
           # Snap to the nearest tranche to avoid dust issues at the edges, either
           # due to rounding in the evm or potentially malicious trades.
           # 0.01 is 1%
@@ -403,6 +407,7 @@ deployments:
 #twap-duration !The duration in seconds of the TWAP window for dollar equivalence conversions.
 #twap-fee !The uniswap fee tier to use for the TWAP.
 
+#max-tranche-space !The maximum tranche space to be reached as the tranches go through.
 #min-tranche-space-diff !The minimum tranche space difference that is allowed per trade. Prevents dusting the strat to stop it recharging.
 #tranche-space-snap-threshold !The threshold in tranche space to snap to the nearest tranche to avoid dust issues at the edges.
 
@@ -451,7 +456,14 @@ deployments:
     get(hash(order-hash() update-time-key))
     now()
   ),
-  current-time: now();
+  current-time: now(),
+  :ensure(
+    less-than-or-equal-to(
+      tranche-space-before
+      max-tranche-space
+    )
+    "Maximum tranche space reached"
+  );
 
 #tranche-space-shyness !The shyness of the liquidity in tranches. E.g. 0.9 is 90% shy.
 #set-last-tranche-prod

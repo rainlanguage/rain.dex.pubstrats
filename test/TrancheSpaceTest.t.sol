@@ -9,7 +9,8 @@ import {
     OrderV2,
     OrderConfigV2,
     TakeOrderConfigV2,
-    TakeOrdersConfigV2
+    TakeOrdersConfigV2,
+    SignedContextV1
 } from "rain.orderbook.interface/interface/IOrderBookV3.sol";
 import {IParserV1} from "rain.interpreter.interface/interface/IParserV1.sol";
 import {IOrderBookV3ArbOrderTaker} from "rain.orderbook.interface/interface/IOrderBookV3ArbOrderTaker.sol";
@@ -19,7 +20,7 @@ import {ISubParserV2} from "rain.interpreter.interface/interface/ISubParserV2.so
 import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/IExpressionDeployerV3.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {StrategyTests, IRouteProcessor, LibStrategyDeployment} from "h20.test-std/StrategyTests.sol";
+import {StrategyTests, SafeERC20, IRouteProcessor, LibStrategyDeployment} from "h20.test-std/StrategyTests.sol";
 import "rain.math.saturating/SaturatingMath.sol";
 import "src/lib/LibTrancheSpaceOrders.sol";
 import "rain.math.fixedpoint/lib/LibFixedPointDecimalArithmeticOpenZeppelin.sol";
@@ -30,6 +31,7 @@ import "rain.interpreter.interface/lib/ns/LibNamespace.sol";
 contract TrancheSpaceTest is StrategyTests {
     using Strings for address;
     using Strings for uint256;
+    using SafeERC20 for IERC20;
 
     using LibFixedPointDecimalArithmeticOpenZeppelin for uint256;
     using LibFixedPointDecimalScale for uint256;
@@ -238,6 +240,66 @@ contract TrancheSpaceTest is StrategyTests {
 
         }
 
+    }
+
+    function testMaxTrancheSpaceFlare() public {
+
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = flareRedIo();
+
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = flareBlueIo();
+
+        uint256 expectedRatio = 1e18;
+        uint256 expectedAmountOutputMax = 1e18;
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            "",
+            "",
+            0,
+            0,
+            0,
+            10e18,
+            expectedRatio,
+            expectedAmountOutputMax,
+            TRANCHE_SPACE_FILE_PATH,
+            "flare-red-blue-tranches.buy.initialized.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory orderMaximumTranche = addOrderDepositOutputTokens(strategy);
+        
+        // Maximum tranche space reached.
+        {
+            takeExternalOrder(orderMaximumTranche, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeExternalOrder(orderMaximumTranche, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeExternalOrder(orderMaximumTranche, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeExternalOrder(orderMaximumTranche, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeExternalOrder(orderMaximumTranche, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeExternalOrder(orderMaximumTranche, strategy.inputTokenIndex, strategy.outputTokenIndex);
+        }
+        // Revert if maximum tranche space is reached. 
+        {
+            vm.startPrank(APPROVED_EOA);
+            address inputTokenAddress = orderMaximumTranche.validInputs[strategy.inputTokenIndex].token;
+
+            IERC20(inputTokenAddress).safeApprove(address(ORDERBOOK), type(uint256).max);
+            TakeOrderConfigV2[] memory innerConfigs = new TakeOrderConfigV2[](1);
+
+            innerConfigs[0] = TakeOrderConfigV2(orderMaximumTranche, strategy.inputTokenIndex, strategy.outputTokenIndex, new SignedContextV1[](0));
+            TakeOrdersConfigV2 memory takeOrdersConfig =
+                TakeOrdersConfigV2(0, type(uint256).max, type(uint256).max, innerConfigs, "");
+
+            vm.expectRevert("Maximum tranche space reached");
+            ORDERBOOK.takeOrders(takeOrdersConfig);
+
+            vm.stopPrank();
+        }
     }
 
     function testTrancheSpaceOrderMinimumRevertFlare() public {
