@@ -686,3 +686,4 @@ deployments:
     if(is-zero(amount-is-output) 
       add(get(hash(order-hash() cumulative-sale-volume)) mul(input-vault-increase() calculated-io-ratio())) 
       get(hash(order-hash() cumulative-sale-cost))));
+
