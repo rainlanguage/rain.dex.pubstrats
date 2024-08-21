@@ -1,0 +1,670 @@
+# Strat: Recharging tranches
+#
+# High level idea is that the strategy offers a firm price for batches of tokens.
+# Each batch is called a "tranche".
+#
+# Every time a batch of tokens fully clears a new price further from the previous
+# trades is offered for the next tranche.
+#
+# For example, if 1000 USDC was available in a tranche to buy WLTH at
+# 1 USDC per WLTH and this fully cleared, the next tranche might be to buy up to
+# 1000 USDC at 0.9 USDC per WLTH, then 0.8, etc. etc.
+#
+# Tranches slowly recharge over time passively when no trades are happening against
+# the current price offer. For example, the strategy might recharge 1 tranche per
+# day, so if the last trade left 500 USDC remaining in a 1000 USDC tranche at
+# 0.9 USDC per WLTH then after 24 hours the strategy will be offering 500 USDC
+# at 1 USDC per WLTH. I.e. 0.5 tranches were recharged at 0.9 ratio and then
+# another 0.5 tranches were recharged at 1 ratio. After another 12 hours
+# there will be 1000 USDC on offer at 1 ratio, etc.
+#
+# Almost everything about the strat is bindable and chartable, e.g.
+# - The algorithms that determine the price and amount of each tranche
+# - The recharge rate and delay before the passive recharge starts to kick in
+# - Whether the amounts per tranche are denominated in the input or output token
+# - Whether the strategy is buying or selling TKN
+# - An optional conversion between the input/output token and some external
+#   price, e.g. converting WETH in a vault to USD equivalent.
+
+networks:
+  base-community: 
+    rpc: https://mainnet.base.org 
+    chain-id: 8453 
+    network-id: 8453 
+    currency: ETH
+
+subgraphs:
+  base-community: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-base/0.3/gn
+  
+orderbooks:
+  base-community:
+    address: 0x7A44459893F99b9d9a92d488eb5d16E4090f0545
+    network: base-community
+    subgraph: base-community
+
+deployers:
+  base-community:
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
+    network: base-community
+
+tokens:
+  base-wlth:
+    network: base-community
+    address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+  base-usdc:
+    network: base-community
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+
+orders:
+  # vault-id generated with `openssl rand -hex 32`
+  base-wlth-sell:
+    orderbook: base-community
+    inputs:
+      - token: base-usdc
+        vault-id: 0x28e042e95154e0eaa486f57c65f44e3fd2ea345bb61aca594e074fd4028b2f9d 
+    outputs:
+      - token: base-wlth
+        vault-id: 0x28e042e95154e0eaa486f57c65f44e3fd2ea345bb61aca594e074fd4028b2f9d
+  base-wlth-buy:
+    orderbook: base-community
+    inputs:
+      - token: base-wlth
+        vault-id: 0x85bdfb90f2cabd6661c1bce26962cb35b8c1f43687641f4a4aa58066be447b52
+    outputs:
+      - token: base-usdc
+        vault-id: 0x85bdfb90f2cabd6661c1bce26962cb35b8c1f43687641f4a4aa58066be447b52 
+
+scenarios:
+    wlth-tranches:
+        network: base-community
+        deployer: base-community
+        orderbook: base-community
+        bindings:
+          # The uniswap words are only required if there is a conversion between
+          # the input/output token and some external price. Typically this is
+          # not the case as the io-ratio is defined in terms of the input/output
+          # token and the io-ratio-multiplier is set to the identity function.
+          uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
+
+          # Uniswap v3 factory contract address and corresponding init code hash.
+          # If the factory address and the init code aren't available as a literals
+          # then non-literal address and hash value can be given as bindings.
+          uniswap-v3-factory: 0x33128a8fC17869897dcE68Ed026d694621f6FDfD
+          uniswap-v3-init-code: '[uniswap-v3-init-code]'
+
+          # Uniswap v3 fee tier and twap duration
+          twap-fee: '[uniswap-v3-fee-medium]'
+          twap-duration: 0
+
+          # Reference token addresses
+          reference-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+          reference-stable: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+
+          orderbook-subparser: 0x762adD85a30A83722feF2e029087C9D110B6a7b3
+
+          # How far we move through tranche space in a second.
+          # 1e18 is a whole tranche, so we divide 1 by the number of seconds
+          # per recharge to calculate the per-second rate.
+          # Examples:
+          # 172800 seconds in 2 days, 48 hours = 1 / 172800 = 0.000005787037037037
+          # 86400 seconds in 1 day, 24 hours = 1 / 86400 = 0.000011574074074074
+          # 43200 seconds in 12 hours, 12 hours = 1 / 43200 = 0.000023148148148148
+          # 3600 seconds in 1 hour, 1 hour = 1 / 3600 = 0.000277777777777777
+          tranche-space-per-second: 0.000011574074074074
+
+          # After any trade happens we pause before recharging.
+          # Delay is to observe market feedback to the previous trade, e.g. to
+          # potentially offer the next tranche at a different price for some time
+          # before recharging back to the previous price.
+          # Too long and people could grief to stop recharging.
+          # Too quick and it will be difficult to move between tranches.
+          # The default here is 5 minutes (units are seconds) and probably never
+          # needs to be changed.
+          tranche-space-recharge-delay: 300
+
+          # When a tranche is completely cleared, the next tranche MAY be jumped
+          # into partially. For example, if tranches are 90% shy (i.e. 0.9) then
+          # if a tranche is cleared completely then the next tranche will be
+          # started at 10% of its maximum size. This means that the capital
+          # requirements for the strategy to reprice itself as the market moves
+          # are reduced.
+          # This MUST be set to a value less than 1e18, else it will entirely
+          # skip tranches.
+          # Shyness MAY be set to 0, in which case every tranche will be fully
+          # available as it is entered.
+          # tranche-space-shyness: 0
+
+          # Minimum trade size, if you put in a trade for less than x% of a
+          # tranche it wont clear.
+          # Mitigates people pinging strat for dust orders to stop recharging.
+          min-tranche-space-diff: 0.1
+
+          # Snap to the nearest tranche to avoid dust issues at the edges, either
+          # due to rounding in the evm or potentially malicious trades.
+          # 0.01 is 1%
+          tranche-space-snap-threshold: 0.01
+
+          # This is only relevant if the tranche size/ratio is denominated in
+          # some token other than the input/output tokens. For example, if the
+          # TKN was being traded for WETH but the tranche size was denominated in
+          # USD then the reference-stable would be USD and the reference-reserve
+          # would be WETH, and the identity multiplier needs to be swapped out
+          # for e.g. a TWAP USDT based multiplier.
+          # Typically this is NOT needed as the tranche size and ratio ARE
+          # denominated in the input/output tokens.
+          io-ratio-multiplier: '''io-ratio-multiplier-identity'
+
+        scenarios:
+          buy:
+            bindings:
+                # If we want to denominate the amount in USDC when we're
+                # buying WLTH with it, then the amount is the OUTPUT.
+                amount-is-output: 1
+                io-ratio-expr: '''linear-growth'
+                io-ratio-base: 15
+                io-ratio-spread: 0.025 #this is in %
+                io-ratio-growth: 0.5
+                tranche-size-expr: '''linear-growth'
+                tranche-size-base: 5
+                tranche-size-growth: 0.1
+            scenarios:
+              initialized:
+                bindings:
+                  # This needs to be set upon going live.
+                  # Generate a chart and compare to current market prices, if
+                  # the market is within the chart then set this to the closest
+                  # tranche that won't immediately dump into the market.
+                  # If the market is outside the chart then set this to 0.
+                  initial-tranche-space: 0
+                  post-action: '''post-action-constant'
+                  post-action-tranche: '''post-action-tranche-linear'
+                  io-ratio-current: 20
+                scenarios:
+                  prod:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                      tranche-space-shyness: 0
+                  test:
+                    runs: 100
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test-init'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      test-last-update-time: 0
+                      test-now: 0
+                  test-shy-tranche:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                      tranche-space-shyness: 0.9
+              test:
+                  runs: 10000
+                  bindings:
+                    get-last-tranche: '''get-last-tranche-test'
+                    set-last-tranche: '''set-last-tranche-test'
+                    plottables: '''plottables-test'
+                    max-test-tranche-space: 20
+                    test-last-update-time: 0
+                    test-now: 0
+          sell:
+            bindings:
+                # If we want to denominate the amount in USDC when we're
+                # selling WLTH for it, then the amount is the INPUT.
+                amount-is-output: 0
+                io-ratio-expr: '''linear-growth'
+                io-ratio-base: 0.040
+                io-ratio-spread: 0.025 #this is in %
+                io-ratio-growth: 0.001
+                tranche-size-expr: '''linear-growth'
+                tranche-size-base: 5
+                tranche-size-growth: 0.1
+            scenarios:
+              initialized:
+                bindings:
+                  # This needs to be set upon going live.
+                  # Generate a chart and compare to current market prices, if
+                  # the market is within the chart then set this to the closest
+                  # tranche that won't immediately dump into the market.
+                  # If the market is outside the chart then set this to 0.
+                  initial-tranche-space: 0
+                  post-action: '''post-action-constant'
+                  post-action-tranche: '''post-action-tranche-linear'
+                  io-ratio-current: 0.042
+                scenarios:
+                  prod:
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-prod'
+                      set-last-tranche: '''set-last-tranche-prod'
+                      plottables: '''plottables-prod'
+                      tranche-space-shyness: 0
+                  test:
+                    runs: 100
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test-init'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      test-last-update-time: 0
+                      test-now: 0
+              test:
+                runs: 10000
+                bindings:
+                  get-last-tranche: '''get-last-tranche-test'
+                  set-last-tranche: '''set-last-tranche-test'
+                  plottables: '''plottables-test'
+                  max-test-tranche-space: 20
+                  test-last-update-time: 0
+                  test-now: 0
+
+
+charts:
+    buy-initial-deployment:
+      scenario: wlth-tranches.buy.initialized.test
+      metrics:
+        - label: Initial USDC sold
+          value: 0.6
+          description: 'Amount of USDC sold to buy WLTH in the first tranche (stack item 0.6)'             
+        - label: Initial WLTH bought
+          value: 0.5.2
+          description: 'Amount of WLTH purchased in the first tranche (stack item 0.5.2)'                             
+        - label: Initial io-ratio
+          value: 0.7
+          description: '# WLTH purchased per USDC spent (stack item 0.7)'        
+        - label: Starting tranche
+          value: 0.2.0
+          description: 'This strategy starts executing buys at the initial tranche (stack item 0.2.0)'          
+        - label: Initial buy price
+          value: 0.5.3
+          precision: 4
+          unit-suffix: " USDC"             
+          description: 'Price you pay for 1 WLTH in USDC, visible on dextools (stack item 0.5.3)'     
+      plots:
+
+    buy-simulation:
+      scenario: wlth-tranches.buy.test
+      plots:    
+        USDT sold per tranche:     
+          x:
+              label: 'Tranche space'
+          y:
+              label: 'USDT spent'
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.6  
+        WLTH bought per tranche:    
+          x:
+              label: 'Tranche space'
+          y:
+              label: 'WLTH bought'          
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.5.2
+        'io-ratio per tranche':
+          subtitle: 'Ratio of WLTH bought per 1 USDT sold per tranche'        
+          x:
+              label: 'Tranche space'
+          y:
+              label: 'WLTH bought per 1 USDT'            
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.7
+        buy price by tranche:
+          subtitle: 'Price paid for 1 WLTH in USDT, visible on dextools as WLTH/USDT pair'        
+          x:
+              label: 'Tranche space'
+          y:
+              label: '1 WLTH priced in USDT'          
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.5.3      
+
+    sell-initial-deployment:
+      scenario: wlth-tranches.sell.initialized.test
+      metrics:
+        - label: Initial WLTH sold
+          value: 0.6
+          description: 'Amount of WLTH sold for USDC in the first tranche (stack item 0.6)'             
+        - label: Initial USDC bought
+          value: 0.5.2
+          description: 'Amount of USDC purchased by selling WLTH in the first tranche (stack item 0.5.2)'                             
+        - label: Initial io-ratio
+          value: 0.7
+          description: '# USDC purchased per WLTH spent (stack item 0.7)'        
+        - label: Starting tranche
+          value: 0.2.0
+          description: 'This strategy starts executing sells at the initial tranche (stack item 0.2.0)'          
+        - label: Initial sell price
+          value: 0.7
+          precision: 4
+          unit-suffix: "USDC"        
+          description: 'Price you pay for 1 WLTH in USDC, visible on dextools (stack item 0.7)'     
+      plots:
+
+    sell-simulation:
+      scenario: wlth-tranches.sell.test
+      plots:
+        WLTH sold per tranche:     
+          x:
+              label: 'Tranche space'
+          y:
+              label: 'WLTH spent'
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.6  
+        USDC bought per tranche:    
+          x:
+              label: 'Tranche space'
+          y:
+              label: 'USDC bought'          
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.5.2
+        'io-ratio per tranche':
+          subtitle: 'Ratio of USDC bought per 1 WLTH sold per tranche'        
+          x:
+              label: 'Tranche space'
+          y:
+              label: 'WLTH bought per 1 USDC'            
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.7
+        sell price by tranche:
+          subtitle: 'Price paid for 1 WLTH in USDC, visible on dextools as WLTH/USDC pair'        
+          x:
+              label: 'Tranche space'
+          y:
+              label: '1 WLTH priced in USDC'          
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.7    
+
+deployments:
+  base-wlth-buy:
+    scenario: wlth-tranches.buy.initialized.prod
+    order: base-wlth-buy
+  base-wlth-sell:
+    scenario: wlth-tranches.sell.initialized.prod
+    order: base-wlth-sell
+---
+#tranche-space-per-second !The amount of tranche space that is recharged per second.
+#tranche-space-recharge-delay !The duration in seconds that no recharging occurs after a trade occurs.
+
+#tranche-size-expr !The binding to get the tranche size for the current tranche space.
+#tranche-size-base !Base tranche size is the size of the smallest tranche, denominated in output token. 
+#tranche-size-growth !The exponential growth factor of the size of each tranche. E.g. 0.01 is 1% output amount growth per tranche.
+
+#io-ratio-expr !The binding to get the IO ratio for the current tranche space.
+/* #io-ratio-base !The base IO ratio, as a decimal 18 fixed point number. This is the IO ratio at tranche space 0 and grows according to the growth factor per tranche. */
+#io-ratio-spread !The size of the spread in percentage terms which is the distance of the first tranche away from the midpoint.
+#io-ratio-growth !The exponential growth factor of the IO ratio. E.g. 0.01 is 1% io-ratio growth per tranche.
+
+#reference-token !Strategy token for which the budget is written.
+#reference-stable !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
+#reference-stable-decimals !The number of decimals of the reference stable token.
+#reference-reserve !The token that will be used to compare against the reference stable token to calculate the TWAP for dollar equivalent conversions.
+#reference-reserve-decimals !The number of decimals of the reserve token.
+#twap-duration !The duration in seconds of the TWAP window for dollar equivalence conversions.
+#twap-fee !The uniswap fee tier to use for the TWAP.
+
+#min-tranche-space-diff !The minimum tranche space difference that is allowed per trade. Prevents dusting the strat to stop it recharging.
+#tranche-space-snap-threshold !The threshold in tranche space to snap to the nearest tranche to avoid dust issues at the edges.
+
+#initial-tranche-space !The initial tranche space when the order is first deployed.
+#get-last-tranche !The binding to get the last tranche space and update time.
+#set-last-tranche !The binding to set the last tranche space and update time.
+
+#test-tranche-space-before !Returned by get-test-last-tranche to allow the tranche space before to be bound for testing.
+#test-last-update-time !Returned by get-test-last-tranche to allow the last update time to be bound for testing.
+#test-now !Returned by get-test-last-tranche to allow the current time to be bound for testing.
+
+#io-ratio-multiplier !The binding to get the IO ratio multiplier.
+
+#amount-is-output !Whether the amount is an output or input amount. Non-zero means output (i.e. normal orderbook behaviour), zero means input.
+
+#init-key "init"
+#tranche-space-key "tranche-space"
+#update-time-key "update-time"
+#cumulative-sale-volume "cumulative-sale-volume"
+#cumulative-sale-cost "cumulative-sale-cost"
+#cumulative-buy-volume "cumulative-buy-volume"
+#cumulative-buy-cost "cumulative-buy-cost"
+
+#plottables !The binding for additional things we want to plot during testing.
+
+#post-action !Post action source to get current ratio
+#post-action-tranche !Binding to calculate tranche space for post action.
+#io-ratio-current !Current io-ratio to set the 
+
+#uniswap-words !The subparser for the Uniswap words
+#uniswap-v3-factory !Uniswap v3 factory address.
+#uniswap-v3-init-code !Uniswap v3 init code hash.
+#orderbook-subparser !The subparser for the Orderbook
+
+#plottables-test
+  amount
+  io-ratio:,
+  input-amount: mul(amount io-ratio),
+  effective-price: inv(io-ratio);
+
+#plottables-prod
+  amount
+  io-ratio:;
+
+#get-last-tranche-prod
+  is-initialized: get(hash(order-hash() init-key)),
+  tranche-space-before: if(
+    is-initialized
+    get(hash(order-hash() tranche-space-key))
+    initial-tranche-space
+  ),
+  last-update-time: if(
+    is-initialized
+    get(hash(order-hash() update-time-key))
+    now()
+  ),
+  current-time: now();
+
+#tranche-space-shyness !The shyness of the liquidity in tranches. E.g. 0.9 is 90% shy.
+#set-last-tranche-prod
+  tranche-space current-time:,
+  shy-tranche-space: if(
+    is-zero(frac(tranche-space))
+    add(tranche-space tranche-space-shyness)
+    tranche-space),
+  :set(hash(order-hash() init-key) 1),
+  :set(hash(order-hash() tranche-space-key) shy-tranche-space),
+  :set(hash(order-hash() update-time-key) current-time);
+
+/* Forward the bindings through as is to the caller. */
+#max-test-tranche-space !The maximum tranche space that will appear on the test chart.
+#get-last-tranche-test
+  tranche-space-before: mod(test-tranche-space-before max-test-tranche-space),
+  last-update-time: test-last-update-time,
+  current-time: test-now;
+#get-last-tranche-test-init
+  tranche-space-before: initial-tranche-space,
+  last-update-time: test-last-update-time,
+  current-time: test-now;
+/* There's nothing to set if we're just rebinding in tests. */
+#set-last-tranche-test
+  tranche-space current-time:;
+
+#exponential-growth
+  base rate t:,
+  _: exponential-growth(base rate t);
+
+#linear-growth
+  base rate t:,
+  _: linear-growth(base rate t);
+
+#constant-growth
+  base _ _:,
+  _: base;
+
+#calculate-tranche
+  tranche-space-before
+  last-update-time
+  current-time: call<'get-last-tranche>(),
+  recharge-duration: saturating-sub(current-time add(last-update-time tranche-space-recharge-delay)),
+  recharged-tranche-space: mul(recharge-duration tranche-space-per-second),
+  /* repeat current-time for easy access by callers */
+  _: current-time,
+  tranche-space-now: saturating-sub(tranche-space-before recharged-tranche-space),
+  tranche-space-available: headroom(tranche-space-now),
+  tranche-total-size: call<'tranche-size-expr>(tranche-size-base tranche-size-growth floor(tranche-space-now));
+
+#io-ratio-multiplier-sell
+  multiplier: uniswap-v3-twap-output-ratio(reference-stable reference-reserve twap-duration 0 uniswap-v3-factory uniswap-v3-init-code twap-fee);
+
+#io-ratio-multiplier-buy
+  multiplier: uniswap-v3-twap-output-ratio(reference-reserve reference-stable  twap-duration 0 uniswap-v3-factory uniswap-v3-init-code twap-fee);
+
+#io-ratio-multiplier-identity
+  multiplier: 1;
+
+#calculate-midpoint
+  cumulative-sale-volumeb: get(hash(order-hash() cumulative-sale-volume)),
+  cumulative-sale-costb: get(hash(order-hash() cumulative-sale-cost)),
+  cumulative-buy-volumeb: get(hash(order-hash() cumulative-buy-volume)),
+  cumulative-buy-costb: get(hash(order-hash() cumulative-buy-cost)),
+
+  /* ADD : if initized hasnt change then use the initialised price, need Sids logic for init in here, unsure where that is*/
+  /* the below should be in dollar terms */
+  current-cost-basis: if(is-zero(sub(cumulative-buy-volumeb cumulative-sale-volumeb))
+    sub(cumulative-sale-volumeb cumulative-buy-volumeb)
+    div(sub(cumulative-sale-volumeb cumulative-buy-volumeb) sub(cumulative-buy-volumeb cumulative-sale-volumeb)));
+
+/* (cost of tokens purchased - sum(sale amount * cost basis at the time)) / (total purchased - total sold) */
+
+#apply-spread
+  amount-is-output :,
+  io-ratio-spread :,
+  cost-basis : call<'calculate-midpoint>(),
+  spread-basis : if(amount-is-output
+    mul(inv(cost-basis) sub(1 io-ratio-spread))
+    mul(cost-basis sub(1 io-ratio-spread)));  /*have to invert the cost basis as its in dollar terms for the buy side*/
+
+#calculate-io
+  using-words-from uniswap-words orderbook-subparser
+  tranche-space-now
+  tranche-space-available
+  tranche-total-size: call<'calculate-tranche>(),
+  io-ratio-base: call<'apply-spread>(amount-is-output io-ratio-spread),
+  tranche-io-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth floor(tranche-space-now)),
+  final-io-ratio: mul(tranche-io-ratio call<'io-ratio-multiplier>()),
+  amount-available: mul(tranche-total-size tranche-space-available),
+  amount: if(amount-is-output amount-available div(amount-available final-io-ratio)), 
+  io-ratio: final-io-ratio,
+  :call<'plottables>(amount io-ratio);
+
+#handle-io
+  current-time
+  tranche-space-before
+  _
+  tranche-total-size: call<'calculate-tranche>(),
+  tranche-amount-diff: if(
+    amount-is-output
+    output-vault-decrease()
+    input-vault-increase()
+  ),
+  tranche-space-diff: div(tranche-amount-diff tranche-total-size),
+  tranche-space-after: add(tranche-space-before tranche-space-diff),
+  /* Snap tranche space to the nearest tranche to avoid dust issues at the edges */
+  tranche-space-after-snapped: snap-to-unit(tranche-space-snap-threshold tranche-space-after),
+  :ensure(
+    greater-than-or-equal-to(tranche-space-after-snapped add(tranche-space-before min-tranche-space-diff))
+    "Minimum trade size not met."
+  ),
+  :call<'set-last-tranche>(tranche-space-after-snapped current-time),
+  :call<'post-update-cost-basis>(amount-is-output);
+
+#post-action-buy
+  _: uniswap-v3-twap-output-ratio(
+   reference-stable reference-token
+   twap-duration 0
+   uniswap-v3-factory uniswap-v3-init-code twap-fee
+  );
+
+#post-action-sell
+  _: uniswap-v3-twap-output-ratio(
+   reference-token reference-stable
+   twap-duration 0
+   uniswap-v3-factory uniswap-v3-init-code twap-fee
+  );
+
+#post-action-constant
+  _: io-ratio-current;
+
+#post-action-tranche-linear
+  current-ratio: ,
+  io-ratio-base: ,
+  init-tranche: div(
+    saturating-sub(current-ratio io-ratio-base)
+    io-ratio-growth
+  );
+
+#post-action-tranche-exponential
+  current-ratio: ,
+  io-ratio-base: ,
+  init-tranche: div(
+    saturating-sub(ln(current-ratio) ln(io-ratio-base))
+    ln(add(1 io-ratio-growth))
+  );
+
+#post-add-order
+  using-words-from uniswap-words orderbook-subparser
+  current-ratio: call<'post-action>(),
+  init-tranche: call<'post-action-tranche>(current-ratio),
+  :set(hash(order-hash() init-key) 1),
+  :set(hash(order-hash() tranche-space-key) init-tranche),
+  :set(hash(order-hash() update-time-key) now());
+
+#post-update-cost-basis
+/* will this just run or do i need to call it in handle io?
+
+sudo code of what i want to achieve below, deonminated in USDC
+    if side == 'sell':
+        cumulative_sale_volume += volume
+        cumulative_sale_cost += volume * price
+    elif side == 'buy':
+        cumulative_buy_volume += volume
+        cumulative_buy_cost += volume * price
+*/
+  amount-is-output:,
+  :set(hash(order-hash() cumulative-buy-volume)
+    if(amount-is-output
+      add(get(hash(order-hash()cumulative-buy-volume)) output-vault-decrease()) 
+      get(hash(order-hash()cumulative-buy-volume)))),
+      
+  :set(hash(order-hash() cumulative-buy-cost)
+    if(is-zero(amount-is-output) 
+      add(get(hash(order-hash() cumulative-buy-volume)) mul(output-vault-decrease() inv(calculated-io-ratio()))) 
+      get(hash(order-hash() cumulative-buy-cost)))),
+
+  :set(hash(order-hash()cumulative-sale-volume)
+    if(is-zero(amount-is-output) 
+      add(get(hash(order-hash()cumulative-sale-volume)) input-vault-increase()) 
+      get(hash(order-hash() cumulative-sale-volume)))),
+      
+  :set(hash(order-hash()cumulative-sale-cost)
+    if(is-zero(amount-is-output) 
+      add(get(hash(order-hash() cumulative-sale-volume)) mul(input-vault-increase() calculated-io-ratio())) 
+      get(hash(order-hash() cumulative-sale-cost))));
