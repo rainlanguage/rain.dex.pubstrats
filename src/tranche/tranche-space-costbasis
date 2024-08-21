@@ -550,9 +550,24 @@ deployments:
   /* the below should be in dollar terms */
   current-cost-basis: if(is-zero(sub(cumulative-buy-volumeb cumulative-sale-volumeb))
     sub(cumulative-sale-volumeb cumulative-buy-volumeb)
-    div(sub(cumulative-sale-volumeb cumulative-buy-volumeb) sub(cumulative-buy-volumeb cumulative-sale-volumeb)));
+    if(greater-than(sub(cumulative-buy-volumeb cumulative-sale-volumeb) 0)
+      
+      div(
+        sub(
+          cumulative-buy-costb  
+          mul(get(hash(order-hash() last-sell-size)) get(hash(order-hash() cost-basis)))) 
+        sub(cumulative-buy-volumeb cumulative-sale-volumeb)))
+    
+      div(
+        sub(
+          cumulative-sale-costb  
+          mul(get(hash(order-hash() last-buy-size)) get(hash(order-hash() cost-basis)))) 
+        sub(cumulative-sale-volumeb cumulative-buy-volumeb))),
+  
+  :set(hash(order-hash() cost-basis) current-cost-basis);
 
 /* (cost of tokens purchased - sum(sale amount * cost basis at the time)) / (total purchased - total sold) */
+/* rewrite as (cost of input tokens - sum(output amount * cost basis at the time)) / (total inputted - total outputted) */
 
 #apply-spread
   amount-is-output :,
@@ -638,21 +653,16 @@ deployments:
   :set(hash(order-hash() update-time-key) now());
 
 #post-update-cost-basis
-/* will this just run or do i need to call it in handle io?
-
-sudo code of what i want to achieve below, deonminated in USDC
-    if side == 'sell':
-        cumulative_sale_volume += volume
-        cumulative_sale_cost += volume * price
-    elif side == 'buy':
-        cumulative_buy_volume += volume
-        cumulative_buy_cost += volume * price
-*/
   amount-is-output:,
   :set(hash(order-hash() cumulative-buy-volume)
     if(amount-is-output
       add(get(hash(order-hash()cumulative-buy-volume)) output-vault-decrease()) 
       get(hash(order-hash()cumulative-buy-volume)))),
+
+  :set(hash(order-hash() last-buy-size)
+    if(amount-is-output
+      output-vault-decrease()) 
+      get(hash(order-hash() last-buy-size))),
       
   :set(hash(order-hash() cumulative-buy-cost)
     if(is-zero(amount-is-output) 
@@ -663,6 +673,11 @@ sudo code of what i want to achieve below, deonminated in USDC
     if(is-zero(amount-is-output) 
       add(get(hash(order-hash()cumulative-sale-volume)) input-vault-increase()) 
       get(hash(order-hash() cumulative-sale-volume)))),
+
+ :set(hash(order-hash() last-sell-size)
+    if(amount-is-output
+      input-vault-decrease()) 
+      get(hash(order-hash() last-sell-size))),
       
   :set(hash(order-hash()cumulative-sale-cost)
     if(is-zero(amount-is-output) 
