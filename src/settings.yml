@@ -1,0 +1,44 @@
+networks:
+  sepolia:
+    rpc: https://rpc.ankr.com/eth_sepolia
+    chain-id: 11155111
+    currency: ETH
+  base:
+    rpc: https://base.llamarpc.com
+    chain-id: 8453
+    currency: ETH
+  flare:
+    rpc: https://rpc.ankr.com/flare	
+    chain-id: 14
+    currency: FLR
+
+subgraphs:
+  sepolia: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-sepolia/1.2/gn
+  base: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-base/0.1/gn
+  flare: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-flare/0.1/gn
+  
+orderbooks:
+  sepolia:
+    address: 0x2b44Ead335F6fe5ADCb5B8660C6785B680fd81a9
+    network: sepolia
+    subgraph: sepolia
+  base:
+    address: 0x80DE00e3cA96AE0569426A1bb1Ae22CD4181dE6F
+    network: base
+    subgraph: base
+  flare:
+    address: 0xaa3b14Af0e29E3854E4148f43321C4410db002bC
+    network: flare
+    subgraph: flare
+  
+
+deployers:
+  sepolia:
+    address: 0xfD36cc9152595bA216A5E08D088112eaE935FDED
+    network: sepolia
+  base:
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
+    network: base
+  flare:
+    address: 0xEBe394cff4980992B826Ec70ef0a9ec8b5D4C640
+    network: flare
