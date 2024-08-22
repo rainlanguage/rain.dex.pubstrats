@@ -4,9 +4,6 @@
 [submodule "lib/rain.interpreter.interface"]
 	path = lib/rain.interpreter.interface
 	url = https://github.com/rainlanguage/rain.interpreter.interface.git
-[submodule "lib/openzeppelin-contracts"]
-	path = lib/openzeppelin-contracts
-	url = https://github.com/OpenZeppelin/openzeppelin-contracts
 [submodule "lib/rain.math.fixedpoint"]
 	path = lib/rain.math.fixedpoint
 	url = https://github.com/rainprotocol/rain.math.fixedpoint
