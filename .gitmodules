@@ -1,9 +1,6 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-[submodule "lib/rain.math.fixedpoint"]
-	path = lib/rain.math.fixedpoint
-	url = https://github.com/rainprotocol/rain.math.fixedpoint
 [submodule "lib/h20.test-std"]
 	path = lib/h20.test-std
 	url = https://github.com/h20liquidity/h20.test-std.git
