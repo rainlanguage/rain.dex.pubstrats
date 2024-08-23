@@ -26,45 +26,25 @@
 # - An optional conversion between the input/output token and some external
 #   price, e.g. converting WETH in a vault to USD equivalent.
 
-networks:
-  flare-pubstrats:
-    rpc: https://flare.rpc.thirdweb.com
-    chain-id: 14
-    network-id: 14
-    currency: FLR
-
-subgraphs:
-  flare-pubstrats: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-0xb06202aA
-
-orderbooks:
-  flare-pubstrats:
-    address: 0x07701e3BcE4248EFDFc7D31392a43c8b82a7A260
-    network: flare-pubstrats
-    subgraph: flare-pubstrats
-
-deployers:
-  flare-pubstrats:
-    address: 0xEBe394cff4980992B826Ec70ef0a9ec8b5D4C640
-    network: flare-pubstrats
 
 tokens:
   flare-red:
-    network: flare-pubstrats
+    network: flare
     address: 0xE38D92733203E6f93C634304b777490e67Dc4Bdf
   flare-blue:
-    network: flare-pubstrats
+    network: flare
     address: 0x40D44abeC30288BFcd400200BA65FBD05daA5321
 
 orders:
   flare-buy:
-    orderbook: flare-pubstrats
+    orderbook: flare
     inputs:
       - token: flare-red
     outputs:
       - token: flare-blue
 
   flare-sell:
-    orderbook: flare-pubstrats
+    orderbook: flare
     inputs:
       - token: flare-blue
     outputs:
@@ -72,9 +52,9 @@ orders:
 
 scenarios:
     flare-red-blue-tranches:
-        network: flare-pubstrats
-        deployer: flare-pubstrats
-        orderbook: flare-pubstrats
+        network: flare
+        deployer: flare
+        orderbook: flare
         bindings:
           # The uniswap words are only required if there is a conversion between
           # the input/output token and some external price. Typically this is
@@ -88,7 +68,7 @@ scenarios:
           uniswap-v3-factory: '[uniswap-v3-factory]'
           uniswap-v3-init-code: '[uniswap-v3-init-code]'
 
-          orderbook-subparser: 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
+          orderbook-subparser: 0xFc6836F666C737AB7E6f3Bf72A27Dc0dd126c334
 
           # How far we move through tranche space in a second.
           # 1e18 is a whole tranche, so we divide 1 by the number of seconds
@@ -377,6 +357,9 @@ charts:
                 y: 0.7    
 
 deployments:
+  flare-test-shyness:
+    scenario: flare-red-blue-tranches.buy.initialized.test-shy-tranche
+    order: flare-buy
   flare-buy:
     scenario: flare-red-blue-tranches.buy.initialized.prod
     order: flare-buy
@@ -530,8 +513,9 @@ deployments:
   tranche-total-size: call<'calculate-tranche>(),
   tranche-amount-diff: if(
     amount-is-output
-    scale-18-dynamic(output-token-decimals() uint256-output-vault-decrease())
-    scale-18-dynamic(input-token-decimals() uint256-input-vault-increase())),
+    output-vault-decrease()
+    input-vault-increase()
+  ),
   tranche-space-diff: div(tranche-amount-diff tranche-total-size),
   tranche-space-after: add(tranche-space-before tranche-space-diff),
   /* Snap tranche space to the nearest tranche to avoid dust issues at the edges */
@@ -541,3 +525,6 @@ deployments:
     "Minimum trade size not met."
   ),
   :call<'set-last-tranche>(tranche-space-after-snapped current-time);
+
+#post-add-order
+ :;

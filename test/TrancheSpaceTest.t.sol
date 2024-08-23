@@ -1,46 +1,36 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.19;
+// SPDX-License-Identifier: CAL
+pragma solidity =0.8.25;
+import {console2, Test} from "forge-std/Test.sol";
 
-import {Vm} from "forge-std/Vm.sol";
-import {Test, console2} from "forge-std/Test.sol";
 import {
     IOrderBookV3,
-    IO,
-    OrderV2,
-    OrderConfigV2,
-    TakeOrderConfigV2,
-    TakeOrdersConfigV2
-} from "rain.orderbook.interface/interface/IOrderBookV3.sol";
-import {IParserV1} from "rain.interpreter.interface/interface/IParserV1.sol";
-import {IOrderBookV3ArbOrderTaker} from "rain.orderbook.interface/interface/IOrderBookV3ArbOrderTaker.sol";
-import {IInterpreterV2, SourceIndexV2} from "rain.interpreter.interface/interface/IInterpreterV2.sol";
+    IO
+} from "rain.orderbook.interface/interface/deprecated/v3/IOrderBookV3.sol";
+import {
+    IOrderBookV4,
+    OrderV3,
+    OrderConfigV3,
+    TakeOrderConfigV3,
+    TakeOrdersConfigV3,
+    TaskV1,
+    EvaluableV3,
+    SignedContextV1
+} from "rain.orderbook.interface/interface/IOrderBookV4.sol";
+import {IParserV2} from "rain.interpreter.interface/interface/IParserV2.sol";
+import {IOrderBookV4ArbOrderTakerV2} from "rain.orderbook.interface/interface/unstable/IOrderBookV4ArbOrderTakerV2.sol";
+import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/deprecated/IExpressionDeployerV3.sol";
+import {IInterpreterV3} from "rain.interpreter.interface/interface/IInterpreterV3.sol";
 import {IInterpreterStoreV2} from "rain.interpreter.interface/interface/IInterpreterStoreV2.sol";
-import {ISubParserV2} from "rain.interpreter.interface/interface/ISubParserV2.sol";
-import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/IExpressionDeployerV3.sol";
+import {StrategyTests, IRouteProcessor, LibStrategyDeployment, LibComposeOrders,IInterpreterV3,FullyQualifiedNamespace,LibNamespace,StateNamespace} from "h20.test-std/StrategyTests.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {StrategyTests, IRouteProcessor, LibStrategyDeployment} from "h20.test-std/StrategyTests.sol";
-import "rain.math.saturating/SaturatingMath.sol";
-import "src/lib/LibTrancheSpaceOrders.sol";
-import "rain.math.fixedpoint/lib/LibFixedPointDecimalArithmeticOpenZeppelin.sol";
-import "rain.math.fixedpoint/lib/LibFixedPointDecimalScale.sol";
-import "rain.interpreter.interface/lib/caller/LibEncodedDispatch.sol";
-import "rain.interpreter.interface/lib/ns/LibNamespace.sol"; 
+import {SafeERC20, IERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "h20.test-std/lib/LibProcessStream.sol"; 
 
 contract TrancheSpaceTest is StrategyTests {
     using Strings for address;
     using Strings for uint256;
 
-    using LibFixedPointDecimalArithmeticOpenZeppelin for uint256;
-    using LibFixedPointDecimalScale for uint256;
-
-    uint256 constant FORK_BLOCK_NUMBER = 26478013;
-    uint256 constant VAULT_ID = uint256(keccak256("vault"));
-
-    string constant TRANCHE_SPACE_FILE_PATH = "src/tranche/tranche-space.rain";
-
-    IERC20 constant RED_TOKEN = IERC20(0xE38D92733203E6f93C634304b777490e67Dc4Bdf);
-    IERC20 constant BLUE_TOKEN = IERC20(0x40D44abeC30288BFcd400200BA65FBD05daA5321);
+    uint256 constant FORK_BLOCK_NUMBER = 28712894;
 
     function selectFlareFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_FLARE"));
@@ -50,39 +40,30 @@ contract TrancheSpaceTest is StrategyTests {
 
     function setUp() public {
         selectFlareFork();
-
-        PARSER = IParserV1(0xA073E75E39C402d2AFFb48E5e8EC18169daeC31D);
-        ORDERBOOK = IOrderBookV3(0x07701e3BcE4248EFDFc7D31392a43c8b82a7A260);
-        ARB_INSTANCE = IOrderBookV3ArbOrderTaker(0xF9323B7d23c655122Fb0272D989b83E105cBcf9d);
-        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0xEBe394cff4980992B826Ec70ef0a9ec8b5D4C640);
-        ROUTE_PROCESSOR = IRouteProcessor(address(0x0bB72B4C7c0d47b2CaED07c804D9243C1B8a0728)); 
+        
+        iArbInstance = IOrderBookV4ArbOrderTakerV2(0xd752E60110C72e39637029665bee4Ae081FE1799);
+        iRouteProcessor = IRouteProcessor(address(0x839453563dbdbcfb5D34e99061308c38Fa1321Ed)); 
         EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
         APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
-    }
 
-    function flareRedIo() internal pure returns (IO memory) {
-        return IO(address(RED_TOKEN), 18, VAULT_ID);
-    }
-
-    function flareBlueIo() internal pure returns (IO memory) {
-        return IO(address(BLUE_TOKEN), 18, VAULT_ID);
+        bytes memory orderBook = LibComposeOrders.getOrderOrderBook(
+            vm,
+            "src/tranche/tranche-space.rain",
+            "src/settings.yml",
+            "flare-buy",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml"
+        );
+        iOrderBook = IOrderBookV4(address(uint160(bytes20(orderBook))));
     }
 
     function testTrancheSpaceShynessExternalFlare() public {
 
-        // Input vaults
-        IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = flareRedIo();
-
-        // Output vaults
-        IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = flareBlueIo();
-
         uint256 expectedRatio = 1e18;
         uint256 expectedAmountOutputMax = 1e18;
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+        LibStrategyDeployment.StrategyDeploymentV4 memory strategy = LibStrategyDeployment.StrategyDeploymentV4(
             "",
             "",
             0,
@@ -91,20 +72,20 @@ contract TrancheSpaceTest is StrategyTests {
             10e18,
             expectedRatio,
             expectedAmountOutputMax,
-            TRANCHE_SPACE_FILE_PATH,
-            "flare-red-blue-tranches.buy.initialized.test-shy-tranche",
+            "src/tranche/tranche-space.rain",
+            "src/settings.yml",
+            "",
+            "flare-test-shyness",
             "./lib/h20.test-std/lib/rain.orderbook",
-            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
-            inputVaults,
-            outputVaults
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml"
         );
 
-        OrderV2 memory orderMinimumTrade = addOrderDepositOutputTokens(strategy);
+        OrderV3 memory orderMinimumTrade = addOrderDepositOutputTokens(strategy);
 
         //Tranche 0- Full Tranche
         {
             vm.recordLogs();
-            takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex, new SignedContextV1[](0));
 
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
@@ -123,7 +104,7 @@ contract TrancheSpaceTest is StrategyTests {
         // Tranche 1 - Shy Tranche
         {
             vm.recordLogs();
-            takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex, new SignedContextV1[](0));
 
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
@@ -144,18 +125,10 @@ contract TrancheSpaceTest is StrategyTests {
 
     function testSuccessiveTranchesFlare() public {
 
-        // Input vaults
-        IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = flareRedIo();
-
-        // Output vaults
-        IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = flareBlueIo();
-
         uint256 expectedRatio = 1e18;
         uint256 expectedAmountOutputMax = 1e18;
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+        LibStrategyDeployment.StrategyDeploymentV4 memory strategy = LibStrategyDeployment.StrategyDeploymentV4(
             "",
             "",
             0,
@@ -164,15 +137,15 @@ contract TrancheSpaceTest is StrategyTests {
             10e18,
             expectedRatio,
             expectedAmountOutputMax,
-            TRANCHE_SPACE_FILE_PATH,
-            "flare-red-blue-tranches.buy.initialized.prod",
+            "src/tranche/tranche-space.rain",
+            "src/settings.yml",
+            "",
+            "flare-buy",
             "./lib/h20.test-std/lib/rain.orderbook",
-            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
-            inputVaults,
-            outputVaults
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml"
         );
 
-        OrderV2 memory orderMinimumTrade = addOrderDepositOutputTokens(strategy);
+        OrderV3 memory orderMinimumTrade = addOrderDepositOutputTokens(strategy);
 
         // Asserting for tranche ratios and amounts
 
@@ -185,7 +158,7 @@ contract TrancheSpaceTest is StrategyTests {
         // Tranche 0
         {
             vm.recordLogs();
-            takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex, new SignedContextV1[](0));
 
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
@@ -204,7 +177,7 @@ contract TrancheSpaceTest is StrategyTests {
         // Tranche 1
         {
             vm.recordLogs();
-            takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex, new SignedContextV1[](0));
 
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
@@ -222,7 +195,7 @@ contract TrancheSpaceTest is StrategyTests {
         // Tranche 2
         {
             vm.recordLogs();
-            takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeExternalOrder(orderMinimumTrade, strategy.inputTokenIndex, strategy.outputTokenIndex, new SignedContextV1[](0));
 
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
@@ -241,82 +214,67 @@ contract TrancheSpaceTest is StrategyTests {
     }
 
     function testTrancheSpaceOrderMinimumRevertFlare() public {
-        // Input vaults
-        IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = flareRedIo();
-
-        // Output vaults
-        IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = flareBlueIo();
-
+    
         uint256 expectedRatio = 1e18;
         uint256 expectedAmountOutputMax = 1e18;
 
         // Minimum Revert Amount = expectedAmountOutputMax * 10% = 1e17
         uint256 minimumRevertAmount = 1e17;
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedRedToBlueRoute(address(ARB_INSTANCE)),
-            getEncodedBlueToRedRoute(address(ARB_INSTANCE)),
+        LibStrategyDeployment.StrategyDeploymentV4 memory strategy = LibStrategyDeployment.StrategyDeploymentV4(
+            getEncodedRedToBlueRoute(),
+            getEncodedBlueToRedRoute(),
             0,
             0,
             10e18,
             minimumRevertAmount,
             expectedRatio,
             expectedAmountOutputMax,
-            TRANCHE_SPACE_FILE_PATH,
-            "flare-red-blue-tranches.buy.initialized.prod",
+            "src/tranche/tranche-space.rain",
+            "src/settings.yml",
+            "",
+            "flare-buy",
             "./lib/h20.test-std/lib/rain.orderbook",
-            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
-            inputVaults,
-            outputVaults
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml"
         );
 
         // Order succeeds with minumum trade size
         {
-            OrderV2 memory orderMinimumTrade = addOrderDepositOutputTokens(strategy);
+            OrderV3 memory orderMinimumTrade = addOrderDepositOutputTokens(strategy);
 
             moveExternalPrice(
-                strategy.inputVaults[strategy.inputTokenIndex].token,
-                strategy.outputVaults[strategy.outputTokenIndex].token,
+                orderMinimumTrade.validInputs[strategy.inputTokenIndex].token,
+                orderMinimumTrade.validOutputs[strategy.outputTokenIndex].token,
                 strategy.makerAmount,
                 strategy.makerRoute
             );
 
-            takeArbOrder(orderMinimumTrade,strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeArbOrder(orderMinimumTrade,strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex, new SignedContextV1[](0));
         }
 
         // Order fails with less than minimum trade size
         {
             strategy.takerAmount = minimumRevertAmount - 1;
-            OrderV2 memory orderMinimumTradeRevert = addOrderDepositOutputTokens(strategy);
+            OrderV3 memory orderMinimumTrade = addOrderDepositOutputTokens(strategy);
 
             moveExternalPrice(
-                strategy.inputVaults[strategy.inputTokenIndex].token,
-                strategy.outputVaults[strategy.outputTokenIndex].token,
+                orderMinimumTrade.validInputs[strategy.inputTokenIndex].token,
+                orderMinimumTrade.validOutputs[strategy.outputTokenIndex].token,
                 strategy.makerAmount,
                 strategy.makerRoute
             );
 
             vm.expectRevert(bytes("Minimum trade size not met."));
-            takeArbOrder(orderMinimumTradeRevert,strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeArbOrder(orderMinimumTrade, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex, new SignedContextV1[](0));
         }
     } 
 
     function testTrancheSpaceOrderExternalFlare() public {
 
-        // Input vaults
-        IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = flareRedIo();
-
-        // Output vaults
-        IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = flareBlueIo();
-
         uint256 expectedRatio = 1e18;
         uint256 expectedAmountOutputMax = 1e18;
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+        LibStrategyDeployment.StrategyDeploymentV4 memory strategy = LibStrategyDeployment.StrategyDeploymentV4(
             "",
             "",
             0,
@@ -325,12 +283,12 @@ contract TrancheSpaceTest is StrategyTests {
             2e18,
             expectedRatio,
             expectedAmountOutputMax,
-            TRANCHE_SPACE_FILE_PATH,
-            "flare-red-blue-tranches.buy.initialized.prod",
+            "src/tranche/tranche-space.rain",
+            "src/settings.yml",
+            "",
+            "flare-buy",
             "./lib/h20.test-std/lib/rain.orderbook",
-            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
-            inputVaults,
-            outputVaults
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml"
         );
 
         // OrderBook 'takeOrder'
@@ -338,32 +296,25 @@ contract TrancheSpaceTest is StrategyTests {
     }
 
     function testTrancheSpaceOrderArbFlare() public {
-        // Input vaults
-        IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = flareRedIo();
-
-        // Output vaults
-        IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = flareBlueIo();
 
         uint256 expectedRatio = 1e18;
         uint256 expectedAmountOutputMax = 1e18;
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedRedToBlueRoute(address(ARB_INSTANCE)),
-            getEncodedBlueToRedRoute(address(ARB_INSTANCE)),
+        LibStrategyDeployment.StrategyDeploymentV4 memory strategy = LibStrategyDeployment.StrategyDeploymentV4(
+            getEncodedRedToBlueRoute(),
+            getEncodedBlueToRedRoute(),
             0,
             0,
             10e18,
             1e18,
             expectedRatio,
             expectedAmountOutputMax,
-            TRANCHE_SPACE_FILE_PATH,
-            "flare-red-blue-tranches.buy.initialized.prod",
+            "src/tranche/tranche-space.rain",
+            "src/settings.yml",
+            "",
+            "flare-buy",
             "./lib/h20.test-std/lib/rain.orderbook",
-            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
-            inputVaults,
-            outputVaults
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml"
         );
 
         // OrderBook 'takeOrder'
@@ -372,30 +323,33 @@ contract TrancheSpaceTest is StrategyTests {
     }
     
 
-    function getEncodedRedToBlueRoute(address toAddress) internal pure returns (bytes memory) {
-        bytes memory RED_TO_BLUE_ROUTE_PRELUDE =
+    function getEncodedRedToBlueRoute() internal pure returns (bytes memory) {
+        bytes memory RED_TO_BLUE_ROUTE =
             hex"02"
             hex"E38D92733203E6f93C634304b777490e67Dc4Bdf"
             hex"01"
             hex"ffff"
             hex"00"
             hex"03585a45Af10963838e435601487516F97B18aF7"
-            hex"00";
+            hex"00"
+            hex"d752E60110C72e39637029665bee4Ae081FE1799"
+            hex"000bb8";
 
-        return abi.encode(bytes.concat(RED_TO_BLUE_ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
+        return abi.encode(RED_TO_BLUE_ROUTE);
     }
 
-    // Inheriting contract defines the route for the strategy.
-    function getEncodedBlueToRedRoute(address toAddress) internal pure returns (bytes memory) {
-        bytes memory BLUE_TO_RED_ROUTE_PRELUDE =
+    function getEncodedBlueToRedRoute() internal pure returns (bytes memory) {
+        bytes memory BLUE_TO_RED_ROUTE =
             hex"02"
             hex"40D44abeC30288BFcd400200BA65FBD05daA5321"
             hex"01"
             hex"ffff"
             hex"00"
             hex"03585a45Af10963838e435601487516F97B18aF7"
-            hex"01";
+            hex"01"
+            hex"d752E60110C72e39637029665bee4Ae081FE1799"
+            hex"000bb8";
 
-        return abi.encode(bytes.concat(BLUE_TO_RED_ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
+        return abi.encode(BLUE_TO_RED_ROUTE);
     }
 }
