@@ -3,17 +3,30 @@ networks:
     rpc: https://rpc.ankr.com/flare	
     chain-id: 14
     currency: FLR
+  base: 
+    rpc: https://mainnet.base.org	
+    chain-id: 8453 
+    network-id: 8453 
+    currency: ETH
 
 subgraphs:
   flare: http://replaceme.com
+  base: http://replaceme.com
   
 orderbooks:
   flare:
     address: 0xaa3b14Af0e29E3854E4148f43321C4410db002bC
     network: flare
     subgraph: flare
+  base:
+    address: 0x80DE00e3cA96AE0569426A1bb1Ae22CD4181dE6F
+    network: base
+    subgraph: base
   
 deployers:
   flare:
     address: 0xEBe394cff4980992B826Ec70ef0a9ec8b5D4C640
     network: flare
+  base:
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
+    network: base

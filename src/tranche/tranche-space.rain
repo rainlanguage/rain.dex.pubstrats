@@ -34,6 +34,12 @@ tokens:
   flare-blue:
     network: flare
     address: 0x40D44abeC30288BFcd400200BA65FBD05daA5321
+  base-red:
+    network: base-test
+    address: 0x222789334D44bB5b2364939477E15A6c981Ca165
+  base-blue:
+    network: base-test
+    address: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
 
 orders:
   flare-buy:
@@ -49,6 +55,20 @@ orders:
       - token: flare-blue
     outputs:
       - token: flare-red
+
+  base-buy:
+    orderbook: base
+    inputs:
+      - token: base-red
+    outputs:
+      - token: base-blue
+
+  base-sell:
+    orderbook: base
+    inputs:
+      - token: base-blue
+    outputs:
+      - token: base-red
 
 scenarios:
     flare-red-blue-tranches:
@@ -218,9 +238,175 @@ scenarios:
                   test-last-update-time: 0
                   test-now: 0
 
+    base-red-blue-tranches:
+            network: base
+            deployer: base
+            orderbook: base
+            bindings:
+              # The uniswap words are only required if there is a conversion between
+              # the input/output token and some external price. Typically this is
+              # not the case as the io-ratio is defined in terms of the input/output
+              # token and the io-ratio-multiplier is set to the identity function.
+              uniswap-words: 0x3bD3A7F1A9045701C5085aD4cA5d945686f7a73b
+
+              # Uniswap v3 factory contract address and corresponding init code hash.
+              # If the factory address and the init code aren't available as a literals
+              # then non-literal address and hash value can be given as bindings.
+              uniswap-v3-factory: '[uniswap-v3-factory]'
+              uniswap-v3-init-code: '[uniswap-v3-init-code]'
+
+              orderbook-subparser: 0x5CeEe9F4F49C106D5Bc049C8D649C332E6d365ad
+
+              # How far we move through tranche space in a second.
+              # 1e18 is a whole tranche, so we divide 1 by the number of seconds
+              # per recharge to calculate the per-second rate.
+              # Examples:
+              # 172800 seconds in 2 days, 48 hours = 1 / 172800 = 0.000005787037037037
+              # 86400 seconds in 1 day, 24 hours = 1 / 86400 = 0.000011574074074074
+              # 43200 seconds in 12 hours, 12 hours = 1 / 43200 = 0.000023148148148148
+              # 3600 seconds in 1 hour, 1 hour = 1 / 3600 = 0.000277777777777777
+              tranche-space-per-second: 0.000011574074074074
+
+              # After any trade happens we pause before recharging.
+              # Delay is to observe market feedback to the previous trade, e.g. to
+              # potentially offer the next tranche at a different price for some time
+              # before recharging back to the previous price.
+              # Too long and people could grief to stop recharging.
+              # Too quick and it will be difficult to move between tranches.
+              # The default here is 5 minutes (units are seconds) and probably never
+              # needs to be changed.
+              tranche-space-recharge-delay: 300
+
+              # When a tranche is completely cleared, the next tranche MAY be jumped
+              # into partially. For example, if tranches are 90% shy (i.e. 0.9) then
+              # if a tranche is cleared completely then the next tranche will be
+              # started at 10% of its maximum size. This means that the capital
+              # requirements for the strategy to reprice itself as the market moves
+              # are reduced.
+              # This MUST be set to a value less than 1e18, else it will entirely
+              # skip tranches.
+              # Shyness MAY be set to 0, in which case every tranche will be fully
+              # available as it is entered.
+              # tranche-space-shyness: 0
+
+              # Minimum trade size, if you put in a trade for less than x% of a
+              # tranche it wont clear.
+              # Mitigates people pinging strat for dust orders to stop recharging.
+              min-tranche-space-diff: 0.1
+
+              # Snap to the nearest tranche to avoid dust issues at the edges, either
+              # due to rounding in the evm or potentially malicious trades.
+              # 0.01 is 1%
+              tranche-space-snap-threshold: 0.01
+
+              # This is only relevant if the tranche size/ratio is denominated in
+              # some token other than the input/output tokens. For example, if the
+              # TKN was being traded for WETH but the tranche size was denominated in
+              # USD then the reference-stable would be USD and the reference-reserve
+              # would be WETH, and the identity multiplier needs to be swapped out
+              # for e.g. a TWAP USDT based multiplier.
+              # Typically this is NOT needed as the tranche size and ratio ARE
+              # denominated in the input/output tokens.
+              io-ratio-multiplier: '''io-ratio-multiplier-identity'
+
+            scenarios:
+              buy:
+                bindings:
+                    # If we want to denominate the amount in BLUE when we're
+                    # buying RED with it, then the amount is the OUTPUT.
+                    amount-is-output: 1
+                    io-ratio-expr: '''linear-growth'
+                    io-ratio-base: 1
+                    io-ratio-growth: 0.05
+                    tranche-size-expr: '''exponential-growth'
+                    tranche-size-base: 1
+                    tranche-size-growth: 0.01
+                scenarios:
+                  initialized:
+                    bindings:
+                      # This needs to be set upon going live.
+                      # Generate a chart and compare to current market prices, if
+                      # the market is within the chart then set this to the closest
+                      # tranche that won't immediately dump into the market.
+                      # If the market is outside the chart then set this to 0.
+                      initial-tranche-space: 0
+                    scenarios:
+                      prod:
+                        bindings:
+                          get-last-tranche: '''get-last-tranche-prod'
+                          set-last-tranche: '''set-last-tranche-prod'
+                          plottables: '''plottables-prod'
+                          tranche-space-shyness: 0
+                      test:
+                        runs: 100
+                        bindings:
+                          get-last-tranche: '''get-last-tranche-test-init'
+                          set-last-tranche: '''set-last-tranche-test'
+                          plottables: '''plottables-test'
+                          test-last-update-time: 0
+                          test-now: 0
+                      test-shy-tranche:
+                        bindings:
+                          get-last-tranche: '''get-last-tranche-prod'
+                          set-last-tranche: '''set-last-tranche-prod'
+                          plottables: '''plottables-prod'
+                          tranche-space-shyness: 0.9
+                  test:
+                      runs: 10000
+                      bindings:
+                        get-last-tranche: '''get-last-tranche-test'
+                        set-last-tranche: '''set-last-tranche-test'
+                        plottables: '''plottables-test'
+                        max-test-tranche-space: 20
+                        test-last-update-time: 0
+                        test-now: 0
+              sell:
+                bindings:
+                    # If we want to denominate the amount in BLUE when we're
+                    # selling RED for it, then the amount is the INPUT.
+                    amount-is-output: 0
+                    io-ratio-expr: '''linear-growth'
+                    io-ratio-base: 10
+                    io-ratio-growth: 0.5
+                    tranche-size-expr: '''exponential-growth'
+                    tranche-size-base: 1
+                    tranche-size-growth: 0.01
+                scenarios:
+                  initialized:
+                    bindings:
+                      # This needs to be set upon going live.
+                      # Generate a chart and compare to current market prices, if
+                      # the market is within the chart then set this to the closest
+                      # tranche that won't immediately dump into the market.
+                      # If the market is outside the chart then set this to 0.
+                      initial-tranche-space: 0
+                    scenarios:
+                      prod:
+                        bindings:
+                          get-last-tranche: '''get-last-tranche-prod'
+                          set-last-tranche: '''set-last-tranche-prod'
+                          plottables: '''plottables-prod'
+                          tranche-space-shyness: 0
+                      test:
+                        runs: 100
+                        bindings:
+                          get-last-tranche: '''get-last-tranche-test-init'
+                          set-last-tranche: '''set-last-tranche-test'
+                          plottables: '''plottables-test'
+                          test-last-update-time: 0
+                          test-now: 0
+                  test:
+                    runs: 10000
+                    bindings:
+                      get-last-tranche: '''get-last-tranche-test'
+                      set-last-tranche: '''set-last-tranche-test'
+                      plottables: '''plottables-test'
+                      max-test-tranche-space: 20
+                      test-last-update-time: 0
+                      test-now: 0
 
 charts:
-    buy-initial-deployment:
+    flare-buy-initial-deployment:
       scenario: flare-red-blue-tranches.buy.initialized.test
       metrics:
         - label: Initial BLUE sold
@@ -242,7 +428,7 @@ charts:
           description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.5.3)'     
       plots:
 
-    buy-simulation:
+    flare-buy-simulation:
       scenario: flare-red-blue-tranches.buy.test
       plots:    
         USDT sold per tranche:     
@@ -288,7 +474,7 @@ charts:
                 x: 0.0
                 y: 0.5.3      
 
-    sell-initial-deployment:
+    flare-sell-initial-deployment:
       scenario: flare-red-blue-tranches.sell.initialized.test
       metrics:
         - label: Initial RED sold
@@ -310,7 +496,7 @@ charts:
           description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.7)'     
       plots:
 
-    sell-simulation:
+    flare-sell-simulation:
       scenario: flare-red-blue-tranches.sell.test
       plots:
         RED sold per tranche:     
@@ -356,6 +542,143 @@ charts:
                 x: 0.0
                 y: 0.7    
 
+    base-buy-initial-deployment:
+      scenario: base-red-blue-tranches.buy.initialized.test
+      metrics:
+        - label: Initial BLUE sold
+          value: 0.6
+          description: 'Amount of BLUE sold to buy RED in the first tranche (stack item 0.6)'             
+        - label: Initial RED bought
+          value: 0.5.2
+          description: 'Amount of RED purchased in the first tranche (stack item 0.5.2)'                             
+        - label: Initial io-ratio
+          value: 0.7
+          description: '# RED purchased per BLUE spent (stack item 0.7)'        
+        - label: Starting tranche
+          value: 0.2.0
+          description: 'This strategy starts executing buys at the initial tranche (stack item 0.2.0)'          
+        - label: Initial buy price
+          value: 0.5.3
+          precision: 4
+          unit-suffix: " BLUE"             
+          description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.5.3)'     
+      plots:
+
+    base-buy-simulation:
+      scenario: base-red-blue-tranches.buy.test
+      plots:    
+        USDT sold per tranche:     
+          x:
+              label: 'Tranche space'
+          y:
+              label: 'USDT spent'
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.6  
+        RED bought per tranche:    
+          x:
+              label: 'Tranche space'
+          y:
+              label: 'RED bought'          
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.5.2
+        'io-ratio per tranche':
+          subtitle: 'Ratio of RED bought per 1 USDT sold per tranche'        
+          x:
+              label: 'Tranche space'
+          y:
+              label: 'RED bought per 1 USDT'            
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.7
+        buy price by tranche:
+          subtitle: 'Price paid for 1 RED in USDT, visible on dextools as RED/USDT pair'        
+          x:
+              label: 'Tranche space'
+          y:
+              label: '1 RED priced in USDT'          
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.5.3      
+
+    base-sell-initial-deployment:
+      scenario: base-red-blue-tranches.sell.initialized.test
+      metrics:
+        - label: Initial RED sold
+          value: 0.6
+          description: 'Amount of RED sold for BLUE in the first tranche (stack item 0.6)'             
+        - label: Initial BLUE bought
+          value: 0.5.2
+          description: 'Amount of BLUE purchased by selling RED in the first tranche (stack item 0.5.2)'                             
+        - label: Initial io-ratio
+          value: 0.7
+          description: '# BLUE purchased per RED spent (stack item 0.7)'        
+        - label: Starting tranche
+          value: 0.2.0
+          description: 'This strategy starts executing sells at the initial tranche (stack item 0.2.0)'          
+        - label: Initial sell price
+          value: 0.7
+          precision: 4
+          unit-suffix: "BLUE"        
+          description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.7)'     
+      plots:
+
+    base-sell-simulation:
+      scenario: base-red-blue-tranches.sell.test
+      plots:
+        RED sold per tranche:     
+          x:
+              label: 'Tranche space'
+          y:
+              label: 'RED spent'
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.6  
+        BLUE bought per tranche:    
+          x:
+              label: 'Tranche space'
+          y:
+              label: 'BLUE bought'          
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.5.2
+        'io-ratio per tranche':
+          subtitle: 'Ratio of BLUE bought per 1 RED sold per tranche'        
+          x:
+              label: 'Tranche space'
+          y:
+              label: 'RED bought per 1 BLUE'            
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.7
+        sell price by tranche:
+          subtitle: 'Price paid for 1 RED in BLUE, visible on dextools as RED/BLUE pair'        
+          x:
+              label: 'Tranche space'
+          y:
+              label: '1 RED priced in BLUE'          
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.7    
+
+
 deployments:
   flare-test-shyness:
     scenario: flare-red-blue-tranches.buy.initialized.test-shy-tranche
@@ -366,6 +689,12 @@ deployments:
   flare-sell:
     scenario: flare-red-blue-tranches.sell.initialized.prod
     order: flare-sell
+  base-buy:
+    scenario: base-red-blue-tranches.buy.initialized.prod
+    order: base-buy
+  base-sell:
+    scenario: base-red-blue-tranches.sell.initialized.prod
+    order: base-sell
 
 ---
 #tranche-space-per-second !The amount of tranche space that is recharged per second.
@@ -496,8 +825,7 @@ deployments:
 
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
-  tranche-space-now
-  tranche-space-available
+  tranche-space-now  tranche-space-available
   tranche-total-size: call<'calculate-tranche>(),
   tranche-io-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth floor(tranche-space-now)),
   final-io-ratio: mul(tranche-io-ratio call<'io-ratio-multiplier>()),
