@@ -122,7 +122,7 @@ contract TrancheSpaceTest is StrategyTests {
             assertEq(strategyRatio, expectedTrancheRatio);
         }
     }
-
+    
     function testSuccessiveTranchesFlare() public {
 
         uint256 expectedRatio = 1e18;

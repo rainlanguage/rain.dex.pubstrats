@@ -35,10 +35,10 @@ tokens:
     network: flare
     address: 0x40D44abeC30288BFcd400200BA65FBD05daA5321
   base-red:
-    network: base-test
+    network: base
     address: 0x222789334D44bB5b2364939477E15A6c981Ca165
   base-blue:
-    network: base-test
+    network: base
     address: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
 
 orders:
