@@ -68,6 +68,10 @@ scenarios:
           uniswap-v3-factory: '[uniswap-v3-factory]'
           uniswap-v3-init-code: '[uniswap-v3-init-code]'
 
+          # Uniswap v3 fee tier and twap duration
+          twap-fee: '[uniswap-v3-fee-medium]'
+          twap-duration: 0
+
           orderbook-subparser: 0xFc6836F666C737AB7E6f3Bf72A27Dc0dd126c334
 
           # How far we move through tranche space in a second.
@@ -143,6 +147,9 @@ scenarios:
                   # tranche that won't immediately dump into the market.
                   # If the market is outside the chart then set this to 0.
                   initial-tranche-space: 0
+                  post-action: '''post-action-constant'
+                  io-ratio-current: 0.1
+                  post-action-tranche: '''post-action-tranche-linear'
                 scenarios:
                   prod:
                     bindings:
@@ -193,6 +200,9 @@ scenarios:
                   # tranche that won't immediately dump into the market.
                   # If the market is outside the chart then set this to 0.
                   initial-tranche-space: 0
+                  post-action: '''post-action-constant'
+                  io-ratio-current: 0.1
+                  post-action-tranche: '''post-action-tranche-linear'
                 scenarios:
                   prod:
                     bindings:
@@ -379,6 +389,7 @@ deployments:
 #io-ratio-base !The base IO ratio, as a decimal 18 fixed point number. This is the IO ratio at tranche space 0 and grows according to the growth factor per tranche.
 #io-ratio-growth !The exponential growth factor of the IO ratio. E.g. 0.01 is 1% io-ratio growth per tranche.
 
+#reference-token !Strategy token for which the budget is written.
 #reference-stable !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
 #reference-stable-decimals !The number of decimals of the reference stable token.
 #reference-reserve !The token that will be used to compare against the reference stable token to calculate the TWAP for dollar equivalent conversions.
@@ -406,6 +417,10 @@ deployments:
 #update-time-key "update-time"
 
 #plottables !The binding for additional things we want to plot during testing.
+
+#post-action !Post action source to get current ratio
+#post-action-tranche !Binding to calculate tranche space for post action.
+#io-ratio-current !Current io-ratio offered by the market.
 
 #uniswap-words !The subparser for the Uniswap words
 #uniswap-v3-factory !Uniswap v3 factory address.
@@ -526,5 +541,41 @@ deployments:
   ),
   :call<'set-last-tranche>(tranche-space-after-snapped current-time);
 
+#post-action-buy
+  _: uniswap-v3-twap-output-ratio(
+   reference-stable reference-token
+   twap-duration 0
+   uniswap-v3-factory uniswap-v3-init-code twap-fee
+  );
+
+#post-action-sell
+  _: uniswap-v3-twap-output-ratio(
+   reference-token reference-stable
+   twap-duration 0
+   uniswap-v3-factory uniswap-v3-init-code twap-fee
+  );
+
+#post-action-constant
+  _: io-ratio-current;
+
+#post-action-tranche-linear
+  current-ratio: ,
+  init-tranche: div(
+    saturating-sub(current-ratio io-ratio-base)
+    io-ratio-growth
+  );
+
+#post-action-tranche-exponential
+  current-ratio: ,
+  init-tranche: div(
+    saturating-sub(ln(current-ratio) ln(io-ratio-base))
+    ln(add(1 io-ratio-growth))
+  );
+
 #post-add-order
- :;
+  using-words-from uniswap-words orderbook-subparser
+  current-ratio: call<'post-action>(),
+  init-tranche: call<'post-action-tranche>(current-ratio),
+  :set(hash(order-hash() init-key) 1),
+  :set(hash(order-hash() tranche-space-key) init-tranche),
+  :set(hash(order-hash() update-time-key) now());
