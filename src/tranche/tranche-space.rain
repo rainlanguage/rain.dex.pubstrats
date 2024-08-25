@@ -186,7 +186,7 @@ scenarios:
                 # selling RED for it, then the amount is the INPUT.
                 amount-is-output: 0
                 io-ratio-expr: '''linear-growth'
-                io-ratio-base: 10
+                io-ratio-base: 9
                 io-ratio-growth: 0.5
                 tranche-size-expr: '''exponential-growth'
                 tranche-size-base: 1
@@ -201,7 +201,7 @@ scenarios:
                   # If the market is outside the chart then set this to 0.
                   initial-tranche-space: 0
                   post-action: '''post-action-constant'
-                  io-ratio-current: 0.1
+                  io-ratio-current: 10
                   post-action-tranche: '''post-action-tranche-linear'
                 scenarios:
                   prod:

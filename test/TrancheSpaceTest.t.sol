@@ -58,6 +58,74 @@ contract TrancheSpaceTest is StrategyTests {
         iOrderBook = IOrderBookV4(address(uint160(bytes20(orderBook))));
     }
 
+    function testSuccessiveInitTranches() public {
+
+        LibStrategyDeployment.StrategyDeploymentV4 memory strategy = LibStrategyDeployment.StrategyDeploymentV4(
+            "",
+            "",
+            0,
+            0,
+            10e18,
+            10e18,
+            0,
+            0,
+            "src/tranche/tranche-space.rain",
+            "src/settings.yml",
+            "",
+            "flare-sell",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml"
+        );
+
+        OrderV3 memory order = addOrderDepositOutputTokens(strategy);
+
+
+        // Tranche 0
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex, new SignedContextV1[](0));
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            uint256 expectedTrancheAmount = 102009999999999997;
+            uint256 expectedTrancheRatio = 10e18;
+
+            assertEq(strategyAmount, expectedTrancheAmount);
+            assertEq(strategyRatio, expectedTrancheRatio);
+        }
+
+        // Tranche 1
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex, new SignedContextV1[](0));
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            uint256 expectedTrancheAmount = 98123904761904758;
+            uint256 expectedTrancheRatio = 10.5e18;
+
+            assertEq(strategyAmount, expectedTrancheAmount);
+            assertEq(strategyRatio, expectedTrancheRatio);
+        }
+
+        // Tranche 2
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex, new SignedContextV1[](0));
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            uint256 expectedTrancheAmount = 94600364545454541;
+            uint256 expectedTrancheRatio = 11e18;
+
+            assertEq(strategyAmount, expectedTrancheAmount);
+            assertEq(strategyRatio, expectedTrancheRatio);
+        }
+    }
+
     function testTrancheSpaceShynessExternalFlare() public {
 
         uint256 expectedRatio = 1e18;
