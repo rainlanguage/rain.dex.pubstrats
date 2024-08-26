@@ -288,7 +288,11 @@ deployments:
 #min-tranche-space-diff !The minimum tranche space difference that is allowed per trade. Prevents dusting the strat to stop it recharging.
 #tranche-space-snap-threshold !The threshold in tranche space to snap to the nearest tranche to avoid dust issues at the edges.
 
-#get-last-tranche !The binding to get the last tranche space and update time.
+#get-last-trade-io-ratio-expr !The binding to get the last trade IO ratio and time.
+#get-cost-basis-io-ratio-expr !The binding to get the cost basis IO ratio.
+#get-current-time-expr !The binding to get the current time.
+#get-last-trade-time-expr !The binding to get the last trade time.
+#get-last-tranche-space-expr !The binding to get the last tranche space and update time.
 #set-last-tranche !The binding to set the last tranche space and update time.
 #plottables !The binding for additional things we want to plot during testing.
 
@@ -297,54 +301,100 @@ deployments:
 #test-last-update-time !Returned by get-test-last-tranche to allow the last update time to be bound for testing.
 #test-now !Returned by get-test-last-tranche to allow the current time to be bound for testing.
 
-#last-io-ratio-key "last-io-ratio"
-#last-trade-time "last-trade-time"
+#last-trade-io-ratio-key "last-io-ratio"
+#last-trade-time-key "last-trade-time"
+#tranche-space-key "tranche-space"
+#total-in-key "total-in"
+#total-out-key "total-out"
 
 /* Initialize new order */
 
 #handle-add-order
-  :set(hash(order-hash() last-io-ratio-key) initial-io-ratio),
-  :set(hash(order-hash() last-trade-time) now());
+  :set(hash(order-hash() last-trade-io-ratio-key) initial-io-ratio),
+  :set(hash(order-hash() last-trade-time-key) now());
 
 /* Calculate IO */
 
 #calculate-io
   using-words-from orderbook-subparser
-  tranche-space-now
-  tranche-space-available
-  tranche-total-size: call<'calculate-tranche>(),
-  tranche-io-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth floor(tranche-space-now)),
-  amount-available: mul(tranche-total-size tranche-space-available),
-  amount: if(amount-is-output amount-available div(amount-available tranche-io-ratio)),
+  current-tranche-floor
+  current-tranche-headroom
+  tranche-total-size:
+    call<'calculate-tranche>(),
+  tranche-io-ratio: call<'calculate-io-ratio>(current-tranche-floor),
+  amount: call<'calculate-amount>(current-tranche-headroom tranche-total-size tranche-io-ratio),
   io-ratio: tranche-io-ratio,
+  :call<'set-last-trade-io-ratio-expr>(io-ratio),
+  :call<'set-last-trade-time-expr>(),
   :call<'plottables>(amount io-ratio);
 
 #calculate-tranche
-  tranche-space-before
-  last-update-time
-  current-time: call<'get-last-tranche>(),
-  recharge-duration: saturating-sub(current-time add(last-update-time tranche-space-recharge-delay)),
+  last-tranche-space: call<'get-last-tranche-space-expr>(),
+  last-trade-time: call<'get-last-trade-time-expr>(),
+  current-time: call<'get-current-time-expr>(),
+  recharge-duration: saturating-sub(current-time add(last-trade-time tranche-space-recharge-delay)),
   recharged-tranche-space: div(recharge-duration seconds-per-tranche),
-  /* repeat current-time for easy access by callers */
-  _: current-time,
-  tranche-space-now: saturating-sub(tranche-space-before recharged-tranche-space),
-  tranche-space-available: headroom(tranche-space-now),
-  tranche-total-size: call<'tranche-size-expr>(tranche-size-base tranche-size-growth floor(tranche-space-now));
+  tranche-space-now: saturating-sub(last-tranche-space recharged-tranche-space),
+  current-tranche-floor: floor(tranche-space-now),
+  current-tranche-headroom: headroom(tranche-space-now),
+  tranche-total-size: call<tranche-size-expr>(tranche-size-base tranche-size-growth current-tranche-floor);
 
-#get-last-tranche-prod
-  tranche-space-before: get(hash(order-hash() tranche-space-key)),
-  last-update-time: get(hash(order-hash() update-time-key)),
-  current-time: now();
+#amount-is-output
+  _: equal-to(amount-token output-token());
+
+#calculate-amount
+  current-tranche-headroom
+  tranche-total-size
+  tranche-io-ratio:,
+  amount-available: mul(tranche-total-size current-tranche-headroom),
+  _: if(call<'amount-is-output>() amount-available div(amount-available tranche-io-ratio));
+
+#calculate-io-ratio
+  current-tranche-floor:,
+  midpoint: any(
+    call<'get-cost-basis-io-ratio-expr>()
+    call<'get-last-trade-io-ratio-expr>()
+  ),
+  io-ratio-base: mul(midpoint add(1 spread)),
+  _: call<'io-ratio-expr>(io-ratio-base io-ratio-growth current-tranche-floor);
+
+#get-current-time-prod
+  _: now();
+
+#get-last-trade-io-ratio-prod
+  _: get(hash(order-hash() last-trade-io-ratio-key));
+
+#set-last-trade-io-ratio-prod
+  io-ratio:,
+  :set(hash(order-hash() last-trade-io-ratio-key) io-ratio);
+
+#get-last-trade-time-prod
+  _: get(hash(order-hash() last-trade-time-key));
+
+#set-last-trade-time-prod
+  :set(hash(order-hash() last-trade-time-key) now());
+
+#get-last-tranche-space-prod
+  _: get(hash(order-hash() tranche-space-key));
+
+#set-last-tranche-space-prod
+  tranche-space:,
+  :set(hash(order-hash() tranche-space-key) tranche-space);
+
+#get-cost-basis-io-ratio-prod
+  total-in: get(hash(order-hash() input-token() output-token() total-in-key)),
+  total-out: get(hash(order-hash() input-token() output-token() total-out-key)),
+  _: div(total-in total-out);
 
 /* Handle IO */
 
 #handle-io
-  current-time
   tranche-space-before
+  _
   _
   tranche-total-size: call<'calculate-tranche>(),
   tranche-amount-diff: if(
-    amount-is-output
+    call<'amount-is-output>()
     output-vault-decrease()
     input-vault-increase()
   ),
@@ -352,20 +402,15 @@ deployments:
   tranche-space-after: add(tranche-space-before tranche-space-diff),
   /* Snap tranche space to the nearest tranche to avoid dust issues at the edges */
   tranche-space-after-snapped: snap-to-unit(tranche-space-snap-threshold tranche-space-after),
+  shy-tranche-space: if(
+    is-zero(frac(tranche-space-after-snapped))
+    add(tranche-space-after-snapped tranche-space-shyness)
+    tranche-space-after-snapped),
   :ensure(
     greater-than-or-equal-to(tranche-space-after-snapped add(tranche-space-before min-tranche-space-diff))
     "Minimum trade size not met."
   ),
-  :call<'set-last-tranche>(tranche-space-after-snapped current-time);
-
-#set-last-tranche-prod
-  tranche-space current-time:,
-  shy-tranche-space: if(
-    is-zero(frac(tranche-space))
-    add(tranche-space tranche-space-shyness)
-    tranche-space),
-  :set(hash(order-hash() tranche-space-key) shy-tranche-space),
-  :set(hash(order-hash() update-time-key) current-time);
+  :call<'set-last-tranche-space-expr>(shy-tranche-space);
 
 /* Growth functions */
 
