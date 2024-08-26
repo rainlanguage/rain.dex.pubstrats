@@ -401,7 +401,6 @@ deployments:
 
 #amount-is-output !Whether the amount is an output or input amount. Non-zero means output (i.e. normal orderbook behaviour), zero means input.
 
-#init-key "init"
 #tranche-space-key "tranche-space"
 #update-time-key "update-time"
 
@@ -422,18 +421,13 @@ deployments:
   amount
   io-ratio:;
 
+#handle-add-order
+  :set(hash(order-hash() tranche-space-key) initial-tranche-space),
+  :set(hash(order-hash() update-time-key) now());
+
 #get-last-tranche-prod
-  is-initialized: get(hash(order-hash() init-key)),
-  tranche-space-before: if(
-    is-initialized
-    get(hash(order-hash() tranche-space-key))
-    initial-tranche-space
-  ),
-  last-update-time: if(
-    is-initialized
-    get(hash(order-hash() update-time-key))
-    now()
-  ),
+  tranche-space-before: get(hash(order-hash() tranche-space-key)),
+  last-update-time: get(hash(order-hash() update-time-key)),
   current-time: now();
 
 #tranche-space-shyness !The shyness of the liquidity in tranches. E.g. 0.9 is 90% shy.
@@ -443,7 +437,6 @@ deployments:
     is-zero(frac(tranche-space))
     add(tranche-space tranche-space-shyness)
     tranche-space),
-  :set(hash(order-hash() init-key) 1),
   :set(hash(order-hash() tranche-space-key) shy-tranche-space),
   :set(hash(order-hash() update-time-key) current-time);
 
