@@ -56,18 +56,6 @@ scenarios:
         deployer: flare
         orderbook: flare
         bindings:
-          # The uniswap words are only required if there is a conversion between
-          # the input/output token and some external price. Typically this is
-          # not the case as the io-ratio is defined in terms of the input/output
-          # token and the io-ratio-multiplier is set to the identity function.
-          uniswap-words: 0xAFF83Dd453f9EE510d6F623d09322A68E8ee29A3
-
-          # Uniswap v3 factory contract address and corresponding init code hash.
-          # If the factory address and the init code aren't available as a literals
-          # then non-literal address and hash value can be given as bindings.
-          uniswap-v3-factory: '[uniswap-v3-factory]'
-          uniswap-v3-init-code: '[uniswap-v3-init-code]'
-
           orderbook-subparser: 0xFc6836F666C737AB7E6f3Bf72A27Dc0dd126c334
 
           # How far we move through tranche space in a second.
@@ -217,7 +205,6 @@ scenarios:
                   max-test-tranche-space: 20
                   test-last-update-time: 0
                   test-now: 0
-
 
 charts:
     buy-initial-deployment:
@@ -379,13 +366,6 @@ deployments:
 #io-ratio-base !The base IO ratio, as a decimal 18 fixed point number. This is the IO ratio at tranche space 0 and grows according to the growth factor per tranche.
 #io-ratio-growth !The exponential growth factor of the IO ratio. E.g. 0.01 is 1% io-ratio growth per tranche.
 
-#reference-stable !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
-#reference-stable-decimals !The number of decimals of the reference stable token.
-#reference-reserve !The token that will be used to compare against the reference stable token to calculate the TWAP for dollar equivalent conversions.
-#reference-reserve-decimals !The number of decimals of the reserve token.
-#twap-duration !The duration in seconds of the TWAP window for dollar equivalence conversions.
-#twap-fee !The uniswap fee tier to use for the TWAP.
-
 #min-tranche-space-diff !The minimum tranche space difference that is allowed per trade. Prevents dusting the strat to stop it recharging.
 #tranche-space-snap-threshold !The threshold in tranche space to snap to the nearest tranche to avoid dust issues at the edges.
 
@@ -406,9 +386,6 @@ deployments:
 
 #plottables !The binding for additional things we want to plot during testing.
 
-#uniswap-words !The subparser for the Uniswap words
-#uniswap-v3-factory !Uniswap v3 factory address.
-#uniswap-v3-init-code !Uniswap v3 init code hash.
 #orderbook-subparser !The subparser for the Orderbook
 
 #plottables-test
@@ -478,25 +455,15 @@ deployments:
   tranche-space-available: headroom(tranche-space-now),
   tranche-total-size: call<'tranche-size-expr>(tranche-size-base tranche-size-growth floor(tranche-space-now));
 
-#io-ratio-multiplier-sell
-  multiplier: uniswap-v3-twap-output-ratio(reference-stable reference-reserve twap-duration 0 uniswap-v3-factory uniswap-v3-init-code twap-fee);
-
-#io-ratio-multiplier-buy
-  multiplier: uniswap-v3-twap-output-ratio(reference-reserve reference-stable  twap-duration 0 uniswap-v3-factory uniswap-v3-init-code twap-fee);
-
-#io-ratio-multiplier-identity
-  multiplier: 1;
-
 #calculate-io
-  using-words-from uniswap-words orderbook-subparser
+  using-words-from orderbook-subparser
   tranche-space-now
   tranche-space-available
   tranche-total-size: call<'calculate-tranche>(),
   tranche-io-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth floor(tranche-space-now)),
-  final-io-ratio: mul(tranche-io-ratio call<'io-ratio-multiplier>()),
   amount-available: mul(tranche-total-size tranche-space-available),
-  amount: if(amount-is-output amount-available div(amount-available final-io-ratio)),
-  io-ratio: final-io-ratio,
+  amount: if(amount-is-output amount-available div(amount-available tranche-io-ratio)),
+  io-ratio: tranche-io-ratio,
   :call<'plottables>(amount io-ratio);
 
 #handle-io
