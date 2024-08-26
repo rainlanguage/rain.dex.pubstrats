@@ -50,12 +50,21 @@ scenarios:
     bindings:
       orderbook-subparser: 0xFc6836F666C737AB7E6f3Bf72A27Dc0dd126c334
 
-      # Needs to be set to market price at order add time.
-      initial-io-ratio: 1e50
-      # distance from the midpoint for tranche 0
-      spread: 0.005
       amount-token: 0x40D44abeC30288BFcd400200BA65FBD05daA5321
+      tranche-size-expr: '''no-growth'
+      tranche-size-base: 0
+      tranche-size-growth: 0
+
+      # Needs to be set to market price at order add time.
       quote-token: 0xE38D92733203E6f93C634304b777490e67Dc4Bdf
+      initial-io-ratio: 1e50
+
+      # Relative distance from the midpoint for tranche 0.
+      # E.g. 0.005 is 0.5% spread which means total spread is 1%.
+      spread: 0.005
+      io-ratio-expr: '''exponential-growth'
+      # e.g. 0.5% per tranche
+      io-ratio-growth: 0.005
 
       # 60 * 60 * 24
       seconds-per-tranche: 86400
@@ -69,13 +78,6 @@ scenarios:
       # The default here is 5 minutes (units are seconds) and probably never
       # needs to be changed.
       tranche-space-recharge-delay: 300
-
-      io-ratio-expr: '''exponential-growth'
-      # e.g. 0.5% per tranche
-      io-ratio-growth: 0.005
-
-      tranche-size-expr: '''constant-growth'
-      tranche-size-base: 0
 
       # When a tranche is completely cleared, the next tranche MAY be jumped
       # into partially. For example, if tranches are 90% shy (i.e. 0.9) then
@@ -264,38 +266,39 @@ deployments:
     order: flare-sell
 
 ---
-#seconds-per-tranche !The duration in seconds that it takes to recharge a tranche.
-#tranche-space-recharge-delay !The duration in seconds that no recharging occurs after a trade occurs.
+#orderbook-subparser !The subparser for the Orderbook
 
+#amount-token !The token that is the amount token for the strategy. This denominates tranche sizes.
 #tranche-size-expr !The binding to get the tranche size for the current tranche space.
 #tranche-size-base !Base tranche size is the size of the smallest tranche, denominated in output token.
 #tranche-size-growth !The exponential growth factor of the size of each tranche. E.g. 0.01 is 1% output amount growth per tranche.
 
+#quote-token !The token that is the quote token for the strategy.
+#initial-io-ratio !The IO ratio that the strategy starts at. The quote token is the output so that the IO ratio looks like a CEX price.
+
+#spread !The relative distance from the midpoint for tranche 0. E.g. 0.01 is 1% spread which means total spread is 2%.
 #io-ratio-expr !The binding to get the IO ratio for the current tranche space.
-#io-ratio-base !The base IO ratio, as a decimal 18 fixed point number. This is the IO ratio at tranche space 0 and grows according to the growth factor per tranche.
 #io-ratio-growth !The exponential growth factor of the IO ratio. E.g. 0.01 is 1% io-ratio growth per tranche.
+
+#seconds-per-tranche !The duration in seconds that it takes to recharge a tranche.
+#tranche-space-recharge-delay !The duration in seconds that no recharging occurs after a trade occurs.
+
+#tranche-space-shyness !The shyness of the liquidity in tranches. E.g. 0.9 is 90% shy.
 
 #min-tranche-space-diff !The minimum tranche space difference that is allowed per trade. Prevents dusting the strat to stop it recharging.
 #tranche-space-snap-threshold !The threshold in tranche space to snap to the nearest tranche to avoid dust issues at the edges.
 
-#initial-tranche-space !The initial tranche space when the order is first deployed.
 #get-last-tranche !The binding to get the last tranche space and update time.
 #set-last-tranche !The binding to set the last tranche space and update time.
+#plottables !The binding for additional things we want to plot during testing.
 
+#max-test-tranche-space !The maximum tranche space that will appear on the test chart.
 #test-tranche-space-before !Returned by get-test-last-tranche to allow the tranche space before to be bound for testing.
 #test-last-update-time !Returned by get-test-last-tranche to allow the last update time to be bound for testing.
 #test-now !Returned by get-test-last-tranche to allow the current time to be bound for testing.
 
-#io-ratio-multiplier !The binding to get the IO ratio multiplier.
-
-#amount-is-output !Whether the amount is an output or input amount. Non-zero means output (i.e. normal orderbook behaviour), zero means input.
-
 #tranche-space-key "tranche-space"
 #update-time-key "update-time"
-
-#plottables !The binding for additional things we want to plot during testing.
-
-#orderbook-subparser !The subparser for the Orderbook
 
 #plottables-test
   amount
@@ -316,7 +319,6 @@ deployments:
   last-update-time: get(hash(order-hash() update-time-key)),
   current-time: now();
 
-#tranche-space-shyness !The shyness of the liquidity in tranches. E.g. 0.9 is 90% shy.
 #set-last-tranche-prod
   tranche-space current-time:,
   shy-tranche-space: if(
@@ -327,7 +329,6 @@ deployments:
   :set(hash(order-hash() update-time-key) current-time);
 
 /* Forward the bindings through as is to the caller. */
-#max-test-tranche-space !The maximum tranche space that will appear on the test chart.
 #get-last-tranche-test
   tranche-space-before: mod(test-tranche-space-before max-test-tranche-space),
   last-update-time: test-last-update-time,
@@ -348,7 +349,7 @@ deployments:
   base rate t:,
   _: linear-growth(base rate t);
 
-#constant-growth
+#no-growth
   base _ _:,
   _: base;
 
