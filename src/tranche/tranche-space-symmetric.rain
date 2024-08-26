@@ -297,14 +297,14 @@ deployments:
 #test-last-update-time !Returned by get-test-last-tranche to allow the last update time to be bound for testing.
 #test-now !Returned by get-test-last-tranche to allow the current time to be bound for testing.
 
-#tranche-space-key "tranche-space"
-#update-time-key "update-time"
+#last-io-ratio-key "last-io-ratio"
+#last-trade-time "last-trade-time"
 
 /* Initialize new order */
 
 #handle-add-order
-  :set(hash(order-hash() tranche-space-key) initial-tranche-space),
-  :set(hash(order-hash() update-time-key) now());
+  :set(hash(order-hash() last-io-ratio-key) initial-io-ratio),
+  :set(hash(order-hash() last-trade-time) now());
 
 /* Calculate IO */
 
