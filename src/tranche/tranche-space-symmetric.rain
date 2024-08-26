@@ -36,175 +36,84 @@ tokens:
     address: 0x40D44abeC30288BFcd400200BA65FBD05daA5321
 
 orders:
-  flare-buy:
+  flare:
     orderbook: flare
     inputs:
       - token: flare-red
-    outputs:
-      - token: flare-blue
-
-  flare-sell:
-    orderbook: flare
-    inputs:
       - token: flare-blue
     outputs:
       - token: flare-red
+      - token: flare-blue
 
 scenarios:
-    flare-red-blue-tranches:
-        network: flare
-        deployer: flare
-        orderbook: flare
+  flare:
+    bindings:
+      orderbook-subparser: 0xFc6836F666C737AB7E6f3Bf72A27Dc0dd126c334
+
+      # Needs to be set to market price at order add time.
+      initial-io-ratio: 1e50
+      # distance from the midpoint for tranche 0
+      spread: 0.005
+      amount-token: 0x40D44abeC30288BFcd400200BA65FBD05daA5321
+      quote-token: 0xE38D92733203E6f93C634304b777490e67Dc4Bdf
+
+      # 60 * 60 * 24
+      seconds-per-tranche: 86400
+
+      # After any trade happens we pause before recharging.
+      # Delay is to observe market feedback to the previous trade, e.g. to
+      # potentially offer the next tranche at a different price for some time
+      # before recharging back to the previous price.
+      # Too long and people could grief to stop recharging.
+      # Too quick and it will be difficult to move between tranches.
+      # The default here is 5 minutes (units are seconds) and probably never
+      # needs to be changed.
+      tranche-space-recharge-delay: 300
+
+      io-ratio-expr: '''exponential-growth'
+      # e.g. 0.5% per tranche
+      io-ratio-growth: 0.005
+
+      tranche-size-expr: '''constant-growth'
+      tranche-size-base: 0
+      
+      # When a tranche is completely cleared, the next tranche MAY be jumped
+      # into partially. For example, if tranches are 90% shy (i.e. 0.9) then
+      # if a tranche is cleared completely then the next tranche will be
+      # started at 10% of its maximum size. This means that the capital
+      # requirements for the strategy to reprice itself as the market moves
+      # are reduced.
+      # This MUST be set to a value less than 1e18, else it will entirely
+      # skip tranches.
+      # Shyness MAY be set to 0, in which case every tranche will be fully
+      # available as it is entered.
+      tranche-space-shyness: 0.9
+
+      # Minimum trade size, if you put in a trade for less than x% of a
+      # tranche it wont clear.
+      # Mitigates people pinging strat for dust orders to stop recharging.
+      min-tranche-space-diff: 0.1
+
+      # Snap to the nearest tranche to avoid dust issues at the edges, either
+      # due to rounding in the evm or potentially malicious trades.
+      # 0.01 is 1%
+      tranche-space-snap-threshold: 0.01
+
+    scenarios: 
+      prod:
         bindings:
-          orderbook-subparser: 0xFc6836F666C737AB7E6f3Bf72A27Dc0dd126c334
-
-          # How far we move through tranche space in a second.
-          # 1e18 is a whole tranche, so we divide 1 by the number of seconds
-          # per recharge to calculate the per-second rate.
-          # Examples:
-          # 172800 seconds in 2 days, 48 hours = 1 / 172800 = 0.000005787037037037
-          # 86400 seconds in 1 day, 24 hours = 1 / 86400 = 0.000011574074074074
-          # 43200 seconds in 12 hours, 12 hours = 1 / 43200 = 0.000023148148148148
-          # 3600 seconds in 1 hour, 1 hour = 1 / 3600 = 0.000277777777777777
-          tranche-space-per-second: 0.000011574074074074
-
-          # After any trade happens we pause before recharging.
-          # Delay is to observe market feedback to the previous trade, e.g. to
-          # potentially offer the next tranche at a different price for some time
-          # before recharging back to the previous price.
-          # Too long and people could grief to stop recharging.
-          # Too quick and it will be difficult to move between tranches.
-          # The default here is 5 minutes (units are seconds) and probably never
-          # needs to be changed.
-          tranche-space-recharge-delay: 300
-
-          # When a tranche is completely cleared, the next tranche MAY be jumped
-          # into partially. For example, if tranches are 90% shy (i.e. 0.9) then
-          # if a tranche is cleared completely then the next tranche will be
-          # started at 10% of its maximum size. This means that the capital
-          # requirements for the strategy to reprice itself as the market moves
-          # are reduced.
-          # This MUST be set to a value less than 1e18, else it will entirely
-          # skip tranches.
-          # Shyness MAY be set to 0, in which case every tranche will be fully
-          # available as it is entered.
-          # tranche-space-shyness: 0
-
-          # Minimum trade size, if you put in a trade for less than x% of a
-          # tranche it wont clear.
-          # Mitigates people pinging strat for dust orders to stop recharging.
-          min-tranche-space-diff: 0.1
-
-          # Snap to the nearest tranche to avoid dust issues at the edges, either
-          # due to rounding in the evm or potentially malicious trades.
-          # 0.01 is 1%
-          tranche-space-snap-threshold: 0.01
-
-          # This is only relevant if the tranche size/ratio is denominated in
-          # some token other than the input/output tokens. For example, if the
-          # TKN was being traded for WETH but the tranche size was denominated in
-          # USD then the reference-stable would be USD and the reference-reserve
-          # would be WETH, and the identity multiplier needs to be swapped out
-          # for e.g. a TWAP USDT based multiplier.
-          # Typically this is NOT needed as the tranche size and ratio ARE
-          # denominated in the input/output tokens.
-          io-ratio-multiplier: '''io-ratio-multiplier-identity'
-
-        scenarios:
-          buy:
-            bindings:
-                # If we want to denominate the amount in BLUE when we're
-                # buying RED with it, then the amount is the OUTPUT.
-                amount-is-output: 1
-                io-ratio-expr: '''linear-growth'
-                io-ratio-base: 1
-                io-ratio-growth: 0.05
-                tranche-size-expr: '''exponential-growth'
-                tranche-size-base: 1
-                tranche-size-growth: 0.01
-            scenarios:
-              initialized:
-                bindings:
-                  # This needs to be set upon going live.
-                  # Generate a chart and compare to current market prices, if
-                  # the market is within the chart then set this to the closest
-                  # tranche that won't immediately dump into the market.
-                  # If the market is outside the chart then set this to 0.
-                  initial-tranche-space: 0
-                scenarios:
-                  prod:
-                    bindings:
-                      get-last-tranche: '''get-last-tranche-prod'
-                      set-last-tranche: '''set-last-tranche-prod'
-                      plottables: '''plottables-prod'
-                      tranche-space-shyness: 0
-                  test:
-                    runs: 100
-                    bindings:
-                      get-last-tranche: '''get-last-tranche-test-init'
-                      set-last-tranche: '''set-last-tranche-test'
-                      plottables: '''plottables-test'
-                      test-last-update-time: 0
-                      test-now: 0
-                  test-shy-tranche:
-                    bindings:
-                      get-last-tranche: '''get-last-tranche-prod'
-                      set-last-tranche: '''set-last-tranche-prod'
-                      plottables: '''plottables-prod'
-                      tranche-space-shyness: 0.9
-              test:
-                  runs: 10000
-                  bindings:
-                    get-last-tranche: '''get-last-tranche-test'
-                    set-last-tranche: '''set-last-tranche-test'
-                    plottables: '''plottables-test'
-                    max-test-tranche-space: 20
-                    test-last-update-time: 0
-                    test-now: 0
-          sell:
-            bindings:
-                # If we want to denominate the amount in BLUE when we're
-                # selling RED for it, then the amount is the INPUT.
-                amount-is-output: 0
-                io-ratio-expr: '''linear-growth'
-                io-ratio-base: 10
-                io-ratio-growth: 0.5
-                tranche-size-expr: '''exponential-growth'
-                tranche-size-base: 1
-                tranche-size-growth: 0.01
-            scenarios:
-              initialized:
-                bindings:
-                  # This needs to be set upon going live.
-                  # Generate a chart and compare to current market prices, if
-                  # the market is within the chart then set this to the closest
-                  # tranche that won't immediately dump into the market.
-                  # If the market is outside the chart then set this to 0.
-                  initial-tranche-space: 0
-                scenarios:
-                  prod:
-                    bindings:
-                      get-last-tranche: '''get-last-tranche-prod'
-                      set-last-tranche: '''set-last-tranche-prod'
-                      plottables: '''plottables-prod'
-                      tranche-space-shyness: 0
-                  test:
-                    runs: 100
-                    bindings:
-                      get-last-tranche: '''get-last-tranche-test-init'
-                      set-last-tranche: '''set-last-tranche-test'
-                      plottables: '''plottables-test'
-                      test-last-update-time: 0
-                      test-now: 0
-              test:
-                runs: 10000
-                bindings:
-                  get-last-tranche: '''get-last-tranche-test'
-                  set-last-tranche: '''set-last-tranche-test'
-                  plottables: '''plottables-test'
-                  max-test-tranche-space: 20
-                  test-last-update-time: 0
-                  test-now: 0
+          get-last-tranche: '''get-last-tranche-prod'
+          set-last-tranche: '''set-last-tranche-prod'
+          plottables: '''plottables-prod'
+      test:
+        runs: 10000
+        bindings:
+          get-last-tranche: '''get-last-tranche-test'
+          set-last-tranche: '''set-last-tranche-test'
+          plottables: '''plottables-test'
+          max-test-tranche-space: 20
+          test-last-update-time: 0
+          test-now: 0
 
 charts:
     buy-initial-deployment:
