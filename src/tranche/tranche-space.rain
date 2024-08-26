@@ -389,7 +389,6 @@ deployments:
 #io-ratio-base !The base IO ratio, as a decimal 18 fixed point number. This is the IO ratio at tranche space 0 and grows according to the growth factor per tranche.
 #io-ratio-growth !The exponential growth factor of the IO ratio. E.g. 0.01 is 1% io-ratio growth per tranche.
 
-#reference-token !Strategy token for which the budget is written.
 #reference-stable !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
 #reference-stable-decimals !The number of decimals of the reference stable token.
 #reference-reserve !The token that will be used to compare against the reference stable token to calculate the TWAP for dollar equivalent conversions.
@@ -541,16 +540,9 @@ deployments:
   ),
   :call<'set-last-tranche>(tranche-space-after-snapped current-time);
 
-#post-action-buy
+#post-action-orcale
   _: uniswap-v3-twap-output-ratio(
-   reference-stable reference-token
-   twap-duration 0
-   uniswap-v3-factory uniswap-v3-init-code twap-fee
-  );
-
-#post-action-sell
-  _: uniswap-v3-twap-output-ratio(
-   reference-token reference-stable
+   output-token() input-token()
    twap-duration 0
    uniswap-v3-factory uniswap-v3-init-code twap-fee
   );
