@@ -76,7 +76,7 @@ scenarios:
 
       tranche-size-expr: '''constant-growth'
       tranche-size-base: 0
-      
+
       # When a tranche is completely cleared, the next tranche MAY be jumped
       # into partially. For example, if tranches are 90% shy (i.e. 0.9) then
       # if a tranche is cleared completely then the next tranche will be
@@ -99,7 +99,7 @@ scenarios:
       # 0.01 is 1%
       tranche-space-snap-threshold: 0.01
 
-    scenarios: 
+    scenarios:
       prod:
         bindings:
           get-last-tranche: '''get-last-tranche-prod'
@@ -121,27 +121,27 @@ charts:
       metrics:
         - label: Initial BLUE sold
           value: 0.6
-          description: 'Amount of BLUE sold to buy RED in the first tranche (stack item 0.6)'             
+          description: 'Amount of BLUE sold to buy RED in the first tranche (stack item 0.6)'
         - label: Initial RED bought
           value: 0.5.2
-          description: 'Amount of RED purchased in the first tranche (stack item 0.5.2)'                             
+          description: 'Amount of RED purchased in the first tranche (stack item 0.5.2)'
         - label: Initial io-ratio
           value: 0.7
-          description: '# RED purchased per BLUE spent (stack item 0.7)'        
+          description: '# RED purchased per BLUE spent (stack item 0.7)'
         - label: Starting tranche
           value: 0.2.0
-          description: 'This strategy starts executing buys at the initial tranche (stack item 0.2.0)'          
+          description: 'This strategy starts executing buys at the initial tranche (stack item 0.2.0)'
         - label: Initial buy price
           value: 0.5.3
           precision: 4
-          unit-suffix: " BLUE"             
-          description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.5.3)'     
+          unit-suffix: " BLUE"
+          description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.5.3)'
       plots:
 
     buy-simulation:
       scenario: flare-red-blue-tranches.buy.test
-      plots:    
-        USDT sold per tranche:     
+      plots:
+        USDT sold per tranche:
           x:
               label: 'Tranche space'
           y:
@@ -150,66 +150,66 @@ charts:
             - type: line
               options:
                 x: 0.0
-                y: 0.6  
-        RED bought per tranche:    
+                y: 0.6
+        RED bought per tranche:
           x:
               label: 'Tranche space'
           y:
-              label: 'RED bought'          
+              label: 'RED bought'
           marks:
             - type: line
               options:
                 x: 0.0
                 y: 0.5.2
         'io-ratio per tranche':
-          subtitle: 'Ratio of RED bought per 1 USDT sold per tranche'        
+          subtitle: 'Ratio of RED bought per 1 USDT sold per tranche'
           x:
               label: 'Tranche space'
           y:
-              label: 'RED bought per 1 USDT'            
+              label: 'RED bought per 1 USDT'
           marks:
             - type: line
               options:
                 x: 0.0
                 y: 0.7
         buy price by tranche:
-          subtitle: 'Price paid for 1 RED in USDT, visible on dextools as RED/USDT pair'        
+          subtitle: 'Price paid for 1 RED in USDT, visible on dextools as RED/USDT pair'
           x:
               label: 'Tranche space'
           y:
-              label: '1 RED priced in USDT'          
+              label: '1 RED priced in USDT'
           marks:
             - type: line
               options:
                 x: 0.0
-                y: 0.5.3      
+                y: 0.5.3
 
     sell-initial-deployment:
       scenario: flare-red-blue-tranches.sell.initialized.test
       metrics:
         - label: Initial RED sold
           value: 0.6
-          description: 'Amount of RED sold for BLUE in the first tranche (stack item 0.6)'             
+          description: 'Amount of RED sold for BLUE in the first tranche (stack item 0.6)'
         - label: Initial BLUE bought
           value: 0.5.2
-          description: 'Amount of BLUE purchased by selling RED in the first tranche (stack item 0.5.2)'                             
+          description: 'Amount of BLUE purchased by selling RED in the first tranche (stack item 0.5.2)'
         - label: Initial io-ratio
           value: 0.7
-          description: '# BLUE purchased per RED spent (stack item 0.7)'        
+          description: '# BLUE purchased per RED spent (stack item 0.7)'
         - label: Starting tranche
           value: 0.2.0
-          description: 'This strategy starts executing sells at the initial tranche (stack item 0.2.0)'          
+          description: 'This strategy starts executing sells at the initial tranche (stack item 0.2.0)'
         - label: Initial sell price
           value: 0.7
           precision: 4
-          unit-suffix: "BLUE"        
-          description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.7)'     
+          unit-suffix: "BLUE"
+          description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.7)'
       plots:
 
     sell-simulation:
       scenario: flare-red-blue-tranches.sell.test
       plots:
-        RED sold per tranche:     
+        RED sold per tranche:
           x:
               label: 'Tranche space'
           y:
@@ -218,39 +218,39 @@ charts:
             - type: line
               options:
                 x: 0.0
-                y: 0.6  
-        BLUE bought per tranche:    
+                y: 0.6
+        BLUE bought per tranche:
           x:
               label: 'Tranche space'
           y:
-              label: 'BLUE bought'          
+              label: 'BLUE bought'
           marks:
             - type: line
               options:
                 x: 0.0
                 y: 0.5.2
         'io-ratio per tranche':
-          subtitle: 'Ratio of BLUE bought per 1 RED sold per tranche'        
+          subtitle: 'Ratio of BLUE bought per 1 RED sold per tranche'
           x:
               label: 'Tranche space'
           y:
-              label: 'RED bought per 1 BLUE'            
+              label: 'RED bought per 1 BLUE'
           marks:
             - type: line
               options:
                 x: 0.0
                 y: 0.7
         sell price by tranche:
-          subtitle: 'Price paid for 1 RED in BLUE, visible on dextools as RED/BLUE pair'        
+          subtitle: 'Price paid for 1 RED in BLUE, visible on dextools as RED/BLUE pair'
           x:
               label: 'Tranche space'
           y:
-              label: '1 RED priced in BLUE'          
+              label: '1 RED priced in BLUE'
           marks:
             - type: line
               options:
                 x: 0.0
-                y: 0.7    
+                y: 0.7
 
 deployments:
   flare-test-shyness:
@@ -264,7 +264,7 @@ deployments:
     order: flare-sell
 
 ---
-#tranche-space-per-second !The amount of tranche space that is recharged per second.
+#seconds-per-tranche !The duration in seconds that it takes to recharge a tranche.
 #tranche-space-recharge-delay !The duration in seconds that no recharging occurs after a trade occurs.
 
 #tranche-size-expr !The binding to get the tranche size for the current tranche space.
@@ -357,7 +357,7 @@ deployments:
   last-update-time
   current-time: call<'get-last-tranche>(),
   recharge-duration: saturating-sub(current-time add(last-update-time tranche-space-recharge-delay)),
-  recharged-tranche-space: mul(recharge-duration tranche-space-per-second),
+  recharged-tranche-space: div(recharge-duration seconds-per-tranche),
   /* repeat current-time for easy access by callers */
   _: current-time,
   tranche-space-now: saturating-sub(tranche-space-before recharged-tranche-space),
