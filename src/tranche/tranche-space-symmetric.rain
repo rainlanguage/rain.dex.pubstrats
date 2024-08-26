@@ -518,6 +518,3 @@ deployments:
     "Minimum trade size not met."
   ),
   :call<'set-last-tranche>(tranche-space-after-snapped current-time);
-
-#post-add-order
- :;
