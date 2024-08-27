@@ -1,3 +1,23 @@
+networks:
+  base:
+    rpc: https://base.llamarpc.com
+    chain-id: 8453
+    currency: ETH
+
+subgraphs:
+  base: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-base/0.5/gn
+
+orderbooks:
+  base:
+    address: 0x80DE00e3cA96AE0569426A1bb1Ae22CD4181dE6F
+    network: base
+    subgraph: base
+
+deployers:
+  base:
+    address: 0xC1A14cE2fd58A3A2f99deCb8eDd866204eE07f8D
+    network: base
+
 tokens:
   base-usdc:
     network: base
@@ -75,14 +95,28 @@ scenarios:
     scenarios:
       prod:
         bindings:
-          get-last-tranche: '''get-last-tranche-prod'
-          set-last-tranche: '''set-last-tranche-prod'
+          get-last-tranche-space-expr: '''get-last-tranche-space-prod'
+          set-last-tranche-space-expr: '''set-last-tranche-space-prod'
+          set-last-trade-io-ratio-expr: '''set-last-trade-io-ratio-prod'
+          get-last-trade-io-ratio-expr: '''get-last-trade-io-ratio-prod'
+          get-last-trade-time-expr: '''get-last-trade-time-prod'
+          set-last-trade-time-expr: '''set-last-trade-time-prod'
+          get-cost-basis-io-ratio-expr: '''get-cost-basis-io-ratio-prod'
+          set-cost-basis-io-ratio-expr: '''set-cost-basis-io-ratio-prod'
+          get-current-time-expr: '''get-current-time-prod'
           plottables: '''plottables-prod'
       test:
         runs: 10000
         bindings:
-          get-last-tranche: '''get-last-tranche-test'
-          set-last-tranche: '''set-last-tranche-test'
+          get-last-tranche-space-expr: '''get-last-tranche-space-test'
+          set-last-tranche-space-expr: '''set-last-tranche-space-test'
+          set-last-trade-io-ratio-expr: '''set-last-trade-io-ratio-test'
+          get-last-trade-io-ratio-expr: '''get-last-trade-io-ratio-test'
+          set-last-trade-time-expr: '''set-last-trade-time-test'
+          get-last-trade-time-expr: '''get-last-trade-time-test'
+          get-cost-basis-io-ratio-expr: '''get-cost-basis-io-ratio-test'
+          set-cost-basis-io-ratio-expr: '''set-cost-basis-io-ratio-test'
+          get-current-time-expr: '''get-current-time-test'
           plottables: '''plottables-test'
           max-test-tranche-space: 20
           test-last-update-time: 0
@@ -118,12 +152,15 @@ deployments:
 #min-tranche-space-diff !The minimum tranche space difference that is allowed per trade. Prevents dusting the strat to stop it recharging.
 #tranche-space-snap-threshold !The threshold in tranche space to snap to the nearest tranche to avoid dust issues at the edges.
 
-#get-last-trade-io-ratio-expr !The binding to get the last trade IO ratio and time.
+#get-last-trade-io-ratio-expr !The binding to get the last trade IO ratio.
+#set-last-trade-io-ratio-expr !The binding to set the last trade IO ratio.
 #get-cost-basis-io-ratio-expr !The binding to get the cost basis IO ratio.
+#set-cost-basis-io-ratio-expr !The binding to set the cost basis IO ratio.
 #get-current-time-expr !The binding to get the current time.
 #get-last-trade-time-expr !The binding to get the last trade time.
+#set-last-trade-time-expr !The binding to set the last trade time.
 #get-last-tranche-space-expr !The binding to get the last tranche space and update time.
-#set-last-tranche !The binding to set the last tranche space and update time.
+#set-last-tranche-space-expr !The binding to set the last tranche space and update time.
 #plottables !The binding for additional things we want to plot during testing.
 
 #max-test-tranche-space !The maximum tranche space that will appear on the test chart.
@@ -294,10 +331,32 @@ deployments:
   amount
   io-ratio:;
 
-#get-last-tranche-test
-  tranche-space-before: mod(test-tranche-space-before max-test-tranche-space),
-  last-update-time: test-last-update-time,
-  current-time: test-now;
+#get-last-tranche-space-test
+  _: mod(test-tranche-space-before max-test-tranche-space);
+
+#set-last-tranche-space-test
+  _:;
 
 #set-last-tranche-test
-  tranche-space current-time:;
+  _:;
+
+#get-last-trade-io-ratio-test
+  _: 1;
+
+#set-last-trade-io-ratio-test
+  _:;
+
+#get-last-trade-time-test
+  _: test-now;
+
+#set-last-trade-time-test
+  :;
+
+#set-cost-basis-io-ratio-test
+  :;
+
+#get-current-time-test
+  _: test-now;
+
+#get-cost-basis-io-ratio-test
+  _ _ _: 1 1 1;
