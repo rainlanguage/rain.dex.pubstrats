@@ -1,6 +1,6 @@
 networks:
   base:
-    rpc: https://base.llamarpc.com
+    rpc: https://mainnet.base.org
     chain-id: 8453
     currency: ETH
 
@@ -99,11 +99,10 @@ scenarios:
           set-last-tranche-space-expr: '''set-last-tranche-space-prod'
           set-last-trade-io-ratio-expr: '''set-last-trade-io-ratio-prod'
           get-last-trade-io-ratio-expr: '''get-last-trade-io-ratio-prod'
-          get-last-trade-time-expr: '''get-last-trade-time-prod'
+          get-times-expr: '''get-times-prod'
           set-last-trade-time-expr: '''set-last-trade-time-prod'
           get-cost-basis-io-ratio-expr: '''get-cost-basis-io-ratio-prod'
           set-cost-basis-io-ratio-expr: '''set-cost-basis-io-ratio-prod'
-          get-current-time-expr: '''get-current-time-prod'
           plottables: '''plottables-prod'
       test:
         runs: 10000
@@ -113,16 +112,17 @@ scenarios:
           set-last-trade-io-ratio-expr: '''set-last-trade-io-ratio-test'
           get-last-trade-io-ratio-expr: '''get-last-trade-io-ratio-test'
           set-last-trade-time-expr: '''set-last-trade-time-test'
-          get-last-trade-time-expr: '''get-last-trade-time-test'
+          get-times-expr: '''get-times-test'
           get-cost-basis-io-ratio-expr: '''get-cost-basis-io-ratio-test'
           set-cost-basis-io-ratio-expr: '''set-cost-basis-io-ratio-test'
-          get-current-time-expr: '''get-current-time-test'
           plottables: '''plottables-test'
           max-test-tranche-space: 20
           test-last-update-time: 0
           test-now: 0
 
 charts:
+  base:
+    scenario: base.prod
 
 deployments:
   base:
@@ -156,8 +156,7 @@ deployments:
 #set-last-trade-io-ratio-expr !The binding to set the last trade IO ratio.
 #get-cost-basis-io-ratio-expr !The binding to get the cost basis IO ratio.
 #set-cost-basis-io-ratio-expr !The binding to set the cost basis IO ratio.
-#get-current-time-expr !The binding to get the current time.
-#get-last-trade-time-expr !The binding to get the last trade time.
+#get-times-expr !The binding to get the times.
 #set-last-trade-time-expr !The binding to set the last trade time.
 #get-last-tranche-space-expr !The binding to get the last tranche space and update time.
 #set-last-tranche-space-expr !The binding to set the last tranche space and update time.
@@ -188,8 +187,17 @@ deployments:
   current-tranche-headroom
   tranche-total-size:
     call<'calculate-tranche>(),
-  tranche-io-ratio: call<'calculate-io-ratio>(current-tranche-floor),
-  amount: call<'calculate-amount>(current-tranche-headroom tranche-total-size tranche-io-ratio),
+  /* calculate io ratio */
+  midpoint: any(
+    call<'get-cost-basis-io-ratio-expr>()
+    call<'get-last-trade-io-ratio-expr>()
+  ),
+  io-ratio-base: mul(midpoint add(1 spread)),
+  tranche-io-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth current-tranche-floor),
+  /* calculate amount */
+  amount-available: mul(tranche-total-size current-tranche-headroom),
+  amount: if(call<'amount-is-output>() amount-available div(amount-available tranche-io-ratio)),
+
   io-ratio: tranche-io-ratio,
   :call<'set-last-trade-io-ratio-expr>(io-ratio),
   :call<'set-last-trade-time-expr>(),
@@ -197,8 +205,7 @@ deployments:
 
 #calculate-tranche
   last-tranche-space: call<'get-last-tranche-space-expr>(),
-  last-trade-time: call<'get-last-trade-time-expr>(),
-  current-time: call<'get-current-time-expr>(),
+  current-time last-trade-time: call<'get-times-expr>(),
   recharge-duration: saturating-sub(current-time add(last-trade-time tranche-space-recharge-delay)),
   recharged-tranche-space: div(recharge-duration seconds-per-tranche),
   tranche-space-now: saturating-sub(last-tranche-space recharged-tranche-space),
@@ -209,27 +216,12 @@ deployments:
 #amount-is-output
   _: equal-to(amount-token output-token());
 
-#calculate-amount
-  current-tranche-headroom
-  tranche-total-size
-  tranche-io-ratio:,
-  amount-available: mul(tranche-total-size current-tranche-headroom),
-  _: if(call<'amount-is-output>() amount-available div(amount-available tranche-io-ratio));
-
-#calculate-io-ratio
-  current-tranche-floor:,
-  midpoint: any(
-    call<'get-cost-basis-io-ratio-expr>()
-    call<'get-last-trade-io-ratio-expr>()
-  ),
-  io-ratio-base: mul(midpoint add(1 spread)),
-  _: call<'io-ratio-expr>(io-ratio-base io-ratio-growth current-tranche-floor);
-
-#get-current-time-prod
-  _: now();
+#get-times-prod
+  current-time: now(),
+  last-trade-time: get(hash(order-hash() last-trade-time-key));
 
 #get-last-trade-io-ratio-prod
-  stored-last-trade-io: get(hash(order-hash() last-trade-io-ratio-key)),
+  stored-last-trade-io: any(get(hash(order-hash() last-trade-io-ratio-key)) initial-io-ratio),
   _: if(
     equal-to(output-token() get(hash(order-hash() last-trade-output-token-key)))
     stored-last-trade-io
@@ -238,9 +230,6 @@ deployments:
 #set-last-trade-io-ratio-prod
   io-ratio:,
   :set(hash(order-hash() last-trade-io-ratio-key) io-ratio);
-
-#get-last-trade-time-prod
-  _: get(hash(order-hash() last-trade-time-key));
 
 #set-last-trade-time-prod
   :set(hash(order-hash() last-trade-time-key) now());
@@ -255,28 +244,29 @@ deployments:
 #get-cost-basis-io-ratio-prod
   total-in: get(hash(order-hash() input-token() output-token() input-token())),
   total-out: get(hash(order-hash() input-token() output-token() output-token())),
-  _: div(total-in total-out);
+  _: div(total-in any(total-out 1));
 
 #set-cost-basis-io-ratio-prod
   /* first reduce outstanding inventory */
-  other-total-in-key: hash(order-hash() output-token() input-token() output-token()),
-  other-total-out-key: hash(order-hash() output-token() input-token() input-token()),
-  other-total-in: get(other-total-in-key),
-  other-total-out: get(other-total-out-key),
-  other-reduction-in: min(other-total-in output-vault-decrease()),
-  :set(other-total-in-key sub(other-total-in other-reduction-in)),
-  other-reduction-out: div(mul(other-reduction-in other-total-out) other-total-in),
-  :set(other-total-out-key sub(other-total-out other-reduction-out)),
+  /* other-total-in-key: hash(order-hash() output-token() input-token() output-token()), */
+  /* other-total-out-key: hash(order-hash() output-token() input-token() input-token()), */
+  /* other-total-in: get(other-total-in-key), */
+  /* other-total-out: get(other-total-out-key), */
+  /* other-reduction-in: min(other-total-in output-vault-decrease()), */
+  /* :set(other-total-in-key sub(other-total-in other-reduction-in)), */
+  /* other-reduction-out: div(mul(other-reduction-in other-total-out) other-total-in), */
+  /* :set(other-total-out-key sub(other-total-out other-reduction-out)), */
 
   /* then increase our inventory */
-  total-in-key: hash(order-hash() input-token() output-token() input-token()),
-  total-out-key: hash(order-hash() input-token() output-token() output-token()),
-  total-in: get(total-in-key),
-  total-out: get(total-out-key),
-  remaining-out: sub(output-vault-decrease() other-reduction-in),
-  remaining-in: div(mul(remaining-out total-in) total-out),
-  :set(total-in-key add(total-in remaining-in)),
-  :set(total-out-key add(total-out remaining-out));
+  /* total-in-key: hash(order-hash() input-token() output-token() input-token()), */
+  /* total-out-key: hash(order-hash() input-token() output-token() output-token()), */
+  /* total-in: get(total-in-key), */
+  /* total-out: get(total-out-key), */
+  /* remaining-out: sub(output-vault-decrease() other-reduction-in), */
+  /* remaining-in: div(mul(remaining-out total-in) total-out), */
+  /* :set(total-in-key add(total-in remaining-in)), */
+  /* :set(total-out-key add(total-out remaining-out)); */
+  :;
 
 /* Handle IO */
 
@@ -346,17 +336,15 @@ deployments:
 #set-last-trade-io-ratio-test
   _:;
 
-#get-last-trade-time-test
-  _: test-now;
+#get-times-test
+  current-time: test-now,
+  last-trade-time: test-now;
 
 #set-last-trade-time-test
   :;
 
 #set-cost-basis-io-ratio-test
   :;
-
-#get-current-time-test
-  _: test-now;
 
 #get-cost-basis-io-ratio-test
   _ _ _: 1 1 1;
