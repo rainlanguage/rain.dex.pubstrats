@@ -1,32 +1,3 @@
-# Strat: Recharging tranches
-#
-# High level idea is that the strategy offers a firm price for batches of tokens.
-# Each batch is called a "tranche".
-#
-# Every time a batch of tokens fully clears a new price further from the previous
-# trades is offered for the next tranche.
-#
-# For example, if 1000 BLUE was available in a tranche to buy RED at
-# 1 BLUE per RED and this fully cleared, the next tranche might be to buy up to
-# 1000 BLUE at 0.9 BLUE per RED, then 0.8, etc. etc.
-#
-# Tranches slowly recharge over time passively when no trades are happening against
-# the current price offer. For example, the strategy might recharge 1 tranche per
-# day, so if the last trade left 500 BLUE remaining in a 1000 BLUE tranche at
-# 0.9 BLUE per RED then after 24 hours the strategy will be offering 500 BLUE
-# at 1 BLUE per RED. I.e. 0.5 tranches were recharged at 0.9 ratio and then
-# another 0.5 tranches were recharged at 1 ratio. After another 12 hours
-# there will be 1000 BLUE on offer at 1 ratio, etc.
-#
-# Almost everything about the strat is bindable and chartable, e.g.
-# - The algorithms that determine the price and amount of each tranche
-# - The recharge rate and delay before the passive recharge starts to kick in
-# - Whether the amounts per tranche are denominated in the input or output token
-# - Whether the strategy is buying or selling TKN
-# - An optional conversion between the input/output token and some external
-#   price, e.g. converting WETH in a vault to USD equivalent.
-
-
 tokens:
   flare-red:
     network: flare
@@ -118,152 +89,11 @@ scenarios:
           test-now: 0
 
 charts:
-    buy-initial-deployment:
-      scenario: flare-red-blue-tranches.buy.initialized.test
-      metrics:
-        - label: Initial BLUE sold
-          value: 0.6
-          description: 'Amount of BLUE sold to buy RED in the first tranche (stack item 0.6)'
-        - label: Initial RED bought
-          value: 0.5.2
-          description: 'Amount of RED purchased in the first tranche (stack item 0.5.2)'
-        - label: Initial io-ratio
-          value: 0.7
-          description: '# RED purchased per BLUE spent (stack item 0.7)'
-        - label: Starting tranche
-          value: 0.2.0
-          description: 'This strategy starts executing buys at the initial tranche (stack item 0.2.0)'
-        - label: Initial buy price
-          value: 0.5.3
-          precision: 4
-          unit-suffix: " BLUE"
-          description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.5.3)'
-      plots:
-
-    buy-simulation:
-      scenario: flare-red-blue-tranches.buy.test
-      plots:
-        USDT sold per tranche:
-          x:
-              label: 'Tranche space'
-          y:
-              label: 'USDT spent'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.6
-        RED bought per tranche:
-          x:
-              label: 'Tranche space'
-          y:
-              label: 'RED bought'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.5.2
-        'io-ratio per tranche':
-          subtitle: 'Ratio of RED bought per 1 USDT sold per tranche'
-          x:
-              label: 'Tranche space'
-          y:
-              label: 'RED bought per 1 USDT'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.7
-        buy price by tranche:
-          subtitle: 'Price paid for 1 RED in USDT, visible on dextools as RED/USDT pair'
-          x:
-              label: 'Tranche space'
-          y:
-              label: '1 RED priced in USDT'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.5.3
-
-    sell-initial-deployment:
-      scenario: flare-red-blue-tranches.sell.initialized.test
-      metrics:
-        - label: Initial RED sold
-          value: 0.6
-          description: 'Amount of RED sold for BLUE in the first tranche (stack item 0.6)'
-        - label: Initial BLUE bought
-          value: 0.5.2
-          description: 'Amount of BLUE purchased by selling RED in the first tranche (stack item 0.5.2)'
-        - label: Initial io-ratio
-          value: 0.7
-          description: '# BLUE purchased per RED spent (stack item 0.7)'
-        - label: Starting tranche
-          value: 0.2.0
-          description: 'This strategy starts executing sells at the initial tranche (stack item 0.2.0)'
-        - label: Initial sell price
-          value: 0.7
-          precision: 4
-          unit-suffix: "BLUE"
-          description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.7)'
-      plots:
-
-    sell-simulation:
-      scenario: flare-red-blue-tranches.sell.test
-      plots:
-        RED sold per tranche:
-          x:
-              label: 'Tranche space'
-          y:
-              label: 'RED spent'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.6
-        BLUE bought per tranche:
-          x:
-              label: 'Tranche space'
-          y:
-              label: 'BLUE bought'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.5.2
-        'io-ratio per tranche':
-          subtitle: 'Ratio of BLUE bought per 1 RED sold per tranche'
-          x:
-              label: 'Tranche space'
-          y:
-              label: 'RED bought per 1 BLUE'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.7
-        sell price by tranche:
-          subtitle: 'Price paid for 1 RED in BLUE, visible on dextools as RED/BLUE pair'
-          x:
-              label: 'Tranche space'
-          y:
-              label: '1 RED priced in BLUE'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.7
 
 deployments:
-  flare-test-shyness:
-    scenario: flare-red-blue-tranches.buy.initialized.test-shy-tranche
-    order: flare-buy
-  flare-buy:
-    scenario: flare-red-blue-tranches.buy.initialized.prod
-    order: flare-buy
-  flare-sell:
-    scenario: flare-red-blue-tranches.sell.initialized.prod
-    order: flare-sell
+  flare:
+    scenario: flare.prod
+    order: flare
 
 ---
 #orderbook-subparser !The subparser for the Orderbook
@@ -304,8 +134,6 @@ deployments:
 #last-trade-io-ratio-key "last-io-ratio"
 #last-trade-time-key "last-trade-time"
 #tranche-space-key "tranche-space"
-#total-in-key "total-in"
-#total-out-key "total-out"
 
 /* Initialize new order */
 
@@ -382,9 +210,29 @@ deployments:
   :set(hash(order-hash() tranche-space-key) tranche-space);
 
 #get-cost-basis-io-ratio-prod
-  total-in: get(hash(order-hash() input-token() output-token() total-in-key)),
-  total-out: get(hash(order-hash() input-token() output-token() total-out-key)),
+  total-in: get(hash(order-hash() input-token() output-token() input-token())),
+  total-out: get(hash(order-hash() input-token() output-token() output-token())),
   _: div(total-in total-out);
+
+#set-cost-basis-io-ratio-prod
+  /* first reduce outstanding inventory */
+  other-total-in-key: hash(order-hash() output-token() input-token() output-token()),
+  other-total-out-key: hash(order-hash() output-token() input-token() input-token()),
+  other-total-in: get(other-total-in-key),
+  other-total-out: get(other-total-out-key),
+  other-reduction-in: min(other-total-in output-vault-decrease()),
+  :set(other-total-in-key sub(other-total-in other-reduction-in)),
+  other-redution-out: div(mul(other-reduction-in other-total-out) other-total-in),
+  :set(other-total-out-key sub(other-total-out other-redution-out)),
+  /* then increase our inventory */
+  total-in-key: hash(order-hash() input-token() output-token() input-token()),
+  total-out-key: hash(order-hash() input-token() output-token() output-token()),
+  total-in: get(total-in-key),
+  total-out: get(total-out-key),
+  remaining-out: sub(output-vault-decrease() other-reduction-in),
+  remaining-in: div(mul(remaining-out total-in) total-out),
+  :set(total-in-key add(total-in remaining-in)),
+  :set(total-out-key add(total-out remaining-out));
 
 /* Handle IO */
 
@@ -410,7 +258,8 @@ deployments:
     greater-than-or-equal-to(tranche-space-after-snapped add(tranche-space-before min-tranche-space-diff))
     "Minimum trade size not met."
   ),
-  :call<'set-last-tranche-space-expr>(shy-tranche-space);
+  :call<'set-last-tranche-space-expr>(shy-tranche-space),
+  :call<'set-cost-basis-io-ratio-expr>();
 
 /* Growth functions */
 
