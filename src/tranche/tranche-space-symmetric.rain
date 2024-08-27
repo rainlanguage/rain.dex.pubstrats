@@ -1,41 +1,41 @@
 tokens:
-  flare-red:
-    network: flare
-    address: 0xE38D92733203E6f93C634304b777490e67Dc4Bdf
-  flare-blue:
-    network: flare
-    address: 0x40D44abeC30288BFcd400200BA65FBD05daA5321
+  base-usdc:
+    network: base
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+  base-weth:
+    network: base
+    address: 0x4200000000000000000000000000000000000006
 
 orders:
-  flare:
-    orderbook: flare
+  base:
+    orderbook: base
     inputs:
-      - token: flare-red
-      - token: flare-blue
+      - token: base-usdc
+      - token: base-weth
     outputs:
-      - token: flare-red
-      - token: flare-blue
+      - token: base-usdc
+      - token: base-weth
 
 scenarios:
-  flare:
+  base:
     bindings:
-      orderbook-subparser: 0xFc6836F666C737AB7E6f3Bf72A27Dc0dd126c334
+      orderbook-subparser: 0x5CeEe9F4F49C106D5Bc049C8D649C332E6d365ad
 
-      amount-token: 0x40D44abeC30288BFcd400200BA65FBD05daA5321
+      amount-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
       tranche-size-expr: '''no-growth'
-      tranche-size-base: 0
+      tranche-size-base: 10
       tranche-size-growth: 0
 
       # Needs to be set to market price at order add time.
-      quote-token: 0xE38D92733203E6f93C634304b777490e67Dc4Bdf
-      initial-io-ratio: 1e50
+      initial-output-token: 0x4200000000000000000000000000000000000006
+      initial-io-ratio: 2672.03
 
       # Relative distance from the midpoint for tranche 0.
-      # E.g. 0.005 is 0.5% spread which means total spread is 1%.
-      spread: 0.005
+      # E.g. 0.0005 is 0.05% spread which means total spread is 0.1%.
+      spread: 0.0005
       io-ratio-expr: '''exponential-growth'
-      # e.g. 0.5% per tranche
-      io-ratio-growth: 0.005
+      # e.g. 0.1% per tranche
+      io-ratio-growth: 0.001
 
       # 60 * 60 * 24
       seconds-per-tranche: 86400
@@ -91,9 +91,9 @@ scenarios:
 charts:
 
 deployments:
-  flare:
-    scenario: flare.prod
-    order: flare
+  base:
+    scenario: base.prod
+    order: base
 
 ---
 #orderbook-subparser !The subparser for the Orderbook
@@ -103,7 +103,7 @@ deployments:
 #tranche-size-base !Base tranche size is the size of the smallest tranche, denominated in output token.
 #tranche-size-growth !The exponential growth factor of the size of each tranche. E.g. 0.01 is 1% output amount growth per tranche.
 
-#quote-token !The token that is the quote token for the strategy.
+#initial-output-token !The token that is the initial output token for the strategy.
 #initial-io-ratio !The IO ratio that the strategy starts at. The quote token is the output so that the IO ratio looks like a CEX price.
 
 #spread !The relative distance from the midpoint for tranche 0. E.g. 0.01 is 1% spread which means total spread is 2%.
@@ -131,6 +131,7 @@ deployments:
 #test-last-update-time !Returned by get-test-last-tranche to allow the last update time to be bound for testing.
 #test-now !Returned by get-test-last-tranche to allow the current time to be bound for testing.
 
+#last-trade-output-token-key "last-trade-output-token"
 #last-trade-io-ratio-key "last-io-ratio"
 #last-trade-time-key "last-trade-time"
 #tranche-space-key "tranche-space"
@@ -138,6 +139,7 @@ deployments:
 /* Initialize new order */
 
 #handle-add-order
+  :set(hash(order-hash() last-trade-output-token-key) initial-output-token),
   :set(hash(order-hash() last-trade-io-ratio-key) initial-io-ratio),
   :set(hash(order-hash() last-trade-time-key) now());
 
@@ -190,7 +192,11 @@ deployments:
   _: now();
 
 #get-last-trade-io-ratio-prod
-  _: get(hash(order-hash() last-trade-io-ratio-key));
+  stored-last-trade-io: get(hash(order-hash() last-trade-io-ratio-key)),
+  _: if(
+    equal-to(output-token() get(hash(order-hash() last-trade-output-token-key)))
+    stored-last-trade-io
+    inv(stored-last-trade-io));
 
 #set-last-trade-io-ratio-prod
   io-ratio:,
@@ -222,8 +228,9 @@ deployments:
   other-total-out: get(other-total-out-key),
   other-reduction-in: min(other-total-in output-vault-decrease()),
   :set(other-total-in-key sub(other-total-in other-reduction-in)),
-  other-redution-out: div(mul(other-reduction-in other-total-out) other-total-in),
-  :set(other-total-out-key sub(other-total-out other-redution-out)),
+  other-reduction-out: div(mul(other-reduction-in other-total-out) other-total-in),
+  :set(other-total-out-key sub(other-total-out other-reduction-out)),
+
   /* then increase our inventory */
   total-in-key: hash(order-hash() input-token() output-token() input-token()),
   total-out-key: hash(order-hash() input-token() output-token() output-token()),
