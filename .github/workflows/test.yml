@@ -19,8 +19,8 @@ jobs:
 
     steps:
       - run: |
-          echo "MANIFEST_PATH=./lib/rain.orderbook/Cargo.toml" >> $GITHUB_ENV
-          echo "SETTINGS_PATH=test/strategies/settings.yml" >> $GITHUB_ENV
+          echo "MANIFEST_PATH=./lib/h20.test-std/lib/rain.orderbook/Cargo.toml" >> $GITHUB_ENV
+          echo "SETTINGS_PATH=src/settings.yml" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
         with:
@@ -56,4 +56,4 @@ jobs:
 
       - run: nix develop -c rainix-sol-test
 
-      - run: nix run .#rainix-deployer-words
+      - run: nix run .#check-deployer-words
