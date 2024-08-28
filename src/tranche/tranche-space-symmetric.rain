@@ -1,18 +1,3 @@
-networks:
-  base:
-    rpc: https://mainnet.base.org
-    chain-id: 8453
-    currency: ETH
-
-subgraphs:
-  base: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-base/0.5/gn
-
-orderbooks:
-  base:
-    address: 0x80DE00e3cA96AE0569426A1bb1Ae22CD4181dE6F
-    network: base
-    subgraph: base
-
 deployers:
   base:
     address: 0xC1A14cE2fd58A3A2f99deCb8eDd866204eE07f8D
@@ -39,7 +24,7 @@ orders:
 scenarios:
   base:
     bindings:
-      orderbook-subparser: 0x5CeEe9F4F49C106D5Bc049C8D649C332E6d365ad
+      orderbook-subparser: 0x662dFd6d5B6DF94E07A60954901D3001c24F856a
 
       amount-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
       tranche-size-expr: '''no-growth'
@@ -175,6 +160,7 @@ deployments:
 /* Initialize new order */
 
 #handle-add-order
+  using-words-from orderbook-subparser
   :set(hash(order-hash() last-trade-output-token-key) initial-output-token),
   :set(hash(order-hash() last-trade-io-ratio-key) initial-io-ratio),
   :set(hash(order-hash() last-trade-time-key) now());
@@ -248,25 +234,24 @@ deployments:
 
 #set-cost-basis-io-ratio-prod
   /* first reduce outstanding inventory */
-  /* other-total-in-key: hash(order-hash() output-token() input-token() output-token()), */
-  /* other-total-out-key: hash(order-hash() output-token() input-token() input-token()), */
-  /* other-total-in: get(other-total-in-key), */
-  /* other-total-out: get(other-total-out-key), */
-  /* other-reduction-in: min(other-total-in output-vault-decrease()), */
-  /* :set(other-total-in-key sub(other-total-in other-reduction-in)), */
-  /* other-reduction-out: div(mul(other-reduction-in other-total-out) other-total-in), */
-  /* :set(other-total-out-key sub(other-total-out other-reduction-out)), */
+  other-total-in-key: hash(order-hash() output-token() input-token() output-token()),
+  other-total-out-key: hash(order-hash() output-token() input-token() input-token()),
+  other-total-in: get(other-total-in-key),
+  other-total-out: get(other-total-out-key),
+  other-reduction-in: min(other-total-in output-vault-decrease()),
+  :set(other-total-in-key sub(other-total-in other-reduction-in)),
+  other-reduction-out: div(mul(other-reduction-in other-total-out) other-total-in),
+  :set(other-total-out-key sub(other-total-out other-reduction-out)),
 
   /* then increase our inventory */
-  /* total-in-key: hash(order-hash() input-token() output-token() input-token()), */
-  /* total-out-key: hash(order-hash() input-token() output-token() output-token()), */
-  /* total-in: get(total-in-key), */
-  /* total-out: get(total-out-key), */
-  /* remaining-out: sub(output-vault-decrease() other-reduction-in), */
-  /* remaining-in: div(mul(remaining-out total-in) total-out), */
-  /* :set(total-in-key add(total-in remaining-in)), */
-  /* :set(total-out-key add(total-out remaining-out)); */
-  :;
+  total-in-key: hash(order-hash() input-token() output-token() input-token()),
+  total-out-key: hash(order-hash() input-token() output-token() output-token()),
+  total-in: get(total-in-key),
+  total-out: get(total-out-key),
+  remaining-out: sub(output-vault-decrease() other-reduction-in),
+  remaining-in: div(mul(remaining-out total-in) total-out),
+  :set(total-in-key add(total-in remaining-in)),
+  :set(total-out-key add(total-out remaining-out));
 
 /* Handle IO */
 
