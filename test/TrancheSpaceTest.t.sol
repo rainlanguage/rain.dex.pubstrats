@@ -30,7 +30,7 @@ contract TrancheSpaceTest is StrategyTests {
     using Strings for address;
     using Strings for uint256;
 
-    uint256 constant FORK_BLOCK_NUMBER = 28945416;
+    uint256 constant FORK_BLOCK_NUMBER = 28982497;
 
     function selectFlareFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_FLARE"));
