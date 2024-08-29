@@ -231,7 +231,7 @@ deployments:
   total-out: get(hash(order-hash() input-token() output-token() output-token())),
   other-total-in: get(hash(order-hash() output-token() input-token() input-token())),
   other-total-out: get(hash(order-hash() output-token() input-token() output-token())),
-  _: cond(
+  _: conditions(
     every(total-in total-out) div(total-out any(total-in 1))
     every(other-total-in other-total-out) div(other-total-in any(other-total-out))
     "else" 0
