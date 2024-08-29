@@ -234,6 +234,7 @@ deployments:
   _: cond(
     every(total-in total-out) div(total-out any(total-in 1))
     every(other-total-in other-total-out) div(other-total-in any(other-total-out))
+    "else" 0
   );
 
 #set-cost-basis-io-ratio-prod
