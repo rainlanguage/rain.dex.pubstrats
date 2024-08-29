@@ -526,5 +526,5 @@ deployments:
   ),
   :call<'set-last-tranche>(tranche-space-after-snapped current-time);
 
-#post-add-order
+#handle-add-order
  :;
