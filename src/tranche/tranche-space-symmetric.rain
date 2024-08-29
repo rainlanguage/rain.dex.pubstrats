@@ -33,7 +33,7 @@ scenarios:
 
       # Needs to be set to market price at order add time.
       initial-output-token: 0x4200000000000000000000000000000000000006
-      initial-io-ratio: 2590.2
+      initial-io-ratio: 2582.8
 
       # Relative distance from the midpoint for tranche 0.
       # E.g. 0.0005 is 0.05% spread which means total spread is 0.1%.
@@ -233,7 +233,7 @@ deployments:
   other-total-out: get(hash(order-hash() output-token() input-token() output-token())),
   _: conditions(
     every(total-in total-out) div(total-out any(total-in 1))
-    every(other-total-in other-total-out) div(other-total-in any(other-total-out))
+    every(other-total-in other-total-out) div(other-total-in any(other-total-out 1))
     "else" 0
   );
 
