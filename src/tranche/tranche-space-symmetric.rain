@@ -33,7 +33,7 @@ scenarios:
 
       # Needs to be set to market price at order add time.
       initial-output-token: 0x4200000000000000000000000000000000000006
-      initial-io-ratio: 2549
+      initial-io-ratio: 2586.3
 
       # Relative distance from the midpoint for tranche 0.
       # E.g. 0.0005 is 0.05% spread which means total spread is 0.1%.
@@ -162,8 +162,7 @@ deployments:
 #handle-add-order
   using-words-from orderbook-subparser
   :set(hash(order-hash() last-trade-output-token-key) initial-output-token),
-  :set(hash(order-hash() last-trade-io-ratio-key) initial-io-ratio),
-  :set(hash(order-hash() last-trade-time-key) now());
+  :set(hash(order-hash() last-trade-io-ratio-key) initial-io-ratio);
 
 /* Calculate IO */
 
@@ -204,7 +203,7 @@ deployments:
 
 #get-times-prod
   current-time: now(),
-  last-trade-time: get(hash(order-hash() last-trade-time-key));
+  last-trade-time: get(hash(order-hash() input-token() output-token() last-trade-time-key));
 
 #get-last-trade-io-ratio-prod
   stored-last-trade-io: any(get(hash(order-hash() last-trade-io-ratio-key)) initial-io-ratio),
@@ -218,14 +217,14 @@ deployments:
   :set(hash(order-hash() last-trade-io-ratio-key) io-ratio);
 
 #set-last-trade-time-prod
-  :set(hash(order-hash() last-trade-time-key) now());
+  :set(hash(order-hash() input-token() output-token() last-trade-time-key) now());
 
 #get-last-tranche-space-prod
-  _: get(hash(order-hash() tranche-space-key));
+  _: get(hash(order-hash() input-token() output-token() tranche-space-key));
 
 #set-last-tranche-space-prod
   tranche-space:,
-  :set(hash(order-hash() tranche-space-key) tranche-space);
+  :set(hash(order-hash() input-token() output-token() tranche-space-key) tranche-space);
 
 #get-cost-basis-io-ratio-prod
   total-in: get(hash(order-hash() input-token() output-token() input-token())),
@@ -241,7 +240,7 @@ deployments:
   other-reduction-in: min(other-total-in output-vault-decrease()),
   reduced-other-total-in: sub(other-total-in other-reduction-in),
   :set(other-total-in-key reduced-other-total-in),
-  other-reduction-out: div(mul(other-reduction-in other-total-out) any(other-total-in uint256-max-value())),
+  other-reduction-out: div(mul(other-reduction-in other-total-out) any(other-total-in max-value())),
   :set(other-total-out-key every(reduced-other-total-in sub(other-total-out other-reduction-out))),
 
   /* then increase our inventory */
@@ -250,7 +249,7 @@ deployments:
   total-in: get(total-in-key),
   total-out: get(total-out-key),
   remaining-out: sub(output-vault-decrease() other-reduction-in),
-  remaining-in: div(mul(remaining-out total-in) any(total-out uint256-max-value())),
+  remaining-in: div(mul(remaining-out total-in) any(total-out max-value())),
   :set(total-in-key add(total-in remaining-in)),
   :set(total-out-key every(remaining-in add(total-out remaining-out)));
 
