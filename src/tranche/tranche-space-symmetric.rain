@@ -33,7 +33,7 @@ scenarios:
 
       # Needs to be set to market price at order add time.
       initial-output-token: 0x4200000000000000000000000000000000000006
-      initial-io-ratio: 2672.03
+      initial-io-ratio: 2530
 
       # Relative distance from the midpoint for tranche 0.
       # E.g. 0.0005 is 0.05% spread which means total spread is 0.1%.
@@ -239,9 +239,10 @@ deployments:
   other-total-in: get(other-total-in-key),
   other-total-out: get(other-total-out-key),
   other-reduction-in: min(other-total-in output-vault-decrease()),
-  :set(other-total-in-key sub(other-total-in other-reduction-in)),
-  other-reduction-out: div(mul(other-reduction-in other-total-out) other-total-in),
-  :set(other-total-out-key sub(other-total-out other-reduction-out)),
+  reduced-other-total-in: sub(other-total-in other-reduction-in),
+  :set(other-total-in-key reduced-other-total-in),
+  other-reduction-out: div(mul(other-reduction-in other-total-out) any(other-total-in uint256-max-value())),
+  :set(other-total-out-key every(reduced-other-total-in sub(other-total-out other-reduction-out))),
 
   /* then increase our inventory */
   total-in-key: hash(order-hash() input-token() output-token() input-token()),
@@ -249,9 +250,9 @@ deployments:
   total-in: get(total-in-key),
   total-out: get(total-out-key),
   remaining-out: sub(output-vault-decrease() other-reduction-in),
-  remaining-in: div(mul(remaining-out total-in) total-out),
+  remaining-in: div(mul(remaining-out total-in) any(total-out uint256-max-value())),
   :set(total-in-key add(total-in remaining-in)),
-  :set(total-out-key add(total-out remaining-out));
+  :set(total-out-key every(remaining-in add(total-out remaining-out)));
 
 /* Handle IO */
 
