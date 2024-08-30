@@ -43,7 +43,7 @@ deployers:
     address: 0x3214CdB105a73f8356583eCd85264cCfA8417694
     network: flare
   base:
-    address: 0xC1A14cE2fd58A3A2f99deCb8eDd866204eE07f8D
+    address: 0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C
     network: base
   sepolia:
     address: 0x7692BA8446Bb8B3140A2c02df073080BeD0a7F8E
