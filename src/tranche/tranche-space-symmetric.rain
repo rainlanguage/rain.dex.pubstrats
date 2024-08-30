@@ -35,7 +35,7 @@ scenarios:
 
       # Needs to be set to market price at order add time.
       initial-output-token: 0x4200000000000000000000000000000000000006
-      initial-io-ratio: 2523
+      initial-io-ratio: 2473
 
       # Relative distance from the midpoint for tranche 0.
       # E.g. 0.0005 is 0.05% spread which means total spread is 0.1%.
@@ -216,6 +216,7 @@ deployments:
 
 #set-last-trade-io-ratio-prod
   io-ratio:,
+  :set(hash(order-hash() last-trade-output-token-key) output-token()),
   :set(hash(order-hash() last-trade-io-ratio-key) io-ratio);
 
 #set-last-trade-time-prod
