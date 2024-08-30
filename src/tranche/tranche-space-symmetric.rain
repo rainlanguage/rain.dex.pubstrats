@@ -1,3 +1,5 @@
+raindex-version: test_sha
+
 deployers:
   base:
     address: 0xC1A14cE2fd58A3A2f99deCb8eDd866204eE07f8D
