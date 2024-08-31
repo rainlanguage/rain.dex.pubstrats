@@ -35,11 +35,11 @@ scenarios:
 
       # Needs to be set to market price at order add time.
       initial-output-token: 0x4200000000000000000000000000000000000006
-      initial-io-ratio: 2520
+      initial-io-ratio: 2529.2
 
       # Relative distance from the midpoint for tranche 0.
-      # E.g. 0.005 is 0.5% spread which means total spread is 1%.
-      spread: 0.005
+      # E.g. 0.0005 is 0.05% spread which means total spread is 1%.
+      spread: 0.0005
       io-ratio-expr: '''exponential-growth'
       # e.g. 0.1% per tranche
       io-ratio-growth: 0.001
