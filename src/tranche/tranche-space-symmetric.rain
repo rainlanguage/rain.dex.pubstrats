@@ -35,7 +35,7 @@ scenarios:
 
       # Needs to be set to market price at order add time.
       initial-output-token: 0x4200000000000000000000000000000000000006
-      initial-io-ratio: 2528.7
+      initial-io-ratio: 2530
 
       # Relative distance from the midpoint for tranche 0.
       # E.g. 0.0005 is 0.05% spread which means total spread is 1%.
@@ -225,8 +225,12 @@ deployments:
   _: get(hash(order-hash() input-token() output-token() tranche-space-key));
 
 #set-last-tranche-space-prod
-  tranche-space:,
-  :set(hash(order-hash() input-token() output-token() tranche-space-key) tranche-space);
+  tranche-space
+  tranche-space-diff:,
+  other-tranche-space: get(hash(order-hash() output-token() input-token() tranche-space-key)),
+  new-other-tranche-space: saturating-sub(other-tranche-space tranche-space-diff),
+  :set(hash(order-hash() input-token() output-token() tranche-space-key) tranche-space),
+  :set(hash(order-hash() output-token() input-token() tranche-space-key) new-other-tranche-space);
 
 #get-cost-basis-io-ratio-prod
   total-in: get(hash(order-hash() input-token() output-token() input-token())),
@@ -286,7 +290,7 @@ deployments:
     "Minimum trade size not met."
   ),
   :call<'set-last-trade-time-expr>(),
-  :call<'set-last-tranche-space-expr>(shy-tranche-space),
+  :call<'set-last-tranche-space-expr>(shy-tranche-space tranche-space-diff),
   :call<'set-cost-basis-io-ratio-expr>();
 
 /* Growth functions */
