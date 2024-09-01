@@ -18,6 +18,8 @@
           check-deployer-words = rainix.mkTask.${system} {
             name = "check-deployer-words";
             body = ''
+              set -euxo pipefail
+              
               for network in ${networks}
               do
                 echo "Checking deployer words for $network"
