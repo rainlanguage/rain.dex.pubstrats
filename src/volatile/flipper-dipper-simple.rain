@@ -1,5 +1,10 @@
 raindex-version: test_sha
 
+deployers:
+  base:
+    address: 0xC1A14cE2fd58A3A2f99deCb8eDd866204eE07f8D
+    network: base
+
 tokens:
   base-usdbc:
     network: base
@@ -65,7 +70,8 @@ deployments:
 #handle-add-order
 using-words-from
   raindex-subparser
-
+  key:
+    hash(order-hash() trade-time-ago-key),
   :set(key now());
 
 #epochs-since-trade
@@ -114,12 +120,10 @@ io:
   );
 
 #breakeven-io
-prev-input-vault-balance-raw:
-  get(hash(order-hash() input-token())),
 prev-input-vault-balance:
-  scale-18-dynamic(input-token-decimals() prev-input-vault-balance-raw),
-output-vault-balance:
-  scale-18-dynamic(output-token-decimals() uint256-output-vault-before()),
+  get(hash(order-hash() input-token())),
+output-vault-balance: output-vault-before(),
+
 /**
  * This will be `0` initially which is a dangerous edge case
  * as we will naively ask for `0` input and instantly lose
@@ -147,12 +151,12 @@ _: max-value(),
 _: add(baseline-io additional-io);
 
 #handle-io
-  :ensure(uint256-output-vault-before() "No output."),
+  :ensure(output-vault-before() "No output."),
   :ensure(
-    equal-to(uint256-output-vault-before() uint256-output-vault-decrease())
+    equal-to(output-vault-before() output-vault-decrease())
     "Partial clear."
   ),
   :set(
     hash(order-hash() output-token())
-    uint256-output-vault-before()
+    output-vault-before()
   );
