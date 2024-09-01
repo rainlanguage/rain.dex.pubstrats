@@ -1,69 +1,78 @@
+raindex-version: test_sha
+
 tokens:
-  eusdt:
-    network: flare
-    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+  base-usdbc:
+    network: base
+    address: 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA
     decimals: 6
-  eeth:
-    network: flare
-    address: 0xa76DCDdcE60a442d69Bac7158F3660f50921b122
+  base-usdc:
+    network: base
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+    decimals: 6
+  base-dai:
+    network: base
+    address: 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb
     decimals: 18
-  wflr:
-    network: flare
-    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+  base-dola:
+    network: base
+    address: 0x4621b7A9c75199271F773Ebd9A499dbd165c3191
     decimals: 18
 
 orders:
-  flare:
-    orderbook: flare
+  base:
+    orderbook: base
     inputs:
-      - token: wflr
-      - token: eusdt
-      - token: eeth
+      - token: base-usdbc
+      - token: base-usdc
+      - token: base-dai
+      - token: base-dola
     outputs:
-      - token: wflr
-      - token: eusdt
-      - token: eeth
+      - token: base-usdbc
+      - token: base-usdc
+      - token: base-dai
+      - token: base-dola
 
 scenarios:
-  flare:
-    orderbook: flare
+  base:
+    orderbook: base
     runs: 1
     bindings:
-      # date +%s
-      strat-start-time: 9999999999
-
-      time-per-epoch-init: 1800
-      initial-max-io: 1e10
+      time-per-epoch-init: 3600
+      initial-max-io: 1.1
 
       time-per-epoch-trading: 28800
-      io-multiplier: 0.1
+      io-multiplier: 0.03
 
 charts:
-  flare:
+  base:
 
 deployments:
-  flare:
-    order: flare
-    scenario: flare
+  base:
+    order: base
+    scenario: base
 
 ---
-#raindex-subparser 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
+#raindex-subparser 0x662dFd6d5B6DF94E07A60954901D3001c24F856a
 
 #trade-time-ago-key "trade-time-ago-key"
 
-#strat-start-time !Time the strat starts at.
 #time-per-epoch-init !Number of seconds per epoch during initialization. An epoch is one halving.
 #initial-max-io !A very large io that is the starting auction for pairs before any trades have happened.
 
 #time-per-epoch-trading !Number of seconds per epoch during trading. An epoch is one halving.
 #io-multiplier !Multiple of the breakeven io to start each flip at. E.g. 0.2 starts 20% above breakeven.
 
+#handle-add-order
+using-words-from
+  raindex-subparser
+
+  :set(key now());
+
 #epochs-since-trade
 time-per-epoch:,
 key:
   hash(order-hash() trade-time-ago-key),
-last-time:
-  any(get(key) strat-start-time),
+last-time: get(key),
 time-ago:
   sub(now() last-time),
 epochs:
