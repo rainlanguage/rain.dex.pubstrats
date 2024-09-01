@@ -51,7 +51,7 @@ jobs:
 
       - run: nix develop -c rainix-sol-prelude
 
-      - run: ./prep-tauri.sh
+      - run: ./pointers.sh
         working-directory: lib/h20.test-std/lib/rain.orderbook
 
       - run: nix develop -c rainix-sol-test
