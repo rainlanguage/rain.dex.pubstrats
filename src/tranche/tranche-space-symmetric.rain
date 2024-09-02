@@ -32,6 +32,7 @@ scenarios:
       tranche-size-expr: '''no-growth'
       tranche-size-base: 10
       tranche-size-growth: 0
+      history-cap: 30
 
       # Needs to be set to market price at order add time.
       initial-output-token: 0x4200000000000000000000000000000000000006
@@ -123,6 +124,7 @@ deployments:
 #tranche-size-expr !The binding to get the tranche size for the current tranche space.
 #tranche-size-base !Base tranche size is the size of the smallest tranche, denominated in output token.
 #tranche-size-growth !The exponential growth factor of the size of each tranche. E.g. 0.01 is 1% output amount growth per tranche.
+#history-cap !The max amount of trade history kept for cost basis tracking (denominated in same token as tranche size).
 
 #initial-output-token !The token that is the initial output token for the strategy.
 #initial-io-ratio !The IO ratio that the strategy starts at. The quote token is the output so that the IO ratio looks like a CEX price.
@@ -260,10 +262,16 @@ deployments:
   total-out-key: hash(order-hash() input-token() output-token() output-token()),
   total-in: get(total-in-key),
   total-out: get(total-out-key),
-  remaining-out: sub(output-vault-decrease() other-reduction-in),
   remaining-in: sub(input-vault-increase() other-reduction-out),
-  :set(total-in-key add(total-in remaining-in)),
-  :set(total-out-key every(remaining-in add(total-out remaining-out)));
+  remaining-out: sub(output-vault-decrease() other-reduction-in),
+  new-in: add(total-in remaining-in),
+  new-out: add(total-out remaining-out),
+  cap-denominator: any(if(call<'amount-is-output>() new-out new-in) max-value()),
+  cap-ratio: min(div(history-cap cap-denominator) 1),
+  capped-in: mul(cap-ratio new-in),
+  capped-out: mul(cap-ratio new-out),
+  :set(total-in-key capped-in),
+  :set(total-out-key every(remaining-in capped-out));
 
 /* Handle IO */
 
