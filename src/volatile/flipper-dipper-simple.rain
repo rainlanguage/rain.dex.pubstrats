@@ -42,11 +42,11 @@ scenarios:
     orderbook: base
     runs: 1
     bindings:
-      time-per-epoch-init: 3600
-      initial-max-io: 1.1
+      time-per-epoch-init: 10800
+      initial-max-io: 1.05
 
-      time-per-epoch-trading: 28800
-      io-multiplier: 0.03
+      time-per-epoch-trading: 10800
+      io-multiplier: 0.01
 
 charts:
   base:
