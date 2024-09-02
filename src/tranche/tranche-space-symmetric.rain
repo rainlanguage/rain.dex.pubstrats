@@ -32,11 +32,11 @@ scenarios:
       tranche-size-expr: '''no-growth'
       tranche-size-base: 10
       tranche-size-growth: 0
-      history-cap: 30
+      history-cap: 0
 
       # Needs to be set to market price at order add time.
       initial-output-token: 0x4200000000000000000000000000000000000006
-      initial-io-ratio: 2480
+      initial-io-ratio: 2530
 
       # Relative distance from the midpoint for tranche 0.
       # E.g. 0.0005 is 0.05% spread which means total spread is 1%.
