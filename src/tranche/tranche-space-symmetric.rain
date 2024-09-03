@@ -1,4 +1,4 @@
-raindex-version: test_sha
+raindex-version: 4bcce268983fc17f4e7d051ed0f6f52428bca70a
 
 deployers:
   base:
@@ -32,11 +32,11 @@ scenarios:
       tranche-size-expr: '''no-growth'
       tranche-size-base: 10
       tranche-size-growth: 0
-      history-cap: 0
+      history-cap: 30
 
       # Needs to be set to market price at order add time.
       initial-output-token: 0x4200000000000000000000000000000000000006
-      initial-io-ratio: 2530
+      initial-io-ratio: 2450
 
       # Relative distance from the midpoint for tranche 0.
       # E.g. 0.0005 is 0.05% spread which means total spread is 1%.
@@ -253,9 +253,10 @@ deployments:
   other-total-out: get(other-total-out-key),
   other-reduction-in: min(other-total-in output-vault-decrease()),
   reduced-other-total-in: sub(other-total-in other-reduction-in),
+  other-reduction-out: every(other-total-in div(mul(other-total-out reduced-other-total-in) any(other-total-in max-value()))),
+  reduced-other-total-out: sub(other-total-out other-reduction-out),
   :set(other-total-in-key reduced-other-total-in),
-  other-reduction-out: every(other-reduction-in div(mul(other-total-out other-total-in) any(other-reduction-in max-value()))),
-  :set(other-total-out-key every(reduced-other-total-in sub(other-total-out other-reduction-out))),
+  :set(other-total-out-key every(reduced-other-total-in reduced-other-total-out)),
 
   /* then increase our inventory */
   total-in-key: hash(order-hash() input-token() output-token() input-token()),
