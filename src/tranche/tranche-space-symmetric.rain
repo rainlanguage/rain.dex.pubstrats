@@ -254,6 +254,7 @@ deployments:
   other-reduction-in: min(other-total-in output-vault-decrease()),
   reduced-other-total-in: sub(other-total-in other-reduction-in),
   reduced-other-total-out: every(other-total-in div(mul(other-total-out reduced-other-total-in) any(other-total-in max-value()))),
+  other-reduction-out: sub(other-total-out reduced-other-total-out),
   :set(other-total-in-key reduced-other-total-in),
   :set(other-total-out-key every(reduced-other-total-in reduced-other-total-out)),
 
