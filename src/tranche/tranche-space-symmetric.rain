@@ -235,44 +235,33 @@ deployments:
   :set(hash(order-hash() output-token() input-token() tranche-space-key) new-other-tranche-space);
 
 #get-cost-basis-io-ratio-prod
-  total-in: get(hash(order-hash() input-token() output-token() input-token())),
-  total-out: get(hash(order-hash() input-token() output-token() output-token())),
-  other-total-in: get(hash(order-hash() output-token() input-token() input-token())),
-  other-total-out: get(hash(order-hash() output-token() input-token() output-token())),
-  _: conditions(
-    every(total-in total-out) div(total-in any(total-out 1))
-    every(other-total-in other-total-out) div(other-total-in any(other-total-out 1))
-    "else" 0
-  );
+  this-vwaio: get(hash(order-hash() input-token() output-token() "io-ratio")),
+  other-vwaio: get(hash(order-hash() output-token() input-token() "io-ratio")),
+  _: any(this-vwaio inv(other-vwaio));
 
 #set-cost-basis-io-ratio-prod
   /* first reduce outstanding inventory */
-  other-total-in-key: hash(order-hash() output-token() input-token() output-token()),
   other-total-out-key: hash(order-hash() output-token() input-token() input-token()),
-  other-total-in: get(other-total-in-key),
   other-total-out: get(other-total-out-key),
-  other-reduction-in: min(other-total-in output-vault-decrease()),
-  reduced-other-total-in: sub(other-total-in other-reduction-in),
-  reduced-other-total-out: every(other-total-in div(mul(other-total-out reduced-other-total-in) any(other-total-in max-value()))),
-  other-reduction-out: sub(other-total-out reduced-other-total-out),
-  :set(other-total-in-key reduced-other-total-in),
-  :set(other-total-out-key every(reduced-other-total-in reduced-other-total-out)),
+  other-reduction-out: min(other-total-out input-vault-increase()),
+  reduced-other-total-out: sub(other-total-out other-reduction-out),
+  : set(other-total-out-key reduced-other-total-out),
 
   /* then increase our inventory */
-  total-in-key: hash(order-hash() input-token() output-token() input-token()),
   total-out-key: hash(order-hash() input-token() output-token() output-token()),
-  total-in: get(total-in-key),
+  vwaio-key: hash(order-hash() input-token() output-token() "io-ratio"),
   total-out: get(total-out-key),
-  remaining-out: sub(output-vault-decrease() other-reduction-in),
-  remaining-in: mul(remaining-out calculated-io-ratio()),
+  vwaio: get(vwaio-key),
+  total-in: mul(total-out vwaio),
+  remaining-in: sub(input-vault-increase() other-reduction-out),
   new-in: add(total-in remaining-in),
+  remaining-out: div(remaining-in calculated-io-ratio()),
   new-out: add(total-out remaining-out),
-  cap-denominator: any(if(call<'amount-is-output>() new-out new-in) max-value()),
-  cap-ratio: min(div(history-cap cap-denominator) 1),
-  capped-in: mul(cap-ratio new-in),
-  capped-out: mul(cap-ratio new-out),
-  :set(total-in-key capped-in),
-  :set(total-out-key every(remaining-in capped-out));
+  new-vwaio: div(new-in new-out),
+  cap-out: if(call<'amount-is-output>() history-cap div(history-cap new-vwaio)),
+  capped-out: min(new-out cap-out),
+  :set(total-out-key capped-out),
+  :set(vwaio-key new-vwaio);
 
 /* Handle IO */
 
