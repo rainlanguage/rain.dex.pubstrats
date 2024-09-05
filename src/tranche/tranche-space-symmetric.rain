@@ -36,7 +36,7 @@ scenarios:
 
       # Needs to be set to market price at order add time.
       initial-output-token: 0x4200000000000000000000000000000000000006
-      initial-io-ratio: 2460
+      initial-io-ratio: 2398
 
       # Relative distance from the midpoint for tranche 0.
       # E.g. 0.0005 is 0.05% spread which means total spread is 1%.
@@ -237,7 +237,7 @@ deployments:
 #get-cost-basis-io-ratio-prod
   this-vwaio: get(hash(order-hash() input-token() output-token() "io-ratio")),
   other-vwaio: get(hash(order-hash() output-token() input-token() "io-ratio")),
-  _: any(this-vwaio inv(other-vwaio));
+  _: any(this-vwaio inv(any(other-vwaio max-value())));
 
 #set-cost-basis-io-ratio-prod
   /* first reduce outstanding inventory */
@@ -257,8 +257,8 @@ deployments:
   new-in: add(total-in remaining-in),
   remaining-out: div(remaining-in calculated-io-ratio()),
   new-out: add(total-out remaining-out),
-  new-vwaio: div(new-in new-out),
-  cap-out: if(call<'amount-is-output>() history-cap div(history-cap new-vwaio)),
+  new-vwaio: every(new-out div(new-in any(new-out max-value()))),
+  cap-out: if(call<'amount-is-output>() history-cap div(history-cap any(new-vwaio calculated-io-ratio()))),
   capped-out: min(new-out cap-out),
   :set(total-out-key capped-out),
   :set(vwaio-key new-vwaio);
