@@ -1,4 +1,4 @@
-raindex-version: test_sha
+raindex-version: f60e99a7180aa8c82e7197a25c80dbb0c3277d46
 
 deployers:
   base:
@@ -18,10 +18,6 @@ tokens:
     network: base
     address: 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb
     decimals: 18
-  base-dola:
-    network: base
-    address: 0x4621b7A9c75199271F773Ebd9A499dbd165c3191
-    decimals: 18
   base-eusd:
     network: base
     address: 0xCfA3Ef56d303AE4fAabA0592388F19d7C3399FB4
@@ -34,13 +30,11 @@ orders:
       - token: base-usdbc
       - token: base-usdc
       - token: base-dai
-      - token: base-dola
       - token: base-eusd
     outputs:
       - token: base-usdbc
       - token: base-usdc
       - token: base-dai
-      - token: base-dola
       - token: base-eusd
 
 scenarios:
@@ -49,7 +43,8 @@ scenarios:
     runs: 1
     bindings:
       time-per-epoch-init: 10800
-      initial-max-io: 1.05
+      initial-max-additional-io: 0.06
+      initial-baseline-io: 0.97
 
       time-per-epoch-trading: 10800
       io-multiplier: 0.01
@@ -68,7 +63,8 @@ deployments:
 #trade-time-ago-key "trade-time-ago-key"
 
 #time-per-epoch-init !Number of seconds per epoch during initialization. An epoch is one halving.
-#initial-max-io !A very large io that is the starting auction for pairs before any trades have happened.
+#initial-max-additional-io !IO that is _added_ to the initial baseline IO to start the auction.
+#initial-baseline-io !Minimum IO for the initial auction.
 
 #time-per-epoch-trading !Number of seconds per epoch during trading. An epoch is one halving.
 #io-multiplier !Multiple of the breakeven io to start each flip at. E.g. 0.2 starts 20% above breakeven.
@@ -145,12 +141,13 @@ io:
 using-words-from
   raindex-subparser
 
-baseline-io:
+trading-breakeven-io:
   call<'breakeven-io>(),
+baseline-io: any(trading-breakeven-io initial-baseline-io),
 max-additional-io:
-  if(baseline-io mul(baseline-io io-multiplier) initial-max-io),
+  if(trading-breakeven-io mul(trading-breakeven-io io-multiplier) initial-max-additional-io),
 time-per-epoch:
-  if(baseline-io time-per-epoch-trading time-per-epoch-init),
+  if(trading-breakeven-io time-per-epoch-trading time-per-epoch-init),
 additional-io:
   call<'halflife>(max-additional-io call<'epochs-since-trade>(time-per-epoch)),
 _: max-value(),
