@@ -21,6 +21,9 @@ jobs:
       - run: |
           echo "MANIFEST_PATH=./lib/h20.test-std/lib/rain.orderbook/Cargo.toml" >> $GITHUB_ENV
           echo "SETTINGS_PATH=src/settings.yml" >> $GITHUB_ENV
+          echo "DOTRAIN_FOLDER_PATH=./src/tranche" >> $GITHUB_ENV
+          echo "DOTRAIN_EXCLUDE_PATHS='src/learning/ethcc/* src/wip/*'" >> $GITHUB_ENV
+          echo "COMMIT_SHA=$(cd ./lib/h20.test-std/lib/rain.orderbook && git rev-parse HEAD)" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
         with:
