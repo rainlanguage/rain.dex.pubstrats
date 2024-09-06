@@ -60,7 +60,7 @@ scenarios:
           # the input/output token and some external price. Typically this is
           # not the case as the io-ratio is defined in terms of the input/output
           # token and the io-ratio-multiplier is set to the identity function.
-          uniswap-words: 0xAFF83Dd453f9EE510d6F623d09322A68E8ee29A3
+          # uniswap-words: 0xAFF83Dd453f9EE510d6F623d09322A68E8ee29A3
 
           # Uniswap v3 factory contract address and corresponding init code hash.
           # If the factory address and the init code aren't available as a literals
@@ -495,7 +495,7 @@ deployments:
   multiplier: 1;
 
 #calculate-io
-  using-words-from uniswap-words orderbook-subparser
+  using-words-from orderbook-subparser
   tranche-space-now
   tranche-space-available
   tranche-total-size: call<'calculate-tranche>(),
@@ -526,5 +526,5 @@ deployments:
   ),
   :call<'set-last-tranche>(tranche-space-after-snapped current-time);
 
-#post-add-order
+#handle-add-order
  :;

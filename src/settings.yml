@@ -3,17 +3,48 @@ networks:
     rpc: https://rpc.ankr.com/flare	
     chain-id: 14
     currency: FLR
+  base: 
+    rpc: https://mainnet.base.org	
+    chain-id: 8453 
+    network-id: 8453 
+    currency: ETH
+  sepolia: 
+    rpc: https://1rpc.io/sepolia
+    chain-id: 11155111 
+    network-id: 11155111 
+    currency: ETH
 
 subgraphs:
   flare: http://replaceme.com
-  
+  base: http://replaceme.com
+  sepolia: http://replaceme.com
+
+metaboards:
+  flare: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-flare-0x893BBFB7/0.1/gn
+  base: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-base-0x59401C93/0.1/gn
+  sepolia: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-sepolia-0x77991674/0.1/gn
+
 orderbooks:
   flare:
     address: 0xaa3b14Af0e29E3854E4148f43321C4410db002bC
     network: flare
     subgraph: flare
+  base:
+    address: 0x80DE00e3cA96AE0569426A1bb1Ae22CD4181dE6F
+    network: base
+    subgraph: base
+  sepolia:
+    address: 0x0bB72B4C7c0d47b2CaED07c804D9243C1B8a0728
+    network: sepolia
+    subgraph: sepolia
   
 deployers:
   flare:
-    address: 0xEBe394cff4980992B826Ec70ef0a9ec8b5D4C640
+    address: 0x3214CdB105a73f8356583eCd85264cCfA8417694
     network: flare
+  base:
+    address: 0xC1A14cE2fd58A3A2f99deCb8eDd866204eE07f8D
+    network: base
+  sepolia:
+    address: 0x7692BA8446Bb8B3140A2c02df073080BeD0a7F8E
+    network: sepolia
