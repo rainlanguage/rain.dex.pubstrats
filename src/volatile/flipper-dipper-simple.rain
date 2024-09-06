@@ -22,6 +22,10 @@ tokens:
     network: base
     address: 0xCfA3Ef56d303AE4fAabA0592388F19d7C3399FB4
     decimals: 18
+  base-weth:
+    network: base
+    address: 0x4200000000000000000000000000000000000006
+    decimals: 18
 
 orders:
   base:
@@ -36,6 +40,14 @@ orders:
       - token: base-usdc
       - token: base-dai
       - token: base-eusd
+  base-eth:
+    orderbook: base
+    inputs:
+      - token: base-weth
+      - token: base-usdc
+    outputs:
+      - token: base-weth
+      - token: base-usdc
 
 scenarios:
   base:
@@ -48,14 +60,30 @@ scenarios:
 
       time-per-epoch-trading: 10800
       io-multiplier: 0.01
+  base-eth:
+    orderbook: base
+    network: base
+    deployer: base
+    runs: 1
+    bindings:
+      time-per-epoch-init: 10800
+      initial-max-additional-io: 300
+      initial-baseline-io: 2200
+
+      time-per-epoch-trading: 10800
+      io-multiplier: 0.01
 
 charts:
   base:
+  base-eth:
 
 deployments:
   base:
     order: base
     scenario: base
+  base-eth:
+    order: base-eth
+    scenario: base-eth
 
 ---
 #raindex-subparser 0x662dFd6d5B6DF94E07A60954901D3001c24F856a
