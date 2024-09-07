@@ -1,0 +1,10 @@
+---
+#pre
+input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913,
+output-token: 0x4200000000000000000000000000000000000006,
+output-cap: max-value(),
+:set(hash(order-hash() input-token() output-token() tranche-space-key) 2.5);
+
+#post
+tranche-space-after: get(hash(order-hash() input-token() output-token() tranche-space-key)),
+:ensure(equal-to(tranche-space-after 3.9));

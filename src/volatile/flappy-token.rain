@@ -1,0 +1,125 @@
+raindex-version: 3b6f3a1e9c090215aa4571fb753536f870961b82
+
+deployers:
+  base:
+    address: 0xC1A14cE2fd58A3A2f99deCb8eDd866204eE07f8D
+    network: base
+
+tokens:
+  base-usdc:
+    network: base
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+    decimals: 6
+  base-weth:
+    network: base
+    address: 0x4200000000000000000000000000000000000006
+    decimals: 18
+
+orders:
+  base:
+    orderbook: base
+    inputs:
+      - token: base-weth
+    outputs:
+      - token: base-usdc
+
+scenarios:
+  base:
+    orderbook: base
+    runs: 1
+    bindings:
+      time-per-epoch: 10800
+      amount-per-epoch: 3
+
+charts:
+  base:
+
+deployments:
+  base:
+    order: base
+    scenario: base
+
+---
+#raindex-subparser 0x662dFd6d5B6DF94E07A60954901D3001c24F856a
+
+#time-per-epoch !Duration of one unit of streaming amount and io ratio halflife.
+#amount-per-epoch !Amount of output token to approve for buying per epoch.
+#next-trade-multiplier !Start next auction at this x the last trade.
+#baseline !Minimum io ratio. This component of the io ratio is ignored by the halflife calculations.
+#initial-io !Strat will be initialized with this as the starting last trade. Must be larger than baseline.
+
+#last-trade-time-key "last-trade-time"
+#last-trade-io-key "last-trade-io"
+
+#set-last-trade
+last-io:,
+:set(hash(order-hash() last-trade-time-key) now()),
+:set(hash(order-hash() last-trade-io-key) last-io);
+
+#get-last-trade
+last-time:get(hash(order-hash() last-trade-time-key)),
+last-io:get(hash(order-hash() last-trade-io-key));
+
+#get-epoch
+last-time _: call<'get-last-trade>(),
+duration: sub(now() last-time),
+epochs: div(time-per-epoch duration);
+
+#amount-for-epoch
+epoch:,
+_: linear-growth(0 amount-per-epoch epoch);
+
+#halflife
+max epoch:,
+/**
+ * Shrinking the multiplier like this
+ * then applying it 10 times allows for
+ * better precision when max-io-ratio
+ * is very large, e.g. ~1e10 or ~1e20+
+ *
+ * This works because `power` loses
+ * precision on base `0.5` when the
+ * exponent is large and can even go
+ * to `0` while the io-ratio is still
+ * large. Better to keep the multiplier
+ * higher precision and drop the io-ratio
+ * smoothly for as long as we can.
+ */
+multiplier:
+  power(0.5 div(epoch 10)),
+io:
+  mul(
+    max
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+  );
+
+#io-for-epoch
+epoch:,
+last-io: call<'get-last-trade>(),
+max-next-trade: mul(last-io next-trade-multiplier),
+variable-component: sub(max-next-trade baseline),
+above-baseline: call<'halflife>(variable-component epoch),
+_: add(baseline above-baseline);
+
+#handle-add-order
+using-words-from raindex-subparser
+:call<'set-last-trade>(initial-io-ratio);
+
+#calculate-io
+using-words-from raindex-subparser
+epoch:call<'get-epoch>(),
+max-output: call<'amount-for-epoch>(epoch),
+io-ratio: call<'io-for-epoch>(epoch),
+:call<'set-last-trade>(io-ratio);
+
+#handle-io
+:;
