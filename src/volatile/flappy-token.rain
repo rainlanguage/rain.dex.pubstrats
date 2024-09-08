@@ -1,4 +1,4 @@
-raindex-version: 3b6f3a1e9c090215aa4571fb753536f870961b82
+raindex-version: 6be7f1fbd490c587f9d8d2fb894435b0b02e25c4
 
 deployers:
   base:
@@ -30,9 +30,11 @@ scenarios:
     bindings:
       time-per-epoch: 10800
       amount-per-epoch: 3
-      initial-io: 0.00045
+      initial-io: 0.0005
       baseline: 0.0002
       next-trade-multiplier: 1.3
+      next-trade-baseline-multiplier: 0.7
+      min-trade-amount: 0.1
 
 charts:
   base:
@@ -48,8 +50,10 @@ deployments:
 #time-per-epoch !Duration of one unit of streaming amount and io ratio halflife.
 #amount-per-epoch !Amount of output token to approve for buying per epoch.
 #next-trade-multiplier !Start next auction at this x the last trade.
+#next-trade-baseline-multiplier !Lifts the baseline to here relative to the previous trade.
 #baseline !Minimum io ratio. This component of the io ratio is ignored by the halflife calculations.
 #initial-io !Strat will be initialized with this as the starting last trade. Must be larger than baseline.
+#min-trade-amount !Each trade must be at least this many output tokens.
 
 #last-trade-time-key "last-trade-time"
 #last-trade-io-key "last-trade-io"
@@ -109,7 +113,9 @@ val:
 epoch:,
 last-io: call<'get-last-trade>(),
 max-next-trade: mul(last-io next-trade-multiplier),
-variable-component: sub(max-next-trade baseline),
+baseline-next-trade: mul(last-io next-trade-baseline-multiplier),
+real-baseline: max(baseline-next-trade baseline),
+variable-component: sub(max-next-trade real-baseline),
 above-baseline: call<'halflife>(variable-component epoch),
 _: add(baseline above-baseline);
 
@@ -125,4 +131,4 @@ io: call<'io-for-epoch>(epoch),
 :call<'set-last-trade>(io);
 
 #handle-io
-:;
+:ensure(greater-than-or-equal-to(output-vault-decrease() min-trade-amount) "Min trade amount.");
