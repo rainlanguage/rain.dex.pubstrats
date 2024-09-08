@@ -1,0 +1,107 @@
+---
+#raindex-subparser 0x662dFd6d5B6DF94E07A60954901D3001c24F856a
+
+#get-cost-basis-io-ratio
+  this-vwaio: get(hash(order-hash() input-token() output-token() "io-ratio")),
+  other-vwaio: get(hash(order-hash() output-token() input-token() "io-ratio")),
+  _: any(this-vwaio inv(any(other-vwaio max-value())));
+
+#set-cost-basis-io-ratio
+  /* first reduce outstanding inventory */
+  other-total-out-key: hash(order-hash() output-token() input-token() input-token()),
+  other-total-out: get(other-total-out-key),
+  other-reduction-out: min(other-total-out input-vault-increase()),
+  reduced-other-total-out: sub(other-total-out other-reduction-out),
+  : set(other-total-out-key reduced-other-total-out),
+
+  /* then increase our inventory */
+  total-out-key: hash(order-hash() input-token() output-token() output-token()),
+  vwaio-key: hash(order-hash() input-token() output-token() "io-ratio"),
+  total-out: get(total-out-key),
+  vwaio: get(vwaio-key),
+  total-in: mul(total-out vwaio),
+  remaining-in: sub(input-vault-increase() other-reduction-out),
+  new-in: add(total-in remaining-in),
+  remaining-out: div(remaining-in calculated-io-ratio()),
+  new-out: add(total-out remaining-out),
+  new-vwaio: every(new-out div(new-in any(new-out max-value()))),
+  cap-out: if(call<'amount-is-output>() history-cap div(history-cap any(new-vwaio calculated-io-ratio()))),
+  capped-out: min(new-out cap-out),
+  :set(total-out-key capped-out),
+  :set(vwaio-key new-vwaio);
+
+#halflife
+max-val epoch:,
+/**
+ * Shrinking the multiplier like this
+ * then applying it 10 times allows for
+ * better precision when max-io-ratio
+ * is very large, e.g. ~1e10 or ~1e20+
+ *
+ * This works because `power` loses
+ * precision on base `0.5` when the
+ * exponent is large and can even go
+ * to `0` while the io-ratio is still
+ * large. Better to keep the multiplier
+ * higher precision and drop the io-ratio
+ * smoothly for as long as we can.
+ */
+multiplier:
+  power(0.5 div(epoch 10)),
+val:
+  mul(
+    max-val
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+    multiplier
+  );
+
+#set-last-trade
+last-io:,
+:set(hash(order-hash() last-trade-time-key) now()),
+:set(hash(order-hash() last-trade-io-key) last-io);
+
+#get-last-trade
+last-time:get(hash(order-hash() last-trade-time-key)),
+last-io:get(hash(order-hash() last-trade-io-key));
+
+#get-epoch
+last-time _: call<'get-last-trade>(),
+duration: sub(now() last-time),
+epochs: div(duration time-per-epoch);
+
+#amount-for-epoch
+epoch:,
+_: linear-growth(0 amount-per-epoch epoch);
+
+#io-for-epoch
+epoch:,
+last-io: call<'get-last-trade>(),
+max-next-trade: mul(last-io next-trade-multiplier),
+baseline-next-trade: mul(last-io next-trade-baseline-multiplier),
+real-baseline: max(baseline-next-trade baseline),
+variable-component: sub(max-next-trade real-baseline),
+above-baseline: call<'halflife>(variable-component epoch),
+_: add(baseline above-baseline);
+
+#handle-add-order
+using-words-from raindex-subparser
+:call<'set-last-trade>(initial-io);
+
+#calculate-io
+using-words-from raindex-subparser
+epoch:call<'get-epoch>(),
+max-output: call<'amount-for-epoch>(epoch),
+io: call<'io-for-epoch>(epoch),
+:call<'set-last-trade>(io);
+
+#handle-io
+:ensure(greater-than-or-equal-to(output-vault-decrease() min-trade-amount) "Min trade amount."),
+:call<'set-cost-basis-io-ratio>();
