@@ -37,6 +37,7 @@ scenarios:
       history-cap: 30
       amount-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
       initial-io: 2348
+      initial-output-token: 0x4200000000000000000000000000000000000006
 
 charts:
   base:
@@ -55,9 +56,11 @@ deployments:
 #history-cap !The max amount of trade history kept for cost basis tracking (denominated in same token as tranche size).
 #amount-token !The token that is the amount token for the strategy. This denominates tranche sizes.
 #initial-io !The IO ratio that the strategy starts at. The quote token is the output so that the IO ratio looks like a CEX price.
+#initial-output-token !Initial output token for the initial IO ratio.
 
 #last-trade-io-key "last-trade-io"
 #last-trade-time-key "last-trade-time"
+#last-trade-output-token-key "last-trade-output-token"
 
 #amount-is-output
   _: equal-to(amount-token output-token());
@@ -127,11 +130,20 @@ val:
 #set-last-trade
 last-io:,
 :set(hash(order-hash() last-trade-time-key) now()),
-:set(hash(order-hash() last-trade-io-key) last-io);
+:set(hash(order-hash() last-trade-io-key) last-io),
+:set(hash(order-hash() last-trade-output-token-key) output-token());
+
+#handle-add-order
+using-words-from raindex-subparser
+:set(hash(order-hash() last-trade-time-key) now()),
+:set(hash(order-hash() last-trade-io-key) initial-io),
+:set(hash(order-hash() last-trade-output-token-key) initial-output-token);
 
 #get-last-trade
+stored-last-io:get(hash(order-hash() last-trade-io-key)),
+stored-last-output-token:get(hash(order-hash() last-trade-output-token-key)),
 last-time:get(hash(order-hash() last-trade-time-key)),
-last-io:get(hash(order-hash() last-trade-io-key));
+_: if(equal-to(stored-last-output-token output-token()) stored-last-io inv(stored-last-io));
 
 #get-epoch
 last-time _: call<'get-last-trade>(),
@@ -150,10 +162,6 @@ baseline: call<'get-cost-basis-io-ratio>(),
 variable-component: sub(max-next-trade baseline),
 above-baseline: call<'halflife>(variable-component epoch),
 _: add(baseline above-baseline);
-
-#handle-add-order
-using-words-from raindex-subparser
-:call<'set-last-trade>(initial-io);
 
 #calculate-io
 using-words-from raindex-subparser
