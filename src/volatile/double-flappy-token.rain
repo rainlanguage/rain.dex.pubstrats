@@ -151,8 +151,9 @@ duration: sub(now() last-time),
 epochs: div(duration time-per-epoch);
 
 #amount-for-epoch
-epoch:,
-_: linear-growth(0 amount-per-epoch epoch);
+epoch io:,
+base-amount: linear-growth(0 amount-per-epoch epoch),
+_: if(call<'amount-is-output>() base-amount mul(base-amount inv(io)));
 
 #io-for-epoch
 epoch:,
@@ -166,8 +167,9 @@ _: add(baseline above-baseline);
 #calculate-io
 using-words-from raindex-subparser
 epoch:call<'get-epoch>(),
-max-output: call<'amount-for-epoch>(epoch),
 io: call<'io-for-epoch>(epoch),
+max-output: call<'amount-for-epoch>(epoch io),
+_: io,
 :call<'set-last-trade>(io);
 
 #handle-io
