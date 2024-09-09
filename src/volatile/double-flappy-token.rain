@@ -1,5 +1,66 @@
+raindex-version: 6be7f1fbd490c587f9d8d2fb894435b0b02e25c4
+
+deployers:
+  base:
+    address: 0xC1A14cE2fd58A3A2f99deCb8eDd866204eE07f8D
+    network: base
+
+tokens:
+  base-usdc:
+    network: base
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+    decimals: 6
+  base-weth:
+    network: base
+    address: 0x4200000000000000000000000000000000000006
+    decimals: 18
+
+orders:
+  base:
+    orderbook: base
+    inputs:
+      - token: base-weth
+      - token: base-usdc
+    outputs:
+      - token: base-weth
+      - token: base-usdc
+
+scenarios:
+  base:
+    orderbook: base
+    runs: 1
+    bindings:
+      min-trade-amount: 0.1
+      time-per-epoch: 10800
+      amount-per-epoch: 3
+      next-trade-multiplier: 1.3
+      history-cap: 30
+      amount-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+      initial-io: 2348
+
+charts:
+  base:
+
+deployments:
+  base:
+    order: base
+    scenario: base
 ---
 #raindex-subparser 0x662dFd6d5B6DF94E07A60954901D3001c24F856a
+
+#min-trade-amount !Each trade must be at least this many output tokens.
+#time-per-epoch !Duration of one unit of streaming amount and io ratio halflife.
+#amount-per-epoch !Amount of output token to approve for buying per epoch.
+#next-trade-multiplier !Start next auction at this x the last trade.
+#history-cap !The max amount of trade history kept for cost basis tracking (denominated in same token as tranche size).
+#amount-token !The token that is the amount token for the strategy. This denominates tranche sizes.
+#initial-io !The IO ratio that the strategy starts at. The quote token is the output so that the IO ratio looks like a CEX price.
+
+#last-trade-io-key "last-trade-io"
+#last-trade-time-key "last-trade-time"
+
+#amount-is-output
+  _: equal-to(amount-token output-token());
 
 #get-cost-basis-io-ratio
   this-vwaio: get(hash(order-hash() input-token() output-token() "io-ratio")),
@@ -85,9 +146,8 @@ _: linear-growth(0 amount-per-epoch epoch);
 epoch:,
 last-io: call<'get-last-trade>(),
 max-next-trade: mul(last-io next-trade-multiplier),
-baseline-next-trade: mul(last-io next-trade-baseline-multiplier),
-real-baseline: max(baseline-next-trade baseline),
-variable-component: sub(max-next-trade real-baseline),
+baseline: call<'get-cost-basis-io-ratio>(),
+variable-component: sub(max-next-trade baseline),
 above-baseline: call<'halflife>(variable-component epoch),
 _: add(baseline above-baseline);
 
