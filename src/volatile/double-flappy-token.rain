@@ -30,13 +30,14 @@ scenarios:
     orderbook: base
     runs: 1
     bindings:
+      max-amount: 10
+      min-amount: 1
       min-trade-amount: 0.1
       time-per-epoch: 10800
-      amount-per-epoch: 3
       next-trade-multiplier: 1.3
-      history-cap: 30
+      history-cap: 1e50
       amount-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-      initial-io: 2348
+      initial-io: 2354
       initial-output-token: 0x4200000000000000000000000000000000000006
 
 charts:
@@ -49,9 +50,10 @@ deployments:
 ---
 #raindex-subparser 0x662dFd6d5B6DF94E07A60954901D3001c24F856a
 
+#min-amount !Amount will decay down to this number each epoch.
+#max-amount !Amount will decay down from this number each epoch.
 #min-trade-amount !Each trade must be at least this many output tokens.
 #time-per-epoch !Duration of one unit of streaming amount and io ratio halflife.
-#amount-per-epoch !Amount of output token to approve for buying per epoch.
 #next-trade-multiplier !Start next auction at this x the last trade.
 #history-cap !The max amount of trade history kept for cost basis tracking (denominated in same token as tranche size).
 #amount-token !The token that is the amount token for the strategy. This denominates tranche sizes.
@@ -95,7 +97,7 @@ deployments:
   :set(vwaio-key new-vwaio);
 
 #halflife
-max-val epoch:,
+epoch:,
 /**
  * Shrinking the multiplier like this
  * then applying it 10 times allows for
@@ -114,7 +116,6 @@ multiplier:
   power(0.5 div(epoch 10)),
 val:
   mul(
-    max-val
     multiplier
     multiplier
     multiplier
@@ -152,7 +153,9 @@ epochs: div(duration time-per-epoch);
 
 #amount-for-epoch
 epoch io:,
-base-amount: linear-growth(0 amount-per-epoch epoch),
+decay: call<'halflife>(epoch),
+variable-component: sub(max-amount min-amount),
+base-amount: add(min-amount mul(variable-component decay)),
 _: if(call<'amount-is-output>() base-amount mul(base-amount inv(io)));
 
 #io-for-epoch
@@ -161,7 +164,8 @@ last-io: call<'get-last-trade>(),
 max-next-trade: mul(last-io next-trade-multiplier),
 baseline: call<'get-cost-basis-io-ratio>(),
 variable-component: sub(max-next-trade baseline),
-above-baseline: call<'halflife>(variable-component epoch),
+decay: call<'halflife>(epoch),
+above-baseline: mul(variable-component decay),
 _: add(baseline above-baseline);
 
 #calculate-io
