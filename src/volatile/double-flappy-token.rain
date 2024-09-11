@@ -1,4 +1,4 @@
-raindex-version: 6be7f1fbd490c587f9d8d2fb894435b0b02e25c4
+raindex-version: 1c56209e411c3faaedd2bf6d62565201fbe607b3
 
 deployers:
   base:
@@ -33,12 +33,13 @@ scenarios:
       max-amount: 10
       min-amount: 1
       min-trade-amount: 0.1
-      time-per-epoch: 10800
-      next-trade-multiplier: 1.3
+      time-per-epoch: 7200
+      next-trade-multiplier: 1.01
       history-cap: 1e50
       amount-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-      initial-io: 2354
+      initial-io: 2392
       initial-output-token: 0x4200000000000000000000000000000000000006
+      initial-input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
 charts:
   base:
@@ -59,32 +60,37 @@ deployments:
 #amount-token !The token that is the amount token for the strategy. This denominates tranche sizes.
 #initial-io !The IO ratio that the strategy starts at. The quote token is the output so that the IO ratio looks like a CEX price.
 #initial-output-token !Initial output token for the initial IO ratio.
+#initial-input-token !Initial input token for the initial IO ratio.
 
 #last-trade-io-key "last-trade-io"
 #last-trade-time-key "last-trade-time"
 #last-trade-output-token-key "last-trade-output-token"
+#vwaio-key "cost-basis-io-ratio"
 
 #amount-is-output
   _: equal-to(amount-token output-token());
 
 #get-cost-basis-io-ratio
-  this-vwaio: get(hash(order-hash() input-token() output-token() "io-ratio")),
-  other-vwaio: get(hash(order-hash() output-token() input-token() "io-ratio")),
+  this-vwaio: get(hash(order-hash() input-token() output-token() vwaio-key)),
+  other-vwaio: get(hash(order-hash() output-token() input-token() vwaio-key)),
   _: any(this-vwaio inv(any(other-vwaio max-value())));
 
 #set-cost-basis-io-ratio
   /* first reduce outstanding inventory */
-  other-total-out-key: hash(order-hash() output-token() input-token() input-token()),
+  other-total-out-key: hash(order-hash() output-token() input-token()),
+  other-vwaio-key: hash(order-hash() output-token() input-token() vwaio-key),
   other-total-out: get(other-total-out-key),
+  other-vwaio: get(other-vwaio-key),
   other-reduction-out: min(other-total-out input-vault-increase()),
   reduced-other-total-out: sub(other-total-out other-reduction-out),
-  : set(other-total-out-key reduced-other-total-out),
+  :set(other-total-out-key reduced-other-total-out),
+  :set(other-vwaio-key every(reduced-other-total-out other-vwaio)),
 
   /* then increase our inventory */
-  total-out-key: hash(order-hash() input-token() output-token() output-token()),
-  vwaio-key: hash(order-hash() input-token() output-token() "io-ratio"),
+  total-out-key: hash(order-hash() input-token() output-token()),
+  this-vwaio-key: hash(order-hash() input-token() output-token() vwaio-key),
   total-out: get(total-out-key),
-  vwaio: get(vwaio-key),
+  vwaio: get(this-vwaio-key),
   total-in: mul(total-out vwaio),
   remaining-in: sub(input-vault-increase() other-reduction-out),
   new-in: add(total-in remaining-in),
@@ -94,7 +100,7 @@ deployments:
   cap-out: if(call<'amount-is-output>() history-cap div(history-cap any(new-vwaio calculated-io-ratio()))),
   capped-out: min(new-out cap-out),
   :set(total-out-key capped-out),
-  :set(vwaio-key new-vwaio);
+  :set(this-vwaio-key new-vwaio);
 
 #halflife
 epoch:,
@@ -138,7 +144,9 @@ last-io:,
 using-words-from raindex-subparser
 :set(hash(order-hash() last-trade-time-key) now()),
 :set(hash(order-hash() last-trade-io-key) initial-io),
-:set(hash(order-hash() last-trade-output-token-key) initial-output-token);
+:set(hash(order-hash() last-trade-output-token-key) initial-output-token),
+:set(hash(order-hash() initial-input-token initial-output-token) 1e-18),
+:set(hash(order-hash() initial-input-token initial-output-token vwaio-key) initial-io);
 
 #get-last-trade
 stored-last-io:get(hash(order-hash() last-trade-io-key)),
