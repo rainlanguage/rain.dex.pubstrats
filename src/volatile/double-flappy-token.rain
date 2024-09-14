@@ -1,4 +1,4 @@
-raindex-version: 1c56209e411c3faaedd2bf6d62565201fbe607b3
+raindex-version: 9fe04a07eb335d721287fe8d176f7313e49d6d5a
 
 deployers:
   base:
@@ -37,7 +37,7 @@ scenarios:
       next-trade-multiplier: 1.01
       history-cap: 1e50
       amount-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-      initial-io: 2392
+      initial-io: 2425
       initial-output-token: 0x4200000000000000000000000000000000000006
       initial-input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
@@ -169,8 +169,9 @@ _: if(call<'amount-is-output>() base-amount mul(base-amount inv(io)));
 #io-for-epoch
 epoch:,
 last-io: call<'get-last-trade>(),
-max-next-trade: mul(last-io next-trade-multiplier),
-baseline: call<'get-cost-basis-io-ratio>(),
+cost-basis-io: call<'get-cost-basis-io-ratio>(),
+max-next-trade: mul(max(cost-basis-io last-io) next-trade-multiplier),
+baseline: any(cost-basis-io last-io),
 variable-component: sub(max-next-trade baseline),
 decay: call<'halflife>(epoch),
 above-baseline: mul(variable-component decay),
@@ -185,5 +186,5 @@ _: io,
 :call<'set-last-trade>(io);
 
 #handle-io
-:ensure(greater-than-or-equal-to(output-vault-decrease() min-trade-amount) "Min trade amount."),
+:ensure(greater-than-or-equal-to(if(call<'amount-is-output>() output-vault-decrease() input-vault-increase()) min-trade-amount) "Min trade amount."),
 :call<'set-cost-basis-io-ratio>();
