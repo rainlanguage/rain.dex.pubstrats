@@ -35,6 +35,7 @@ scenarios:
       next-trade-multiplier: 1.3
       next-trade-baseline-multiplier: 0.7
       min-trade-amount: 0.1
+      max-trade-amount: 10
 
 charts:
   base:
@@ -54,6 +55,7 @@ deployments:
 #baseline !Minimum io ratio. This component of the io ratio is ignored by the halflife calculations.
 #initial-io !Strat will be initialized with this as the starting last trade. Must be larger than baseline.
 #min-trade-amount !Each trade must be at least this many output tokens.
+#max-trade-amount !Each trade will be capped at this many tokens.
 
 #last-trade-time-key "last-trade-time"
 #last-trade-io-key "last-trade-io"
@@ -126,7 +128,7 @@ using-words-from raindex-subparser
 #calculate-io
 using-words-from raindex-subparser
 epoch:call<'get-epoch>(),
-max-output: call<'amount-for-epoch>(epoch),
+max-output: min(call<'amount-for-epoch>(epoch) max-trade-amount),
 io: call<'io-for-epoch>(epoch),
 :call<'set-last-trade>(io);
 
