@@ -242,14 +242,14 @@ deployments:
 
 #set-cost-basis-io-ratio-prod
   /* first reduce outstanding inventory */
-  other-total-out-key: hash(order-hash() output-token() input-token() input-token()),
+  other-total-out-key: hash(order-hash() output-token() input-token()),
   other-total-out: get(other-total-out-key),
   other-reduction-out: min(other-total-out input-vault-increase()),
   reduced-other-total-out: sub(other-total-out other-reduction-out),
   : set(other-total-out-key reduced-other-total-out),
 
   /* then increase our inventory */
-  total-out-key: hash(order-hash() input-token() output-token() output-token()),
+  total-out-key: hash(order-hash() input-token() output-token()),
   vwaio-key: hash(order-hash() input-token() output-token() vwaio-key),
   total-out: get(total-out-key),
   vwaio: get(vwaio-key),
