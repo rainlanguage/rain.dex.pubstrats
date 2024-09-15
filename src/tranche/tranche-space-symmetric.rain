@@ -243,16 +243,19 @@ deployments:
 #set-cost-basis-io-ratio-prod
   /* first reduce outstanding inventory */
   other-total-out-key: hash(order-hash() output-token() input-token()),
+  other-vwaio-key: hash(order-hash() output-token() input-token() vwaio-key),
   other-total-out: get(other-total-out-key),
+  other-vwaio: get(other-vwaio-key),
   other-reduction-out: min(other-total-out input-vault-increase()),
   reduced-other-total-out: sub(other-total-out other-reduction-out),
-  : set(other-total-out-key reduced-other-total-out),
+  :set(other-total-out-key reduced-other-total-out),
+  :set(other-vwaio-key every(reduced-other-total-out other-vwaio)),
 
   /* then increase our inventory */
   total-out-key: hash(order-hash() input-token() output-token()),
-  vwaio-key: hash(order-hash() input-token() output-token() vwaio-key),
+  this-vwaio-key: hash(order-hash() input-token() output-token() vwaio-key),
   total-out: get(total-out-key),
-  vwaio: get(vwaio-key),
+  vwaio: get(this-vwaio-key),
   total-in: mul(total-out vwaio),
   remaining-in: sub(input-vault-increase() other-reduction-out),
   new-in: add(total-in remaining-in),
@@ -262,7 +265,7 @@ deployments:
   cap-out: if(call<'amount-is-output>() history-cap div(history-cap any(new-vwaio calculated-io-ratio()))),
   capped-out: min(new-out cap-out),
   :set(total-out-key capped-out),
-  :set(vwaio-key new-vwaio);
+  :set(this-vwaio-key new-vwaio);
 
 /* Handle IO */
 
