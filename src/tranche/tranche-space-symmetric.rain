@@ -160,6 +160,7 @@ deployments:
 #last-trade-io-ratio-key "last-io-ratio"
 #last-trade-time-key "last-trade-time"
 #tranche-space-key "tranche-space"
+#vwaio-key "io-ratio"
 
 /* Initialize new order */
 
@@ -235,8 +236,8 @@ deployments:
   :set(hash(order-hash() output-token() input-token() tranche-space-key) new-other-tranche-space);
 
 #get-cost-basis-io-ratio-prod
-  this-vwaio: get(hash(order-hash() input-token() output-token() "io-ratio")),
-  other-vwaio: get(hash(order-hash() output-token() input-token() "io-ratio")),
+  this-vwaio: get(hash(order-hash() input-token() output-token() vwaio-key)),
+  other-vwaio: get(hash(order-hash() output-token() input-token() vwaio-key)),
   _: any(this-vwaio inv(any(other-vwaio max-value())));
 
 #set-cost-basis-io-ratio-prod
@@ -249,7 +250,7 @@ deployments:
 
   /* then increase our inventory */
   total-out-key: hash(order-hash() input-token() output-token() output-token()),
-  vwaio-key: hash(order-hash() input-token() output-token() "io-ratio"),
+  vwaio-key: hash(order-hash() input-token() output-token() vwaio-key),
   total-out: get(total-out-key),
   vwaio: get(vwaio-key),
   total-in: mul(total-out vwaio),
