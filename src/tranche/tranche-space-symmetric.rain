@@ -36,6 +36,7 @@ scenarios:
 
       # Needs to be set to market price at order add time.
       initial-output-token: 0x4200000000000000000000000000000000000006
+      initial-input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
       initial-io-ratio: 2398
 
       # Relative distance from the midpoint for tranche 0.
@@ -126,6 +127,7 @@ deployments:
 #tranche-size-growth !The exponential growth factor of the size of each tranche. E.g. 0.01 is 1% output amount growth per tranche.
 #history-cap !The max amount of trade history kept for cost basis tracking (denominated in same token as tranche size).
 
+#initial-input-token !The token that is the initial input token for the strategy.
 #initial-output-token !The token that is the initial output token for the strategy.
 #initial-io-ratio !The IO ratio that the strategy starts at. The quote token is the output so that the IO ratio looks like a CEX price.
 
@@ -167,7 +169,9 @@ deployments:
 #handle-add-order
   using-words-from orderbook-subparser
   :set(hash(order-hash() last-trade-output-token-key) initial-output-token),
-  :set(hash(order-hash() last-trade-io-ratio-key) initial-io-ratio);
+  :set(hash(order-hash() last-trade-io-ratio-key) initial-io-ratio),
+  :set(hash(order-hash() initial-input-token initial-output-token) 1e-18),
+  :set(hash(order-hash() initial-input-token initial-output-token vwaio-key) initial-io-ratio);
 
 /* Calculate IO */
 
