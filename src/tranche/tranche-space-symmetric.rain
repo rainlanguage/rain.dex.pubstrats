@@ -1,4 +1,4 @@
-raindex-version: f60e99a7180aa8c82e7197a25c80dbb0c3277d46
+raindex-version: 2c9945353fe60df3e0adedb20809b94c08aad4cd
 
 deployers:
   base:
@@ -37,7 +37,7 @@ scenarios:
       # Needs to be set to market price at order add time.
       initial-output-token: 0x4200000000000000000000000000000000000006
       initial-input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-      initial-io-ratio: 2398
+      initial-io-ratio: 2416
 
       # Relative distance from the midpoint for tranche 0.
       # E.g. 0.0005 is 0.05% spread which means total spread is 1%.
