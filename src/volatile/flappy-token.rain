@@ -1,4 +1,4 @@
-raindex-version: 6be7f1fbd490c587f9d8d2fb894435b0b02e25c4
+raindex-version: 8898591f3bcaa21dc91dc3b8584330fc405eadfa
 
 deployers:
   base:
@@ -117,7 +117,7 @@ last-io: call<'get-last-trade>(),
 max-next-trade: mul(last-io next-trade-multiplier),
 baseline-next-trade: mul(last-io next-trade-baseline-multiplier),
 real-baseline: max(baseline-next-trade baseline),
-variable-component: sub(max-next-trade real-baseline),
+variable-component: saturating-sub(max-next-trade real-baseline),
 above-baseline: call<'halflife>(variable-component epoch),
 _: add(baseline above-baseline);
 
