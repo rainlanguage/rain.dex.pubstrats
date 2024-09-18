@@ -119,7 +119,7 @@ baseline-next-trade: mul(last-io next-trade-baseline-multiplier),
 real-baseline: max(baseline-next-trade baseline),
 variable-component: saturating-sub(max-next-trade real-baseline),
 above-baseline: call<'halflife>(variable-component epoch),
-_: add(baseline above-baseline);
+_: add(real-baseline above-baseline);
 
 #handle-add-order
 using-words-from raindex-subparser
