@@ -1,69 +1,114 @@
+raindex-version: f60e99a7180aa8c82e7197a25c80dbb0c3277d46
+
+deployers:
+  base:
+    address: 0xC1A14cE2fd58A3A2f99deCb8eDd866204eE07f8D
+    network: base
+
 tokens:
-  eusdt:
-    network: flare
-    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+  base-usdbc:
+    network: base
+    address: 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA
     decimals: 6
-  eeth:
-    network: flare
-    address: 0xa76DCDdcE60a442d69Bac7158F3660f50921b122
+  base-usdc:
+    network: base
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+    decimals: 6
+  base-dai:
+    network: base
+    address: 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb
     decimals: 18
-  wflr:
-    network: flare
-    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+  base-eusd:
+    network: base
+    address: 0xCfA3Ef56d303AE4fAabA0592388F19d7C3399FB4
+    decimals: 18
+  base-weth:
+    network: base
+    address: 0x4200000000000000000000000000000000000006
     decimals: 18
 
 orders:
-  flare:
-    orderbook: flare
+  base:
+    orderbook: base
     inputs:
-      - token: wflr
-      - token: eusdt
-      - token: eeth
+      - token: base-usdbc
+      - token: base-usdc
+      - token: base-dai
+      - token: base-eusd
     outputs:
-      - token: wflr
-      - token: eusdt
-      - token: eeth
+      - token: base-usdbc
+      - token: base-usdc
+      - token: base-dai
+      - token: base-eusd
+  base-eth:
+    orderbook: base
+    inputs:
+      - token: base-weth
+      - token: base-usdc
+    outputs:
+      - token: base-weth
+      - token: base-usdc
 
 scenarios:
-  flare:
-    orderbook: flare
+  base:
+    orderbook: base
     runs: 1
     bindings:
-      # date +%s
-      strat-start-time: 9999999999
+      time-per-epoch-init: 10800
+      initial-max-additional-io: 0.06
+      initial-baseline-io: 0.97
 
-      time-per-epoch-init: 1800
-      initial-max-io: 1e10
+      time-per-epoch-trading: 10800
+      io-multiplier: 0.01
+  base-eth:
+    orderbook: base
+    network: base
+    deployer: base
+    runs: 1
+    bindings:
+      time-per-epoch-init: 10800
+      initial-max-additional-io: 300
+      initial-baseline-io: 2200
 
-      time-per-epoch-trading: 28800
-      io-multiplier: 0.1
+      time-per-epoch-trading: 10800
+      io-multiplier: 0.01
 
 charts:
-  flare:
+  base:
+  base-eth:
 
 deployments:
-  flare:
-    order: flare
-    scenario: flare
+  base:
+    order: base
+    scenario: base
+  base-eth:
+    order: base-eth
+    scenario: base-eth
 
 ---
-#raindex-subparser 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
+#raindex-subparser 0x662dFd6d5B6DF94E07A60954901D3001c24F856a
 
 #trade-time-ago-key "trade-time-ago-key"
 
-#strat-start-time !Time the strat starts at.
 #time-per-epoch-init !Number of seconds per epoch during initialization. An epoch is one halving.
-#initial-max-io !A very large io that is the starting auction for pairs before any trades have happened.
+#initial-max-additional-io !IO that is _added_ to the initial baseline IO to start the auction.
+#initial-baseline-io !Minimum IO for the initial auction.
 
 #time-per-epoch-trading !Number of seconds per epoch during trading. An epoch is one halving.
 #io-multiplier !Multiple of the breakeven io to start each flip at. E.g. 0.2 starts 20% above breakeven.
+
+#handle-add-order
+using-words-from
+  raindex-subparser
+  key:
+    hash(order-hash() trade-time-ago-key),
+  :set(key now());
 
 #epochs-since-trade
 time-per-epoch:,
 key:
   hash(order-hash() trade-time-ago-key),
-last-time:
-  any(get(key) strat-start-time),
+last-time: get(key),
 time-ago:
   sub(now() last-time),
 epochs:
@@ -105,12 +150,10 @@ io:
   );
 
 #breakeven-io
-prev-input-vault-balance-raw:
-  get(hash(order-hash() input-token())),
 prev-input-vault-balance:
-  scale-18-dynamic(input-token-decimals() prev-input-vault-balance-raw),
-output-vault-balance:
-  scale-18-dynamic(output-token-decimals() uint256-output-vault-before()),
+  get(hash(order-hash() input-token())),
+output-vault-balance: output-vault-before(),
+
 /**
  * This will be `0` initially which is a dangerous edge case
  * as we will naively ask for `0` input and instantly lose
@@ -126,24 +169,25 @@ io:
 using-words-from
   raindex-subparser
 
-baseline-io:
+trading-breakeven-io:
   call<'breakeven-io>(),
+baseline-io: any(trading-breakeven-io initial-baseline-io),
 max-additional-io:
-  if(baseline-io mul(baseline-io io-multiplier) initial-max-io),
+  if(trading-breakeven-io mul(trading-breakeven-io io-multiplier) initial-max-additional-io),
 time-per-epoch:
-  if(baseline-io time-per-epoch-trading time-per-epoch-init),
+  if(trading-breakeven-io time-per-epoch-trading time-per-epoch-init),
 additional-io:
   call<'halflife>(max-additional-io call<'epochs-since-trade>(time-per-epoch)),
 _: max-value(),
 _: add(baseline-io additional-io);
 
 #handle-io
-  :ensure(uint256-output-vault-before() "No output."),
+  :ensure(output-vault-before() "No output."),
   :ensure(
-    equal-to(uint256-output-vault-before() uint256-output-vault-decrease())
+    equal-to(output-vault-before() output-vault-decrease())
     "Partial clear."
   ),
   :set(
     hash(order-hash() output-token())
-    uint256-output-vault-before()
+    output-vault-before()
   );
