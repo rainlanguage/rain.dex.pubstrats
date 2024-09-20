@@ -13,16 +13,23 @@ networks:
     chain-id: 11155111 
     network-id: 11155111 
     currency: ETH
+  polygon: 
+    rpc: https://1rpc.io/polygon
+    chain-id: 137 
+    network-id: 137 
+    currency: POL
 
 subgraphs:
   flare: http://replaceme.com
   base: http://replaceme.com
   sepolia: http://replaceme.com
+  polygon: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-polygon/0.4/gn
 
 metaboards:
   flare: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-flare-0x893BBFB7/0.1/gn
   base: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-base-0x59401C93/0.1/gn
   sepolia: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-sepolia-0x77991674/0.1/gn
+  polygon: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-polygon/0.1/gn
 
 orderbooks:
   flare:
@@ -37,6 +44,10 @@ orderbooks:
     address: 0x0bB72B4C7c0d47b2CaED07c804D9243C1B8a0728
     network: sepolia
     subgraph: sepolia
+  polygon:
+    address: 0x7D2f700b1f6FD75734824EA4578960747bdF269A
+    network: polygon
+    subgraph: polygon
   
 deployers:
   flare:
@@ -48,3 +59,6 @@ deployers:
   sepolia:
     address: 0x7692BA8446Bb8B3140A2c02df073080BeD0a7F8E
     network: sepolia
+  polygon:
+    address: 0x7ff6688157639BE7B7f216025667248Fa2711d18
+    network: polygon
