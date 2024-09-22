@@ -80,8 +80,8 @@ last-io:get(hash(order-hash() last-trade-io-key));
 #get-epoch
 last-time _: call<'get-last-trade>(),
 duration: sub(now() last-time),
-total-time: call<'get-initial-time>(),
-total-duration: sub(now() total-time),
+initial-time: call<'get-initial-time>(),
+total-duration: sub(now() initial-time),
 total-epochs: div(total-duration time-per-epoch),
 trade-epochs: div(duration time-per-epoch);
 
