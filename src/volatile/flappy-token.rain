@@ -59,11 +59,19 @@ deployments:
 
 #last-trade-time-key "last-trade-time"
 #last-trade-io-key "last-trade-io"
+#initial-time-key "initial-time"
+#amount-used-key "amount-used"
 
 #set-last-trade
 last-io:,
 :set(hash(order-hash() last-trade-time-key) now()),
 :set(hash(order-hash() last-trade-io-key) last-io);
+
+#set-initial-time
+:set(hash(order-hash() initial-time-key) now());
+
+#get-initial-time
+:get(hash(order-hash() initial-time-key));
 
 #get-last-trade
 last-time:get(hash(order-hash() last-trade-time-key)),
@@ -72,11 +80,17 @@ last-io:get(hash(order-hash() last-trade-io-key));
 #get-epoch
 last-time _: call<'get-last-trade>(),
 duration: sub(now() last-time),
-epochs: div(duration time-per-epoch);
+total-time: call<'get-initial-time>(),
+total-duration: sub(now() total-time),
+total-epochs: div(total-duration time-per-epoch),
+trade-epochs: div(duration time-per-epoch);
 
 #amount-for-epoch
-epoch:,
-_: linear-growth(0 amount-per-epoch epoch);
+total-epochs:,
+total-available: linear-growth(0 amount-per-epoch total-epochs),
+used: get(hash(order-hash() amount-used-key)),
+unused: sub(total-available used),
+capped-unused: min(unused max-trade-amount);
 
 #halflife
 max-val epoch:,
@@ -123,14 +137,18 @@ _: add(real-baseline above-baseline);
 
 #handle-add-order
 using-words-from raindex-subparser
-:call<'set-last-trade>(initial-io);
+:call<'set-last-trade>(initial-io),
+:call<'set-initial-time>();
 
 #calculate-io
 using-words-from raindex-subparser
-epoch:call<'get-epoch>(),
-max-output: min(call<'amount-for-epoch>(epoch) max-trade-amount),
-io: call<'io-for-epoch>(epoch),
+total-epochs
+trade-epochs:call<'get-epoch>(),
+max-output: call<'amount-for-epoch>(total-epochs),
+io: call<'io-for-epoch>(trade-epochs),
 :call<'set-last-trade>(io);
 
 #handle-io
-:ensure(greater-than-or-equal-to(output-vault-decrease() min-trade-amount) "Min trade amount.");
+:ensure(greater-than-or-equal-to(output-vault-decrease() min-trade-amount) "Min trade amount."),
+used: get(hash(order-hash() amount-used-key)),
+:set(hash(order-hash() amount-used-key) add(used output-vault-decrease()));
