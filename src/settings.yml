@@ -18,18 +18,31 @@ networks:
     chain-id: 137 
     network-id: 137 
     currency: POL
+  arbitrum: 
+    rpc: https://rpc.ankr.com/arbitrum
+    chain-id: 42161 
+    network-id: 42161 
+    currency: ETH
+  matchain: 
+    rpc: https://rpc.matchain.io
+    chain-id: 698 
+    network-id: 698 
+    currency: BNB
 
 subgraphs:
   flare: http://replaceme.com
-  base: http://replaceme.com
+  base: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-base/0.7/gn
   sepolia: http://replaceme.com
   polygon: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-polygon/0.4/gn
+  arbitrum: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-arbitrum/0.1/gn
+  matchain: http://subgraph.mobula.io:8000/subgraphs/name/matchain-ob
 
 metaboards:
   flare: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-flare-0x893BBFB7/0.1/gn
   base: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-base-0x59401C93/0.1/gn
   sepolia: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-sepolia-0x77991674/0.1/gn
   polygon: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-polygon/0.1/gn
+  arbitrum: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-arbitrum/0.1/gn
 
 orderbooks:
   flare:
@@ -37,7 +50,7 @@ orderbooks:
     network: flare
     subgraph: flare
   base:
-    address: 0x80DE00e3cA96AE0569426A1bb1Ae22CD4181dE6F
+    address: 0xd2938e7c9fe3597f78832ce780feb61945c377d7
     network: base
     subgraph: base
   sepolia:
@@ -48,6 +61,14 @@ orderbooks:
     address: 0x7D2f700b1f6FD75734824EA4578960747bdF269A
     network: polygon
     subgraph: polygon
+  arbitrum:
+    address: 0xD8c8D3287B25Bf853ed55b4AD9500148797dA641
+    network: arbitrum
+    subgraph: arbitrum
+  matchain: 
+    address: 0x40312edab8fe65091354172ad79e9459f21094e2
+    network: matchain
+    subgraph: matchain
   
 deployers:
   flare:
@@ -61,4 +82,10 @@ deployers:
     network: sepolia
   polygon:
     address: 0x7ff6688157639BE7B7f216025667248Fa2711d18
+    network: polygon
+  arbitrum:
+    address: 0xcA8A663fF0541b7cf64516C7567F13C33f2e84e5
+    network: arbitrum
+  matchain:
+    address: 0x582d9e838FE6cD9F8147C66A8f56A3FBE513a6A2
     network: polygon
