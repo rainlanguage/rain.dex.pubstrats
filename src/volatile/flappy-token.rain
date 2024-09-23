@@ -28,8 +28,9 @@ scenarios:
     orderbook: base
     runs: 1
     bindings:
-      time-per-epoch: 10800
-      amount-per-epoch: 3
+      time-per-amount-epoch: 86400
+      amount-per-epoch: 24
+      time-per-trade-epoch: 10800
       initial-io: 0.0005
       baseline: 0.0002
       next-trade-multiplier: 1.3
@@ -48,7 +49,8 @@ deployments:
 ---
 #raindex-subparser 0x662dFd6d5B6DF94E07A60954901D3001c24F856a
 
-#time-per-epoch !Duration of one unit of streaming amount and io ratio halflife.
+#time-per-amount-epoch !Duration of one unit of streaming amount halflife.
+#time-per-trade-epoch !Duration of one unit of io ratio halflife.
 #amount-per-epoch !Amount of output token to approve for buying per epoch.
 #next-trade-multiplier !Start next auction at this x the last trade.
 #next-trade-baseline-multiplier !Lifts the baseline to here relative to the previous trade.
@@ -82,12 +84,12 @@ last-time _: call<'get-last-trade>(),
 duration: sub(now() last-time),
 initial-time: call<'get-initial-time>(),
 total-duration: sub(now() initial-time),
-total-epochs: div(total-duration time-per-epoch),
-trade-epochs: div(duration time-per-epoch);
+amount-epochs: div(total-duration time-per-amount-epoch),
+trade-epochs: div(duration time-per-trade-epoch);
 
 #amount-for-epoch
-total-epochs:,
-total-available: linear-growth(0 amount-per-epoch total-epochs),
+amount-epochs:,
+total-available: linear-growth(0 amount-per-epoch amount-epochs),
 used: get(hash(order-hash() amount-used-key)),
 unused: sub(total-available used),
 capped-unused: min(unused max-trade-amount);
@@ -142,9 +144,9 @@ using-words-from raindex-subparser
 
 #calculate-io
 using-words-from raindex-subparser
-total-epochs
+amount-epochs
 trade-epochs:call<'get-epoch>(),
-max-output: call<'amount-for-epoch>(total-epochs),
+max-output: call<'amount-for-epoch>(amount-epochs),
 io: call<'io-for-epoch>(trade-epochs),
 :call<'set-last-trade>(io);
 
