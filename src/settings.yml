@@ -28,6 +28,11 @@ networks:
     chain-id: 698 
     network-id: 698 
     currency: BNB
+  bsc: 
+    rpc: https://rpc.ankr.com/bsc
+    chain-id: 56 
+    network-id: 56 
+    currency: BNB
 
 subgraphs:
   flare: http://replaceme.com
@@ -36,6 +41,7 @@ subgraphs:
   polygon: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-polygon/0.4/gn
   arbitrum: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-arbitrum/0.1/gn
   matchain: http://subgraph.mobula.io:8000/subgraphs/name/matchain-ob
+  bsc: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-bsc/0.1/gn
 
 metaboards:
   flare: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-flare-0x893BBFB7/0.1/gn
@@ -43,6 +49,7 @@ metaboards:
   sepolia: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-sepolia-0x77991674/0.1/gn
   polygon: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-polygon/0.1/gn
   arbitrum: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-arbitrum/0.1/gn
+  bsc: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-bsc/0.1/gn
 
 orderbooks:
   flare:
@@ -62,13 +69,17 @@ orderbooks:
     network: polygon
     subgraph: polygon
   arbitrum:
-    address: 0xD8c8D3287B25Bf853ed55b4AD9500148797dA641
+    address: 0x550878091b2B1506069F61ae59e3A5484Bca9166
     network: arbitrum
     subgraph: arbitrum
   matchain: 
     address: 0x40312edab8fe65091354172ad79e9459f21094e2
     network: matchain
     subgraph: matchain
+  bsc: 
+    address: 0xd2938E7c9fe3597F78832CE780Feb61945c377d7
+    network: bsc
+    subgraph: bsc
   
 deployers:
   flare:
@@ -84,8 +95,11 @@ deployers:
     address: 0x7ff6688157639BE7B7f216025667248Fa2711d18
     network: polygon
   arbitrum:
-    address: 0xcA8A663fF0541b7cf64516C7567F13C33f2e84e5
+    address: 0x9B0D254bd858208074De3d2DaF5af11b3D2F377F
     network: arbitrum
   matchain:
     address: 0x582d9e838FE6cD9F8147C66A8f56A3FBE513a6A2
     network: polygon
+  bsc:
+    address: 
+    network: bsc
