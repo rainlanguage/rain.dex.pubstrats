@@ -57,24 +57,6 @@
   | DAI | [0x6B175474E89094C44Da98b954EedeAC495271d0F](https://etherscan.io/address/0x6b175474e89094c44da98b954eedeac495271d0f) |
   | WETH | [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2](https://etherscan.io/address/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) |
 
-### Flare
-
-**UNVERIFIED CONTRACTS**
-
-For some reason Flarescan is erroring on verification.
-
-- RainterpreterExpressionDeployerNPE2: [0x550878091b2B1506069F61ae59e3A5484Bca9166](https://flarescan.com/address/0x550878091b2B1506069F61ae59e3A5484Bca9166)
-- OrderBook: [0xb06202aA3Fe7d85171fB7aA5f17011d17E63f382](https://flarescan.com/address/0xb06202aA3Fe7d85171fB7aA5f17011d17E63f382)
-- OrderBookSubParser: [0xF836f2746B407136a5bCB515495949B1edB75184](https://flarescan.com/address/0xF836f2746B407136a5bCB515495949B1edB75184)
-- RouteProcessorOrderBookV3ArbOrderTaker: [0x56394785a22b3BE25470a0e03eD9E0a939C47b9b](https://flarescan.com/address/0x56394785a22b3BE25470a0e03eD9E0a939C47b9b)
-- FlareFtsoWords [0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4](https://flarescan.com/address/0xe4064e894DB4bfB9F3A64882aECB2715DC34FaF4)
-- Subgraph: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-0xb06202aA
-- Tokens
-  | Token | Scanlink |
-  | ------ | ------ |
-  | eUSDT | [0x96B41289D90444B8adD57e6F265DB5aE8651DF29](https://flarescan.com/address/0x96b41289d90444b8add57e6f265db5ae8651df29) |
-  | WFLR | [0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d](https://flarescan.com/address/0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d) |
-
 ### Oasis Sapphire
 
 - RainterpreterExpressionDeployerNPE2: [0xF77b3c3f61af5a3cE7f7CE3cfFc117491104432E](https://explorer.oasis.io/mainnet/sapphire/address/0xF77b3c3f61af5a3cE7f7CE3cfFc117491104432E/code#code)
