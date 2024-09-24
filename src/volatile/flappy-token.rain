@@ -28,8 +28,9 @@ scenarios:
     orderbook: base
     runs: 1
     bindings:
-      time-per-epoch: 10800
-      amount-per-epoch: 3
+      time-per-amount-epoch: 86400
+      amount-per-epoch: 24
+      time-per-trade-epoch: 10800
       initial-io: 0.0005
       baseline: 0.0002
       next-trade-multiplier: 1.3
@@ -48,7 +49,8 @@ deployments:
 ---
 #raindex-subparser 0x662dFd6d5B6DF94E07A60954901D3001c24F856a
 
-#time-per-epoch !Duration of one unit of streaming amount and io ratio halflife.
+#time-per-amount-epoch !Duration of one unit of streaming amount halflife.
+#time-per-trade-epoch !Duration of one unit of io ratio halflife.
 #amount-per-epoch !Amount of output token to approve for buying per epoch.
 #next-trade-multiplier !Start next auction at this x the last trade.
 #next-trade-baseline-multiplier !Lifts the baseline to here relative to the previous trade.
@@ -59,11 +61,19 @@ deployments:
 
 #last-trade-time-key "last-trade-time"
 #last-trade-io-key "last-trade-io"
+#initial-time-key "initial-time"
+#amount-used-key "amount-used"
 
 #set-last-trade
 last-io:,
 :set(hash(order-hash() last-trade-time-key) now()),
 :set(hash(order-hash() last-trade-io-key) last-io);
+
+#set-initial-time
+:set(hash(order-hash() initial-time-key) now());
+
+#get-initial-time
+:get(hash(order-hash() initial-time-key));
 
 #get-last-trade
 last-time:get(hash(order-hash() last-trade-time-key)),
@@ -72,11 +82,17 @@ last-io:get(hash(order-hash() last-trade-io-key));
 #get-epoch
 last-time _: call<'get-last-trade>(),
 duration: sub(now() last-time),
-epochs: div(duration time-per-epoch);
+initial-time: call<'get-initial-time>(),
+total-duration: sub(now() initial-time),
+amount-epochs: div(total-duration time-per-amount-epoch),
+trade-epochs: div(duration time-per-trade-epoch);
 
 #amount-for-epoch
-epoch:,
-_: linear-growth(0 amount-per-epoch epoch);
+amount-epochs:,
+total-available: linear-growth(0 amount-per-epoch amount-epochs),
+used: get(hash(order-hash() amount-used-key)),
+unused: sub(total-available used),
+capped-unused: min(unused max-trade-amount);
 
 #halflife
 max-val epoch:,
@@ -123,14 +139,18 @@ _: add(real-baseline above-baseline);
 
 #handle-add-order
 using-words-from raindex-subparser
-:call<'set-last-trade>(initial-io);
+:call<'set-last-trade>(initial-io),
+:call<'set-initial-time>();
 
 #calculate-io
 using-words-from raindex-subparser
-epoch:call<'get-epoch>(),
-max-output: min(call<'amount-for-epoch>(epoch) max-trade-amount),
-io: call<'io-for-epoch>(epoch),
+amount-epochs
+trade-epochs:call<'get-epoch>(),
+max-output: call<'amount-for-epoch>(amount-epochs),
+io: call<'io-for-epoch>(trade-epochs),
 :call<'set-last-trade>(io);
 
 #handle-io
-:ensure(greater-than-or-equal-to(output-vault-decrease() min-trade-amount) "Min trade amount.");
+:ensure(greater-than-or-equal-to(output-vault-decrease() min-trade-amount) "Min trade amount."),
+used: get(hash(order-hash() amount-used-key)),
+:set(hash(order-hash() amount-used-key) add(used output-vault-decrease()));
