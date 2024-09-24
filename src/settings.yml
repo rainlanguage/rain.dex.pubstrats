@@ -101,5 +101,5 @@ deployers:
     address: 0x582d9e838FE6cD9F8147C66A8f56A3FBE513a6A2
     network: polygon
   bsc:
-    address: 
+    address: 0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA
     network: bsc
