@@ -14,7 +14,7 @@ networks:
     network-id: 11155111
     currency: ETH
   polygon: 
-    rpc: https://1rpc.io/polygon
+    rpc: https://rpc.ankr.com/polygon
     chain-id: 137 
     network-id: 137 
     currency: POL
@@ -92,7 +92,7 @@ deployers:
     address: 0x7692BA8446Bb8B3140A2c02df073080BeD0a7F8E
     network: sepolia
   polygon:
-    address: 0x7ff6688157639BE7B7f216025667248Fa2711d18
+    address: 0xE7116BC05C8afe25e5B54b813A74F916B5D42aB1
     network: polygon
   arbitrum:
     address: 0x9B0D254bd858208074De3d2DaF5af11b3D2F377F
