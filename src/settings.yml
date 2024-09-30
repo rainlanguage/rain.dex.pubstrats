@@ -47,7 +47,7 @@ subgraphs:
   arbitrum: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-arbitrum/0.1/gn
   matchain: http://subgraph.mobula.io:8000/subgraphs/name/matchain-ob
   bsc: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-bsc/0.1/gn
-  linea: 
+  linea: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-linea/0.1/gn
 
 metaboards:
   flare: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/mb-flare-0x893BBFB7/0.1/gn
@@ -88,7 +88,7 @@ orderbooks:
     network: bsc
     subgraph: bsc
   linea: 
-    address: 
+    address: 0x22410e2a46261a1B1e3899a072f303022801C764
     network: linea
     subgraph: linea
   
