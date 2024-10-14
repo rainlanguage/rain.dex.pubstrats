@@ -1,4 +1,4 @@
-raindex-version: 9fe04a07eb335d721287fe8d176f7313e49d6d5a
+raindex-version: ef0670ae29fa4f03fa04e1cb0252714209392699
 
 deployers:
   base:
@@ -30,14 +30,14 @@ scenarios:
     orderbook: base
     runs: 1
     bindings:
-      max-amount: 100
-      min-amount: 1
+      max-amount: 50
+      min-amount: 5
       min-trade-amount: 0.1
       time-per-epoch: 7200
       next-trade-multiplier: 1.01
       history-cap: 1e50
       amount-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-      initial-io: 2412
+      initial-io: 2550
       initial-output-token: 0x4200000000000000000000000000000000000006
       initial-input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
