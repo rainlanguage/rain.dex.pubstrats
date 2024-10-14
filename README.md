@@ -2,20 +2,6 @@
 
 ## Deployed Contracts
 
-### Arbitrum
-- RainterpreterExpressionDeployerNPE2: [0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76](https://arbiscan.io/address/0x2aee87d75cd000583daec7a28db103b1c0c18b76#code)
-- OrderBook: [0x90CAF23eA7E507BB722647B0674e50D8d6468234](https://arbiscan.io/address/0x90caf23ea7e507bb722647b0674e50d8d6468234#code)
-- OrderBookSubParser: [0x23F77e7Bc935503e437166498D7D72f2Ea290E1f](https://arbiscan.io/address/0x23f77e7bc935503e437166498d7d72f2ea290e1f)
-- UniswapWords: [0x5Cf7d0a8c61c8dcC6b0ECB281dF1C17264C2A517](https://arbiscan.io/address/0x5cf7d0a8c61c8dcc6b0ecb281df1c17264c2a517)
-- Subgraph: https://api.thegraph.com/subgraphs/name/h20liquidity/arbitrum-0x90caf23e
-
-- Tokens
-  | Token | Scanlink |
-  | ------ | ------ |
-  | USDT | [0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9](https://arbiscan.io/address/0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9) |
-  | USDC | [0xaf88d065e77c8cC2239327C5EDb3A432268e5831](https://arbiscan.io/address/0xaf88d065e77c8cc2239327c5edb3a432268e5831) |
-  | WETH | [0x82aF49447D8a07e3bd95BD0d56f35241523fBab1](https://arbiscan.io/address/0x82af49447d8a07e3bd95bd0d56f35241523fbab1) |
-
 ### Base
 - RainterpreterExpressionDeployerNPE2: [0xfca89cD12Ba1346b1ac570ed988AB43b812733fe](https://basescan.org/address/0xfca89cd12ba1346b1ac570ed988ab43b812733fe#code)
 - OrderBook: [0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76](https://basescan.org/address/0x2aee87d75cd000583daec7a28db103b1c0c18b76#code)
