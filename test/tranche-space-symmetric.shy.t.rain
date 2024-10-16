@@ -1,10 +1,48 @@
+test:
+  calculate-entrypoint: my-calculate-io /* optional */
+  handle-entrypoint: my-handle-io /* optional */
+  scenario: 
+    bindings:
+      shyness: 103
 ---
 #pre
-input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913,
-output-token: 0x4200000000000000000000000000000000000006,
-output-cap: max-value(),
+0 - input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913,
+1 - output-token: 0x4200000000000000000000000000000000000006,
+output-cap: 10,
+block-number: 19382948,
+:set('my-key' 323443),
 :set(hash(order-hash() input-token() output-token() tranche-space-key) 2.5);
 
+/*
+take the state changes from the #pre eval and make a write call to the store on the fork
+fill out context and env with the relevant stack values from #pre
+*/
+
+/*
+this isn't really here, this comes from the main source, we run calculate-io first
+#calculate-io 
+max-out: get('my-key'),
+price: 10;
+
+then we run handle-io, handle-io needs the "calculations" context. which we'll know based on the output-cap in the #pre stack.
+#handle-io
+_: output-vault-decrease(),
+*/
+
+/*
+take the state changes from #calculate-io and pass into the #post eval
+take the stack from #calculate-io and pass into #post context
+*/
+
 #post
+:ensure(equal-to(context<1 0>() 10), /* the max was capped to 10 so the output-vault-decrease should be 10 */
+:ensure(equal-to(context<0 0>() 323443)), /* getting the 0 stack item from #calculate-io and asserting it against the value set in the #pre */
 tranche-space-after: get(hash(order-hash() input-token() output-token() tranche-space-key)),
 :ensure(equal-to(tranche-space-after 3.9));
+
+/*
+ * input-token -> goes to context
+ * output-token -> goes to context
+ * output-cap -> the maximum that would be cleared
+ * block-number -> the block number of the fork that the test is run in
+ */
