@@ -129,5 +129,5 @@ deployers:
     address: 0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA
     network: linea
   ethereum:
-    address:
-    network:
+    address: 0xd19581a021f4704ad4eBfF68258e7A0a9DB1CD77
+    network: ethereum
